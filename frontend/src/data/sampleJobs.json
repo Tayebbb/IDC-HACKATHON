@@ -1,0 +1,264 @@
+{
+  "jobs": [
+    {
+      "title": "Senior Frontend Developer",
+      "company": "Tech Innovators Ltd",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["react", "javascript", "typescript", "tailwind", "css"],
+      "experienceRequired": "advanced",
+      "track": "frontend",
+      "description": "We are looking for an experienced Frontend Developer to join our dynamic team. You will be responsible for building modern, responsive web applications using React and TypeScript.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/frontend-developer",
+        "bdjobs": "https://www.bdjobs.com/jobs/frontend-developer",
+        "glassdoor": "https://www.glassdoor.com/job/frontend-developer"
+      }
+    },
+    {
+      "title": "Full Stack Engineer",
+      "company": "Digital Solutions BD",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["react", "node.js", "mongodb", "express", "javascript"],
+      "experienceRequired": "intermediate",
+      "track": "fullstack",
+      "description": "Join our team as a Full Stack Engineer working on cutting-edge MERN stack applications. Build scalable backend APIs and beautiful frontend interfaces.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/fullstack-engineer",
+        "bdjobs": "https://www.bdjobs.com/jobs/fullstack-engineer"
+      }
+    },
+    {
+      "title": "Backend Developer - Node.js",
+      "company": "Cloud Systems Inc",
+      "location": "Chittagong, Bangladesh",
+      "skillsRequired": ["node.js", "express", "mongodb", "redis", "docker"],
+      "experienceRequired": "intermediate",
+      "track": "backend",
+      "description": "We need a skilled Backend Developer to design and implement scalable microservices architecture using Node.js and modern DevOps practices.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/backend-developer",
+        "glassdoor": "https://www.glassdoor.com/job/backend-developer"
+      }
+    },
+    {
+      "title": "Junior React Developer",
+      "company": "StartupHub Bangladesh",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["react", "javascript", "html", "css", "git"],
+      "experienceRequired": "beginner",
+      "track": "frontend",
+      "description": "Perfect opportunity for fresh graduates or junior developers to kickstart their career in web development. Learn and grow with our supportive team.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/junior-react-developer",
+        "bdjobs": "https://www.bdjobs.com/jobs/junior-react-developer"
+      }
+    },
+    {
+      "title": "DevOps Engineer",
+      "company": "Infrastructure Solutions Ltd",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["docker", "kubernetes", "aws", "jenkins", "linux"],
+      "experienceRequired": "advanced",
+      "track": "devops",
+      "description": "Lead our DevOps initiatives, manage cloud infrastructure, implement CI/CD pipelines, and ensure system reliability and scalability.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/devops-engineer",
+        "glassdoor": "https://www.glassdoor.com/job/devops-engineer"
+      }
+    },
+    {
+      "title": "Mobile App Developer - React Native",
+      "company": "AppVentures BD",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["react native", "javascript", "typescript", "ios", "android"],
+      "experienceRequired": "intermediate",
+      "track": "mobile",
+      "description": "Build cross-platform mobile applications for iOS and Android using React Native. Work on exciting projects for local and international clients.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/mobile-developer",
+        "bdjobs": "https://www.bdjobs.com/jobs/mobile-developer"
+      }
+    },
+    {
+      "title": "Python Django Developer",
+      "company": "Web Solutions Bangladesh",
+      "location": "Sylhet, Bangladesh",
+      "skillsRequired": ["python", "django", "postgresql", "rest api", "docker"],
+      "experienceRequired": "intermediate",
+      "track": "backend",
+      "description": "Develop robust web applications using Django framework. Design RESTful APIs and work with modern database technologies.",
+      "applyLinks": {
+        "bdjobs": "https://www.bdjobs.com/jobs/python-developer",
+        "glassdoor": "https://www.glassdoor.com/job/python-developer"
+      }
+    },
+    {
+      "title": "Data Scientist",
+      "company": "Analytics Pro BD",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["python", "machine learning", "pandas", "tensorflow", "sql"],
+      "experienceRequired": "advanced",
+      "track": "data science",
+      "description": "Apply machine learning algorithms to solve complex business problems. Work with big data and develop predictive models.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/data-scientist",
+        "glassdoor": "https://www.glassdoor.com/job/data-scientist"
+      }
+    },
+    {
+      "title": "UI/UX Designer & Frontend Developer",
+      "company": "Creative Digital Agency",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["figma", "html", "css", "javascript", "react"],
+      "experienceRequired": "intermediate",
+      "track": "frontend",
+      "description": "Combine your design skills with frontend development. Create beautiful user interfaces and implement them using modern web technologies.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/ui-ux-frontend",
+        "bdjobs": "https://www.bdjobs.com/jobs/ui-ux-developer"
+      }
+    },
+    {
+      "title": "QA Automation Engineer",
+      "company": "Quality First Software",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["selenium", "javascript", "cypress", "jest", "testing"],
+      "experienceRequired": "intermediate",
+      "track": "qa",
+      "description": "Design and implement automated test suites. Ensure software quality through comprehensive testing strategies.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/qa-automation",
+        "bdjobs": "https://www.bdjobs.com/jobs/qa-engineer"
+      }
+    },
+    {
+      "title": "WordPress Developer",
+      "company": "CMS Solutions BD",
+      "location": "Rajshahi, Bangladesh",
+      "skillsRequired": ["wordpress", "php", "mysql", "html", "css"],
+      "experienceRequired": "beginner",
+      "track": "fullstack",
+      "description": "Develop and customize WordPress themes and plugins. Work on diverse client projects and learn best practices.",
+      "applyLinks": {
+        "bdjobs": "https://www.bdjobs.com/jobs/wordpress-developer"
+      }
+    },
+    {
+      "title": "Flutter Developer",
+      "company": "Mobile First Apps",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["flutter", "dart", "firebase", "rest api", "mobile"],
+      "experienceRequired": "intermediate",
+      "track": "mobile",
+      "description": "Build beautiful cross-platform mobile applications using Flutter. Work with Firebase for backend services.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/flutter-developer",
+        "glassdoor": "https://www.glassdoor.com/job/flutter-developer"
+      }
+    },
+    {
+      "title": "Java Spring Boot Developer",
+      "company": "Enterprise Solutions Ltd",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["java", "spring boot", "hibernate", "mysql", "microservices"],
+      "experienceRequired": "advanced",
+      "track": "backend",
+      "description": "Develop enterprise-grade applications using Java and Spring Boot. Implement microservices architecture and RESTful APIs.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/java-developer",
+        "bdjobs": "https://www.bdjobs.com/jobs/java-developer"
+      }
+    },
+    {
+      "title": "Vue.js Frontend Developer",
+      "company": "Modern Web Studios",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["vue.js", "javascript", "vuex", "nuxt", "tailwind"],
+      "experienceRequired": "intermediate",
+      "track": "frontend",
+      "description": "Join our team to build progressive web applications using Vue.js and Nuxt.js. Work on modern, component-based architectures.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/vue-developer",
+        "bdjobs": "https://www.bdjobs.com/jobs/vue-developer"
+      }
+    },
+    {
+      "title": "AWS Cloud Architect",
+      "company": "CloudTech Solutions",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["aws", "terraform", "kubernetes", "docker", "python"],
+      "experienceRequired": "advanced",
+      "track": "devops",
+      "description": "Design and implement cloud infrastructure on AWS. Lead cloud migration projects and optimize costs.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/cloud-architect",
+        "glassdoor": "https://www.glassdoor.com/job/cloud-architect"
+      }
+    },
+    {
+      "title": "Graphic Designer & Web Developer",
+      "company": "Design & Code Studio",
+      "location": "Khulna, Bangladesh",
+      "skillsRequired": ["photoshop", "illustrator", "html", "css", "javascript"],
+      "experienceRequired": "beginner",
+      "track": "frontend",
+      "description": "Perfect for creative individuals who love both design and coding. Create stunning graphics and bring them to life on the web.",
+      "applyLinks": {
+        "bdjobs": "https://www.bdjobs.com/jobs/graphic-web-developer"
+      }
+    },
+    {
+      "title": "Machine Learning Engineer",
+      "company": "AI Innovations BD",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["python", "tensorflow", "pytorch", "machine learning", "deep learning"],
+      "experienceRequired": "advanced",
+      "track": "data science",
+      "description": "Develop and deploy machine learning models. Work on computer vision, NLP, and other cutting-edge AI projects.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/ml-engineer",
+        "glassdoor": "https://www.glassdoor.com/job/ml-engineer"
+      }
+    },
+    {
+      "title": "Angular Developer",
+      "company": "Enterprise Web Solutions",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["angular", "typescript", "rxjs", "html", "scss"],
+      "experienceRequired": "intermediate",
+      "track": "frontend",
+      "description": "Build enterprise-level single page applications using Angular. Work on complex projects with large codebases.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/angular-developer",
+        "bdjobs": "https://www.bdjobs.com/jobs/angular-developer"
+      }
+    },
+    {
+      "title": "MERN Stack Developer",
+      "company": "Full Stack Academy",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["mongodb", "express", "react", "node.js", "javascript"],
+      "experienceRequired": "intermediate",
+      "track": "fullstack",
+      "description": "Work on complete MERN stack applications. Build both frontend and backend components for modern web applications.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/mern-developer",
+        "bdjobs": "https://www.bdjobs.com/jobs/mern-developer",
+        "glassdoor": "https://www.glassdoor.com/job/mern-developer"
+      }
+    },
+    {
+      "title": "Cybersecurity Specialist",
+      "company": "SecureNet Bangladesh",
+      "location": "Dhaka, Bangladesh",
+      "skillsRequired": ["security", "penetration testing", "linux", "networking", "python"],
+      "experienceRequired": "advanced",
+      "track": "devops",
+      "description": "Protect our infrastructure and applications. Conduct security audits, implement security best practices, and respond to incidents.",
+      "applyLinks": {
+        "linkedin": "https://www.linkedin.com/jobs/view/cybersecurity",
+        "glassdoor": "https://www.glassdoor.com/job/cybersecurity"
+      }
+    }
+  ]
+}
