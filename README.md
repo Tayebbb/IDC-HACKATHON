@@ -54,17 +54,17 @@ Confidence is derived identically on both sides:
 
 ### Features 1 – 9
 
-| # | Feature | Where it lives |
-|---|---|---|
-| 1 | **ReasoningCard** — the single component that renders every explanation | `frontend/src/components/ReasoningCard.jsx` |
-| 2 | **Career DNA** radar chart (5 categories) + reasoning | backend `/career-dna` · `frontend/src/components/IntelligenceSection.jsx` |
-| 3 | **Career Readiness Score** (40 % skills · 30 % profile · 30 % interview) | backend `/readiness-score` · `IntelligenceSection.jsx` |
-| 4 | **Explainability wrapper** on skill-gap & job-match cards | `JobCard.jsx`, `SkillGapCard.jsx`, `Jobs.jsx` |
-| 5 | **RAG-grounded `/chat`** with a 57-item seed corpus (HF embeddings + keyword fallback) | `backend/main.py`, `backend/data/seed_corpus.json`, `backend/scripts/build_embeddings.py` |
-| 6 | **Voice Interview Coach** — Web Speech API + client-side WPM, filler, and pause metrics | `frontend/src/pages/MockInterview.jsx` |
-| 7 | **What-If Career Simulator** — live client-side recompute with spring-animated readiness | `frontend/src/components/WhatIfSimulator.jsx`, mounted in `CareerRoadmap.jsx` |
-| 8 | **Mindsparks Badge + Certificate** — gated at score ≥ 80, jsPDF export with logos | `frontend/src/components/MindsparksCredential.jsx` |
-| 9 | **Knowledge Graph** — react-flow map: User → Skills → Missing Skills → Target Job → Courses | `frontend/src/pages/KnowledgeGraph.jsx` |
+| #   | Feature                                                                                     | Where it lives                                                                            |
+| --- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1   | **ReasoningCard** — the single component that renders every explanation                     | `frontend/src/components/ReasoningCard.jsx`                                               |
+| 2   | **Career DNA** radar chart (5 categories) + reasoning                                       | backend `/career-dna` · `frontend/src/components/IntelligenceSection.jsx`                 |
+| 3   | **Career Readiness Score** (40 % skills · 30 % profile · 30 % interview)                    | backend `/readiness-score` · `IntelligenceSection.jsx`                                    |
+| 4   | **Explainability wrapper** on skill-gap & job-match cards                                   | `JobCard.jsx`, `SkillGapCard.jsx`, `Jobs.jsx`                                             |
+| 5   | **RAG-grounded `/chat`** with a 57-item seed corpus (HF embeddings + keyword fallback)      | `backend/main.py`, `backend/data/seed_corpus.json`, `backend/scripts/build_embeddings.py` |
+| 6   | **Voice Interview Coach** — Web Speech API + client-side WPM, filler, and pause metrics     | `frontend/src/pages/MockInterview.jsx`                                                    |
+| 7   | **What-If Career Simulator** — live client-side recompute with spring-animated readiness    | `frontend/src/components/WhatIfSimulator.jsx`, mounted in `CareerRoadmap.jsx`             |
+| 8   | **Mindsparks Badge + Certificate** — gated at score ≥ 80, jsPDF export with logos           | `frontend/src/components/MindsparksCredential.jsx`                                        |
+| 9   | **Knowledge Graph** — react-flow map: User → Skills → Missing Skills → Target Job → Courses | `frontend/src/pages/KnowledgeGraph.jsx`                                                   |
 
 ## Tech Stack
 
@@ -137,16 +137,16 @@ IDC HACKATHON/
 
 The FastAPI app exposes these routes. Frozen routes keep their original request/response shape; `/chat` was internally extended (new fields added, none removed).
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET`  | `/` | Health check |
-| `POST` | `/chat` | RAG-grounded chat assistant (returns `sources`, `factors`, `confidence`, `basis`, `retrieval_path`, `signal_types_used` alongside the original reply) |
-| `POST` | `/summarize-cv` | Extract structured data from a PDF CV |
-| `POST` | `/generate-interview-question` | Generate a new interview question |
-| `POST` | `/evaluate-interview-answer` | Score and review an interview answer |
-| `POST` | `/career-dna` | Score 5 career categories and explain each factor |
-| `POST` | `/readiness-score` | Compute readiness with 40/30/30 weights and an envelope |
-| `POST` | `/explain-match` | Wrap an existing job-match result in an envelope |
+| Method | Path                           | Purpose                                                                                                                                               |
+| ------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/`                            | Health check                                                                                                                                          |
+| `POST` | `/chat`                        | RAG-grounded chat assistant (returns `sources`, `factors`, `confidence`, `basis`, `retrieval_path`, `signal_types_used` alongside the original reply) |
+| `POST` | `/summarize-cv`                | Extract structured data from a PDF CV                                                                                                                 |
+| `POST` | `/generate-interview-question` | Generate a new interview question                                                                                                                     |
+| `POST` | `/evaluate-interview-answer`   | Score and review an interview answer                                                                                                                  |
+| `POST` | `/career-dna`                  | Score 5 career categories and explain each factor                                                                                                     |
+| `POST` | `/readiness-score`             | Compute readiness with 40/30/30 weights and an envelope                                                                                               |
+| `POST` | `/explain-match`               | Wrap an existing job-match result in an envelope                                                                                                      |
 
 OpenAPI docs are available at `/docs` and `/redoc`.
 
