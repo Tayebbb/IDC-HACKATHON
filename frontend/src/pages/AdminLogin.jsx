@@ -261,13 +261,12 @@ const AdminLogin = () => {
                 <input type="checkbox" className="w-4 h-4 rounded" disabled={loading} />
                 <span className="text-muted">Remember me</span>
               </label>
-              <button
-                type="button"
+              <Link
+                to="/forgot-password"
                 className="text-primary hover:text-primary-light transition-colors"
-                disabled={loading}
               >
                 Forgot password?
-              </button>
+              </Link>
             </motion.div>
 
             {/* Login Button */}

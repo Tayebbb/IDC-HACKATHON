@@ -125,7 +125,8 @@ const MockInterview = () => {
   const generateQuestion = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/generate-interview-question', {
+      const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+      const response = await fetch(`${apiUrl}/generate-interview-question`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -160,7 +161,8 @@ const MockInterview = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/evaluate-interview-answer', {
+      const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+      const response = await fetch(`${apiUrl}/evaluate-interview-answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

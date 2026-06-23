@@ -13,18 +13,29 @@ import NotificationButton from './NotificationButton';
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAIMenu, setShowAIMenu] = useState(false);
   const location = useLocation();
   const { currentUser, logout } = useAuth();
 
   useEffect(() => {
+    let rafId = null;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        const y = window.scrollY;
+        setScrollY(y);
+        setIsScrolled(y > 20);
+        rafId = null;
+      });
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -86,11 +97,17 @@ const Navbar = () => {
       animate="animate"
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
-        background: `linear-gradient(90deg, rgba(168, 85, 247, ${Math.max(0.15, Math.min(scrollY / 300, 0.5))}), rgba(212, 0, 249, ${Math.max(0.1, Math.min(scrollY / 300, 0.4))})), rgba(11, 14, 28, ${Math.max(0.2, Math.min(scrollY / 200, 0.6))})`,
-        backdropFilter: `blur(${Math.min(scrollY / 5, 90)}px)`,
-        borderBottom: scrollY > 20 ? '1px solid rgba(168,85,247,0.2)' : 'none',
-        paddingTop: scrollY > 50 ? '0.5rem' : '1rem',
-        paddingBottom: scrollY > 50 ? '0.5rem' : '1rem',
+        // Cleaner glassmorphism: transparent at top, subtle dark blur once scrolled.
+        background: isScrolled
+          ? 'rgba(11, 14, 28, 0.78)'
+          : 'rgba(11, 14, 28, 0.30)',
+        backdropFilter: isScrolled ? 'blur(14px) saturate(140%)' : 'blur(6px)',
+        WebkitBackdropFilter: isScrolled ? 'blur(14px) saturate(140%)' : 'blur(6px)',
+        borderBottom: isScrolled
+          ? '1px solid rgba(168, 85, 247, 0.18)'
+          : '1px solid transparent',
+        paddingTop: isScrolled ? '0.5rem' : '0.875rem',
+        paddingBottom: isScrolled ? '0.5rem' : '0.875rem',
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

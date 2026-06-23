@@ -19,35 +19,29 @@ const JobDetails = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchJob();
-  }, [id]);
-
-  const fetchJob = async () => {
-    try {
-      const response = await api.get(`/jobs/${id}`);
-      setJob(response.data);
-    } catch (error) {
-      toast.error('Failed to load job details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchJobDetails = async (jobId) => {
-    try {
-      const jobRef = doc(db, 'jobs', jobId);
-      const jobSnap = await getDoc(jobRef);
-      
-      if (jobSnap.exists()) {
-        setJob({ id: jobSnap.id, ...jobSnap.data() });
-      } else {
-        toast.error('Job not found');
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const jobRef = doc(db, 'jobs', id);
+        const jobSnap = await getDoc(jobRef);
+        if (cancelled) return;
+        if (jobSnap.exists()) {
+          setJob({ id: jobSnap.id, ...jobSnap.data() });
+        } else {
+          toast.error('Job not found');
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error fetching job:', error);
+        toast.error('Failed to load job details');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching job:', error);
-      toast.error('Failed to load job details');
-    }
-  };
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [id]);
 
   const handleApply = async () => {
     if (!currentUser) {

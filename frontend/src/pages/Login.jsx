@@ -331,7 +331,14 @@ const Login = () => {
           )}
 
           {/* Divider */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
+            {loginType === 'user' && (
+              <p className="text-sm">
+                <Link to="/forgot-password" className="text-muted hover:text-primary transition-colors">
+                  Forgot your password?
+                </Link>
+              </p>
+            )}
             {loginType === 'user' ? (
               <p className="text-sm text-muted">
                 Don't have an account?{' '}

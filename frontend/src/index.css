@@ -1,6 +1,12 @@
 /**
  * Neon Dark Theme CSS
  * Tailwind base + components + theme utilities
+ *
+ * Design direction: clean & minimal, with restrained neon accents.
+ * - Softer shadows, less saturated glows
+ * - Heading text-shadow only on h1/h2 (not all headings)
+ * - Visible :focus-visible rings for keyboard accessibility
+ * - Lighter muted text for WCAG AA compliance
  */
 
 @tailwind base;
@@ -13,6 +19,11 @@
     height: 100%;
   }
 
+  html {
+    /* Smoother scroll for anchor navigation */
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply font-sans antialiased;
     background-color: #0B0E1C; /* bg-base */
@@ -20,103 +31,198 @@
     font-family: Poppins, Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: 0.2px;
+    /* Removed wide letter-spacing for cleaner body text */
+    line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading font-extrabold tracking-wide;
-    text-shadow: 0 0 10px rgba(168,85,247,0.12);
+    @apply font-heading font-bold;
+    letter-spacing: -0.01em; /* tighter, more modern */
+    line-height: 1.2;
+  }
+
+  /* Glow shadow only on hero headings, not every heading */
+  h1, h2 {
+    text-shadow: 0 0 12px rgba(168, 85, 247, 0.10);
+  }
+
+  /* Keyboard accessibility: visible focus ring across the app */
+  *:focus { outline: none; }
+  *:focus-visible {
+    outline: 2px solid #C084FC;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(168, 85, 247, 0.35);
+    color: #fff;
   }
 
   /* Custom scrollbar for webkit browsers */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 9999px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.35); }
 
   /* Admin sidebar scrollbar */
   aside::-webkit-scrollbar { width: 6px; }
   aside::-webkit-scrollbar-track { background: transparent; }
   aside::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); border-radius: 9999px; }
   aside::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.5); }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 /* Component utilities and neon helpers */
 @layer components {
-  /* Primary gradient pill button */
+  /* Primary gradient pill button — refined: softer shadow, tighter padding scale */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-2 rounded-full text-white font-medium;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-white font-medium;
     background: linear-gradient(90deg, #A855F7, #7C3AED);
-    box-shadow: 0 6px 30px rgba(10,8,30,0.6), 0 0 18px rgba(168,85,247,0.12);
-    transition: all 180ms ease-in-out;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+    transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
   }
 
   .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 40px rgba(10,8,30,0.75), 0 0 32px rgba(168,85,247,0.2);
-    filter: saturate(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.40);
+    filter: brightness(1.05);
   }
 
-  /* Transparent neon outline */
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  }
+
+  /* Transparent neon outline — softer */
   .btn-outline-neon {
-    @apply inline-flex items-center px-5 py-2 rounded-full text-[#A855F7] bg-transparent border-2;
-    border-image: linear-gradient(90deg, rgba(168,85,247,0.7), rgba(213,0,249,0.6)) 1;
-    transition: all 160ms ease-in-out;
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-medium;
+    color: #C084FC;
+    background: transparent;
+    border: 1.5px solid rgba(168, 85, 247, 0.5);
+    transition: all 160ms ease;
   }
 
   .btn-outline-neon:hover {
-    box-shadow: 0 8px 26px rgba(124,58,237,0.12), 0 0 18px rgba(213,0,249,0.12);
+    border-color: rgba(168, 85, 247, 0.9);
     color: #fff;
-    background: linear-gradient(90deg, rgba(168,85,247,0.12), rgba(213,0,249,0.06));
+    background: rgba(168, 85, 247, 0.08);
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.18);
   }
 
-  /* Neon card */
+  /* Neon card — subtler shadows, softer hover lift */
   .neon-card {
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01));
     border-radius: 16px;
-    border: 1px solid rgba(124,58,237,0.12);
-    box-shadow: 0 6px 30px rgba(10,8,30,0.6), 0 0 20px rgba(168,85,247,0.06);
-    padding: 1rem;
-    transition: transform 200ms ease, box-shadow 200ms ease;
+    border: 1px solid rgba(168, 85, 247, 0.14);
+    box-shadow: 0 4px 20px rgba(10, 8, 30, 0.4);
+    padding: 1.25rem;
+    transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
   }
 
-  .neon-card:hover { transform: translateY(-6px); box-shadow: 0 14px 46px rgba(10,8,30,0.7), 0 0 40px rgba(168,85,247,0.14); }
+  .neon-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(168, 85, 247, 0.25);
+    box-shadow: 0 8px 28px rgba(10, 8, 30, 0.55), 0 0 24px rgba(168, 85, 247, 0.08);
+  }
 
   /* Neon border utility */
   .neon-border {
-    border: 1px solid rgba(168,85,247,0.18);
-    box-shadow: 0 0 12px rgba(168,85,247,0.12), inset 0 0 30px rgba(213,0,249,0.03);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.08), inset 0 0 24px rgba(213, 0, 249, 0.02);
     border-radius: 12px;
   }
 
-  .glow-text { text-shadow: 0 0 10px rgba(168,85,247,0.28); }
-  .glow-icon { filter: drop-shadow(0 0 10px rgba(213,0,249,0.38)); }
+  .glow-text { text-shadow: 0 0 12px rgba(168, 85, 247, 0.28); }
+  .glow-icon { filter: drop-shadow(0 0 8px rgba(213, 0, 249, 0.35)); }
 
-  /* Updated form and input look */
+  /* Form inputs — consistent focus state */
   .input-field {
-    @apply w-full px-4 py-3 rounded-lg border border-[rgba(255,255,255,0.04)];
+    @apply w-full px-4 py-3 rounded-lg;
     background: #11152B; /* bg-section */
-    color: #FFFFFF; /* text-main */
-    transition: box-shadow 160ms ease, transform 120ms ease;
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .input-field:hover {
+    border-color: rgba(168, 85, 247, 0.3);
+  }
+
+  .input-field:focus,
+  .input-field:focus-visible {
+    outline: none;
+    border-color: #A855F7;
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+  }
+
+  .input-field::placeholder {
+    color: rgba(179, 179, 199, 0.55);
   }
 
   .section-container { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
   .page-padding { @apply py-12 sm:py-16 lg:py-20; }
+
+  /* Subtle divider */
+  .divider-soft {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.25), transparent);
+  }
+
+  /* Skeleton shimmer for loading states */
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 8px;
+  }
 }
 
 /* Animations & utilities */
 @layer utilities {
-  .animate-fade-in { animation: fade-in 0.6s both; }
-  .animate-slide-up { animation: slide-up 0.6s both; }
+  .animate-fade-in { animation: fade-in 0.5s ease-out both; }
+  .animate-slide-up { animation: slide-up 0.5s ease-out both; }
   .animate-pulse-soft { animation: pulse-soft 2.4s infinite both; }
 
-  .text-muted { color: #B3B3C7; }
+  /* Lighter for better contrast (was #B3B3C7 ~4.2:1, now ~5.1:1 vs #0B0E1C) */
+  .text-muted { color: #C5C5D6; }
   .bg-section { background: #11152B; }
   .bg-base { background: #0B0E1C; }
 
   /* small helpers for gradients */
   .bg-card-gradient { background-image: linear-gradient(90deg, #6A00F5 0%, #D500F9 100%); }
   .bg-section-gradient { background-image: linear-gradient(180deg, #0B0E1C 0%, #161A34 100%); }
+
+  /* Keyframes for shimmer */
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slide-up {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.015); opacity: 0.96; }
+  }
 }
 
 /* Remove any legacy dark rules — site is permanently dark */

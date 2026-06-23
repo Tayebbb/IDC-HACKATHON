@@ -16,7 +16,7 @@ export default {
         'accent-pink': '#D500F9',
         'accent-blue': '#4F46E5',
         'text-main': '#FFFFFF',
-        'text-muted': '#B3B3C7',
+        'text-muted': '#C5C5D6',
       },
       backgroundImage: {
         'card-gradient': "linear-gradient(90deg, #6A00F5 0%, #D500F9 100%)",

@@ -6,7 +6,8 @@ import {
   onAuthStateChanged,
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -45,6 +46,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(() => {
     return signOut(auth);
+  }, []);
+
+  const resetPassword = useCallback((email) => {
+    return sendPasswordResetEmail(auth, email);
   }, []);
 
   const getUserData = useCallback(async (uid) => {
@@ -91,9 +96,10 @@ export const AuthProvider = ({ children }) => {
     signup,
     login,
     logout,
+    resetPassword,
     getUserData,
     signInWithGoogle
-  }), [currentUser, loading, signup, login, logout, getUserData, signInWithGoogle]);
+  }), [currentUser, loading, signup, login, logout, resetPassword, getUserData, signInWithGoogle]);
 
   return (
     <AuthContext.Provider value={value}>

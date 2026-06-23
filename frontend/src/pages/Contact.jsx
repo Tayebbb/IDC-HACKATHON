@@ -30,11 +30,12 @@ const Contact = () => {
       await contactService.submitContactForm({
         name: formData.name,
         email: formData.email,
+        subject: formData.subject,
         message: formData.message
       });
 
       toast.success("Message sent successfully!");
-      setFormData({ name: '', email: '', message: '' });
+      setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error("Failed to send message. Please try again.");

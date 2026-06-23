@@ -13,7 +13,7 @@ from pathlib import Path
 from google import genai
 from io import BytesIO
 from PyPDF2 import PdfReader
-from pydantic import BaseModel  # noqa: F401 — used by existing interview request models below
+from pydantic import BaseModel, Field  # noqa: F401 — used by existing interview request models below
 
 # Load environment variables
 load_dotenv()
@@ -330,16 +330,17 @@ class Message(TypedDict, total=False):
 #   Chat response JSON: {"reply": "<text>"}
 
 class InterviewQuestionRequest(BaseModel):
-    role: str
-    difficulty: str
-    questionNumber: int
-    previousQuestions: list[str] = []  # Track previous questions to avoid duplicates
+    role: str = Field(..., max_length=64)
+    difficulty: str = Field(..., max_length=32)
+    questionNumber: int = Field(..., ge=0, le=200)
+    # Cap previous-questions list to avoid Gemini token explosion
+    previousQuestions: list[str] = Field(default_factory=list, max_length=50)
 
 class InterviewAnswerRequest(BaseModel):
-    question: str
-    answer: str
-    role: str
-    difficulty: str
+    question: str = Field(..., max_length=5000)
+    answer: str = Field(..., max_length=10000)
+    role: str = Field(..., max_length=64)
+    difficulty: str = Field(..., max_length=32)
 
 class InterviewQuestionResponse(BaseModel):
     question: str
@@ -460,21 +461,35 @@ async def options_summarize_cv():
 
 @app.post("/summarize-cv")
 async def summarize_cv(file: UploadFile = File(...)):
+    MAX_CV_BYTES = 10 * 1024 * 1024  # 10 MB hard cap (Vercel function memory ~512 MB)
     try:
         # Validate file type
         if not file.content_type or not file.content_type.startswith("application/pdf"):
             raise HTTPException(status_code=400, detail="Please upload a PDF file.")
-        
-        # Read file content
+
+        # Read file content (bounded)
         content = await file.read()
-        
+        if len(content) > MAX_CV_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size is {MAX_CV_BYTES // (1024 * 1024)} MB.",
+            )
+
         # Extract text from PDF
         pdf_file = BytesIO(content)
-        reader = PdfReader(pdf_file)
+        try:
+            reader = PdfReader(pdf_file)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Could not read PDF. The file may be corrupted or password-protected.")
+
         full_text = ""
-        
+
         for page in reader.pages:
-            page_text = page.extract_text()
+            try:
+                page_text = page.extract_text()
+            except Exception:
+                # Skip unreadable pages instead of failing the whole upload
+                continue
             if page_text:
                 full_text += page_text + "\n"
         
