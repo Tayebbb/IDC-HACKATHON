@@ -298,6 +298,12 @@ Same readiness formula, computed client-side. Each toggled skill adds **+8** to 
 3. **keyword** — token-overlap fallback when HF is unavailable or returns nothing.
 4. **none** — nothing matched. ReasoningCard simply doesn't render.
 
+### 9.1 `/chat`-specific pre/post-processing
+
+- Before retrieval, `/chat` asks Gemini to rewrite the raw user message into a short search query. This removes conversational phrasing and gives `retrieve_sources` a cleaner retrieval string.
+- After retrieval, `/chat` asks Gemini to grade whether the retrieved source titles are useful for the extracted query. If grading fails or returns weak relevance, `/chat` retries retrieval with the original user message and marks the final `retrieval_path` as `keyword`; factors are built only from the final source set.
+- These wrapper steps do **not** change the internal `retrieve_sources` order: cache -> hf -> keyword -> none remains the retrieval contract.
+
 ### Augmenting `/chat`
 
 When `retrieve_sources` returns sources, they're injected as a user-role content block into the Gemini conversation **before** the model call. The model is instructed (system-style) to ground its answer in those items.

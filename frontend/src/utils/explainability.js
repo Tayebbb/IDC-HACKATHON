@@ -38,7 +38,11 @@ export const ALLOWED_SIGNAL_TYPES = [
  *  - "Low":    0 factors, OR all signals are profile_field only,
  *              OR keyword fallback was used
  */
-export function deriveConfidence(factors, usedFallback = false) {
+export function deriveConfidence(factors, opts = {}) {
+  const usedFallback = typeof opts === 'boolean' ? opts : opts.usedFallback === true;
+  const retrievalPath = typeof opts === 'object'
+    ? opts.retrievalPath || opts.retrieval_path || null
+    : null;
   const list = Array.isArray(factors) ? factors : [];
   if (list.length === 0) return 'Low';
 
@@ -49,6 +53,7 @@ export function deriveConfidence(factors, usedFallback = false) {
   const onlyWeightComponents = types.size === 1 && types.has('weight_component');
   if (onlyWeightComponents) return 'Medium';
 
+  if (retrievalPath === 'keyword' || retrievalPath === 'none') return 'Low';
   if (usedFallback) return 'Medium';
   if (list.length < 3) return 'Medium';
 
@@ -87,7 +92,10 @@ export function buildEnvelope(output, factors, basis, opts = {}) {
     new Set(safeFactors.map((f) => f.signal_type))
   );
 
-  const confidence = deriveConfidence(safeFactors, opts.usedFallback === true);
+  const confidence = deriveConfidence(safeFactors, {
+    usedFallback: opts.usedFallback === true,
+    retrievalPath: opts.retrievalPath || opts.retrieval_path,
+  });
 
   return {
     output,

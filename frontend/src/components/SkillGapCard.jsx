@@ -1,49 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle, Target, TrendingUp } from 'lucide-react';
 import ReasoningCard from './ReasoningCard';
-import { buildEnvelope } from '../utils/explainability';
+
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 const SkillGapCard = ({ missingSkills, matchScore, matchedSkills = [], breakdown = null }) => {
+  const [envelope, setEnvelope] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchExplanation() {
+      try {
+        const response = await fetch(`${API_BASE}/explain-match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matchedSkills,
+            missingSkills,
+            breakdown
+          }),
+        });
+        if (!response.ok) throw new Error('explain-match failed');
+        const data = await response.json();
+        if (!cancelled) {
+          if (data && Array.isArray(data.factors) && data.factors.length > 0) {
+            setEnvelope(data);
+          } else {
+            setEnvelope(null);
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setEnvelope(null);
+        }
+      }
+    }
+    fetchExplanation();
+    return () => {
+      cancelled = true;
+    };
+  }, [matchedSkills, missingSkills, breakdown, matchScore]);
+
   if (!missingSkills || missingSkills.length === 0) {
     return null;
   }
-
-  // Build factors so the same ReasoningCard the rest of the app uses
-  // can render skill_match signals here too (Feature 4).
-  const factors = [];
-  matchedSkills.forEach((s) => factors.push({
-    label: `${s} detected (skill_match)`,
-    positive: true,
-    signal_type: 'skill_match',
-  }));
-  missingSkills.forEach((s) => factors.push({
-    label: `${s} missing (skill_match)`,
-    positive: false,
-    signal_type: 'skill_match',
-  }));
-  if (breakdown) {
-    const weights = {
-      skillScore: ['Skills component', 60],
-      expScore: ['Experience component', 20],
-      trackScore: ['Track component', 20],
-    };
-    Object.entries(weights).forEach(([k, [name, w]]) => {
-      if (breakdown[k] !== undefined && breakdown[k] !== null) {
-        factors.push({
-          label: `${name}: ${Math.round(breakdown[k])}/${w} \u00d7 ${w}% (weight_component)`,
-          positive: Number(breakdown[k]) >= w / 2,
-          signal_type: 'weight_component',
-          value: Number(breakdown[k]),
-        });
-      }
-    });
-  }
-  const envelope = buildEnvelope(
-    matchScore,
-    factors,
-    `${matchedSkills.length} skill(s) matched \u00b7 ${missingSkills.length} skill(s) missing`
-  );
 
   const getEncouragementText = (score) => {
     if (score >= 80) {
@@ -111,13 +112,14 @@ const SkillGapCard = ({ missingSkills, matchScore, matchedSkills = [], breakdown
       </div>
 
       {/* Explainability — Feature 4 */}
-      <ReasoningCard
-        title="Why this score?"
-        score={typeof matchScore === 'number' ? matchScore : undefined}
-        factors={envelope.factors}
-        basis={envelope.basis}
-        confidence={envelope.confidence}
-      />
+      {envelope && (
+        <ReasoningCard
+          title="Why this score?"
+          factors={envelope?.factors ?? []}
+          basis={envelope?.basis}
+          confidence={envelope?.confidence}
+        />
+      )}
     </motion.div>
   );
 };

@@ -332,14 +332,14 @@ class Message(TypedDict, total=False):
 class InterviewQuestionRequest(BaseModel):
     role: str
     difficulty: str
-    questionNumber: int
+    questionNumber: int = 1  # optional — defaults to first question in the session
     previousQuestions: list[str] = []  # Track previous questions to avoid duplicates
 
 class InterviewAnswerRequest(BaseModel):
     question: str
     answer: str
     role: str
-    difficulty: str
+    difficulty: str = "medium"  # optional — defaults to medium difficulty
 
 class InterviewQuestionResponse(BaseModel):
     question: str

@@ -35,10 +35,11 @@ ChartJS.register(
   Legend
 );
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function IntelligenceSection({
   skills,
+  profile = {},
   profileCompletion = 0,
   interviewScore = null,
   userName = '',
@@ -55,7 +56,7 @@ export default function IntelligenceSection({
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (skillList.length === 0) {
+      if (skillList.length === 0 && (!profile.skills || profile.skills.length === 0)) {
         setDna(null);
         setReadiness(null);
         return;
@@ -64,7 +65,10 @@ export default function IntelligenceSection({
         const dnaRes = await fetch(`${API_BASE}/career-dna`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ skills: skillList }),
+          body: JSON.stringify({
+            skills: profile.skills ?? skillList ?? [],
+            toolsTechnologies: profile.toolsTechnologies ?? []
+          }),
         });
         if (!dnaRes.ok) throw new Error('career-dna failed');
         const dnaData = await dnaRes.json();

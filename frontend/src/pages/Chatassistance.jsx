@@ -240,6 +240,8 @@ export default function Chatassistance() {
 
       // Call backend API
       const apiUrl = (import.meta.env.VITE_API_URL || "https://backendcareerpath.vercel.app").replace(/\/+$/, "");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       const res = await fetch(`${apiUrl}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -247,6 +249,7 @@ export default function Chatassistance() {
           message: userMessage,
           history,
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -265,6 +268,8 @@ export default function Chatassistance() {
         factors: Array.isArray(data.factors) ? data.factors : [],
         confidence: data.confidence || null,
         basis: data.basis || null,
+        sources: Array.isArray(data.sources) ? data.sources : [],
+        retrieval_path: data.retrieval_path ?? "none",
       };
       const updatedMessages = [...newMessages, modelMsg];
       setMessages(updatedMessages);
@@ -276,9 +281,12 @@ export default function Chatassistance() {
     } catch (error) {
       console.error("Error:", error);
       // Add error message
+      const errorContent = error.name === "AbortError"
+        ? "Request timed out. Please try again."
+        : "Sorry, something went wrong talking to the server. Please try again.";
       const errorMessages = [
         ...newMessages,
-        { role: "model", content: "Sorry, something went wrong talking to the server. Please try again." }
+        { role: "model", content: errorContent }
       ];
       setMessages(errorMessages);
 
@@ -287,6 +295,7 @@ export default function Chatassistance() {
         await saveChatHistory(errorMessages);
       }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -405,6 +414,24 @@ export default function Chatassistance() {
                     basis={msg.basis}
                     confidence={msg.confidence}
                   />
+                )}
+
+                {msg.sources?.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-muted mb-1">Sources</p>
+                    <div className="flex flex-wrap gap-2">
+                      {msg.sources.map(src => (
+                        <span
+                          key={src.id}
+                          title={src.snippet}
+                          className="neon-border text-xs px-2 py-1 rounded-full cursor-default"
+                        >
+                          {src.type === "job" ? "💼" : "📚"}{" "}
+                          {src.title.length > 40 ? src.title.slice(0, 40) + "…" : src.title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
               {msg.role === "user" && (

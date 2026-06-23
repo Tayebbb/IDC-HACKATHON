@@ -37,6 +37,8 @@ import { db } from '../firebase';
 import ReasoningCard from '../components/ReasoningCard';
 import { buildEnvelope } from '../utils/explainability';
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 const MockInterview = () => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -125,7 +127,7 @@ const MockInterview = () => {
   const generateQuestion = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/generate-interview-question', {
+      const response = await fetch(`${API_BASE}/generate-interview-question`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -160,7 +162,7 @@ const MockInterview = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/evaluate-interview-answer', {
+      const response = await fetch(`${API_BASE}/evaluate-interview-answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

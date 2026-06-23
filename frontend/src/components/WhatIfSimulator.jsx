@@ -20,7 +20,7 @@ import { Sparkles, Wand2 } from 'lucide-react';
 import ReasoningCard from './ReasoningCard';
 import { buildEnvelope } from '../utils/explainability';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 // Mirror of backend CAREER_DNA_CATEGORIES (lowercase) — keep in sync.
 const SKILL_TO_CATEGORY = {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { User, Briefcase, BookOpen, TrendingUp, ArrowRight, GraduationCap, CheckCircle, Sparkles, MapPin, Award } from 'lucide-react';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where, limit, orderBy } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { calculateMatchScore } from '../utils/matchScore';
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [userProfile, setUserProfile] = useState(null);
   const [skillGapResources, setSkillGapResources] = useState([]);
+  const [interviewScore, setInterviewScore] = useState(null);
 
   // Memoize profile completion calculation
   const calculateCompletion = useCallback((data) => {
@@ -298,6 +299,33 @@ const Dashboard = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchLatestInterviewScore = async () => {
+      try {
+        const historyRef = collection(db, 'interviewHistory');
+        const q = query(
+          historyRef,
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc'),
+          limit(1)
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          setInterviewScore(snapshot.docs[0].data().score);
+        } else {
+          setInterviewScore(null);
+        }
+      } catch (error) {
+        console.error('Error fetching latest interview score:', error);
+        setInterviewScore(null);
+      }
+    };
+
+    fetchLatestInterviewScore();
+  }, [currentUser]);
+
   // Monitor authentication state - placed after all useCallback definitions
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -336,7 +364,7 @@ const Dashboard = () => {
         <IntelligenceSection
           skills={userProfile?.skills || []}
           profileCompletion={profileCompletion}
-          interviewScore={null}
+          interviewScore={interviewScore}
           userName={currentUser?.displayName || userProfile?.name || currentUser?.email}
         />
 

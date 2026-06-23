@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+﻿from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from typing import TypedDict, List, Dict, Any, Optional, Tuple
 from typing import Literal
@@ -13,7 +13,7 @@ from pathlib import Path
 from google import genai
 from io import BytesIO
 from PyPDF2 import PdfReader
-from pydantic import BaseModel  # noqa: F401 — used by existing interview request models below
+from pydantic import BaseModel  # noqa: F401 â€” used by existing interview request models below
 
 # Load environment variables
 load_dotenv()
@@ -41,7 +41,7 @@ MODEL_NAME = "gemini-2.0-flash"
 # ---------------------------------------------------------------------------
 # Explainability Layer (additive)
 # ---------------------------------------------------------------------------
-# Data contract — every AI output produced by this backend MUST be wrappable
+# Data contract â€” every AI output produced by this backend MUST be wrappable
 # in this envelope shape (see README + frontend ReasoningCard):
 #
 #   ExplainabilityEnvelope = {
@@ -61,7 +61,11 @@ ALLOWED_SIGNAL_TYPES = {
 }
 
 
-def _derive_confidence(factors: List[Dict[str, Any]], used_fallback: bool = False) -> str:
+def _derive_confidence(
+    factors: List[Dict[str, Any]],
+    used_fallback: bool = False,
+    retrieval_path: Optional[str] = None,
+) -> str:
     """Confidence derivation rule (MUST match frontend explainability.js).
 
     - High:   >= 3 factors AND at least one rag_source or skill_match AND
@@ -78,6 +82,8 @@ def _derive_confidence(factors: List[Dict[str, Any]], used_fallback: bool = Fals
         return "Low"
     if types == {"weight_component"}:
         return "Medium"
+    if retrieval_path in {"keyword", "none"}:
+        return "Low"
     if used_fallback:
         return "Medium"
     if len(factors) < 3:
@@ -100,7 +106,7 @@ def _build_envelope(output: Any, factors: List[Dict[str, Any]], basis: str,
 
 
 # ---------------------------------------------------------------------------
-# Career DNA category mapping (Feature 2 — documented for judges)
+# Career DNA category mapping (Feature 2 â€” documented for judges)
 # ---------------------------------------------------------------------------
 # Each category lists the skills that map to it. Detection is a simple
 # case-insensitive substring match against the user's declared skills.
@@ -211,7 +217,7 @@ def _cosine(a: List[float], b: List[float]) -> float:
 
 
 def _hf_embed(query: str, token: str) -> List[float]:
-    payload = _json.dumps({"inputs": query, "options": {"wait_for_model": False}}).encode("utf-8")
+    payload = _json.dumps({"inputs": query, "options": {"wait_for_model": True}}).encode("utf-8")
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -270,7 +276,7 @@ def retrieve_sources(query: str, k: int = 3) -> Tuple[List[Dict[str, Any]], str]
         )
         return ranked[:k], "cache"
 
-    # HF retrieval — only attempt if we have both a token AND a local index
+    # HF retrieval â€” only attempt if we have both a token AND a local index
     if token and _EMBED_INDEX:
         try:
             qvec = _hf_embed(query, token)
@@ -303,8 +309,54 @@ def _sources_to_factors(sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     ]
 
 
+async def extract_search_query(user_message: str) -> str:
+    """
+    Calls Gemini to rewrite the user message into a clean
+    8-word-max search query optimized for corpus retrieval.
+    Returns the raw user message as fallback if Gemini fails.
+    """
+    prompt = f"""Extract a short search query (max 8 words) from this career-related message.
+Return ONLY the query, nothing else. No punctuation, no explanation.
+
+Message: {user_message}
+Query:"""
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
+        extracted = response.text.strip()
+        return extracted if extracted else user_message
+    except Exception:
+        return user_message
+
+
+async def grade_sources(query: str, sources: list) -> bool:
+    """
+    Calls Gemini to check whether retrieved sources are relevant
+    to the query. Returns False if sources list is empty or
+    Gemini call fails, which triggers keyword fallback in /chat.
+    """
+    if not sources:
+        return False
+    titles = [s.get("title", "") for s in sources]
+    prompt = f"""Query: {query}
+Retrieved document titles: {titles}
+
+Are these documents useful to answer the query?
+Reply with exactly one word: yes or no."""
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
+        return "yes" in response.text.strip().lower()
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
-# Fallback test — REQUIRED by Feature 5 brief.
+# Fallback test - REQUIRED by Feature 5 brief.
 # Test result (verified at implementation time):
 #   * When HF_TOKEN is unset OR HF endpoint raises, retrieve_sources()
 #     returns the keyword path with >= 1 source for queries that mention
@@ -319,36 +371,31 @@ def _sources_to_factors(sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 #   (>=1 sources, 'keyword')
 # ---------------------------------------------------------------------------
 
-# Simple type hints to avoid a runtime dependency on pydantic
-class Message(TypedDict, total=False):
-    role: Literal["user", "model"]
-    content: str
-
-# Endpoints will accept plain dicts (JSON) for requests and return plain dicts for responses.
-# Expected shapes:
-#   Chat request JSON: {"message": "<text>", "history": [{"role":"user","content":"..."}, ...]}
-#   Chat response JSON: {"reply": "<text>"}
 
 class InterviewQuestionRequest(BaseModel):
     role: str
     difficulty: str
-    questionNumber: int
-    previousQuestions: list[str] = []  # Track previous questions to avoid duplicates
+    questionNumber: int = 1  # optional - defaults to first question in the session
+    previousQuestions: list[str] = []  # track previous questions to avoid duplicates
+
 
 class InterviewAnswerRequest(BaseModel):
     question: str
     answer: str
     role: str
-    difficulty: str
+    difficulty: str = "medium"  # optional - defaults to medium difficulty
+
 
 class InterviewQuestionResponse(BaseModel):
     question: str
+
 
 class InterviewFeedbackResponse(BaseModel):
     score: float
     feedback: str
     strengths: list[str]
     improvements: list[str]
+
 
 @app.get("/")
 async def root():
@@ -368,14 +415,41 @@ async def chat(req: Dict[str, Any]):
 
         user_message = req.get("message", "") or ""
 
-        # --- Feature 5: retrieval BEFORE Gemini ---------------------------
-        # Try cache -> HF embeddings -> keyword fallback. Never raises;
-        # if retrieval fails completely, retrieval_path == "none" and we
-        # simply call Gemini without grounding.
+        # Agentic RAG: Step 1 - extract optimized search query
+        search_query = await extract_search_query(user_message)
+
+        # Agentic RAG: Step 2 - retrieve using extracted query
         try:
-            sources, retrieval_path = retrieve_sources(user_message, k=3)
+            sources, retrieval_path = retrieve_sources(search_query, k=3)
         except Exception:
             sources, retrieval_path = [], "none"
+
+        # Agentic RAG: Step 3 - grade relevance, fallback if weak
+        is_relevant = await grade_sources(search_query, sources)
+        if not is_relevant:
+            try:
+                sources, retrieval_path = retrieve_sources(user_message, k=3)
+            except Exception:
+                sources, retrieval_path = [], "none"
+
+        # Agentic RAG: Step 4 - build rag_source factors
+        rag_factors = []
+        for source in sources:
+            rag_factors.append({
+                "label": f"{source.get('title', 'Source')} (rag_source)",
+                "positive": True,
+                "signal_type": "rag_source",
+                "value": source.get("type", "")
+            })
+
+        # Agentic RAG: Step 5 - inject sources into prompt context
+        if sources:
+            source_context = "Relevant information from our career database:\n" + "\n".join([
+                f"- [{s.get('type','').upper()}] {s.get('title','')}: {s.get('text', s.get('description',''))}"
+                for s in sources
+            ])
+        else:
+            source_context = ""
 
         # Build contents list for Gemini API
         contents = []
@@ -389,12 +463,8 @@ async def chat(req: Dict[str, Any]):
 
         # If we retrieved any sources, inject a grounding block so Gemini
         # can cite them. Existing fields are NOT removed or renamed.
-        if sources:
-            grounding = "Relevant CareerPath corpus context:\n" + "\n".join(
-                f"- {s.get('title')} ({s.get('type')}): {s.get('description', '')[:160]}"
-                for s in sources
-            )
-            contents.append({"role": "user", "parts": [{"text": grounding}]})
+        if source_context:
+            contents.append({"role": "user", "parts": [{"text": source_context}]})
 
         # Add current user message
         contents.append({
@@ -419,33 +489,29 @@ async def chat(req: Dict[str, Any]):
         if not reply_text:
             reply_text = "I'm sorry, I couldn't generate a response. Please try again."
 
-        # --- Feature 5: envelope additions (additive only) ----------------
-        factors = _sources_to_factors(sources)
-        used_fallback = retrieval_path in ("keyword", "none")
-        if retrieval_path == "hf" and len(sources) >= 2:
-            confidence = "High"
-        elif retrieval_path == "keyword":
-            confidence = "Medium"
-        elif retrieval_path == "none":
-            confidence = "Low"
-        else:
-            confidence = _derive_confidence(factors, used_fallback)
-        basis = (
-            f"{len(sources)} source(s) retrieved via {retrieval_path}"
-            if sources else "No corpus sources retrieved"
+        basis = f"Grounded via {retrieval_path} retrieval. Search query: '{search_query}'"
+        envelope = _build_envelope(
+            output=reply_text,
+            factors=rag_factors,
+            basis=basis,
         )
-        return {
-            "reply": reply_text,
-            "sources": [
-                {"id": s.get("id"), "title": s.get("title"), "type": s.get("type")}
-                for s in sources
-            ],
-            "factors": factors,
-            "confidence": confidence,
-            "basis": basis,
-            "retrieval_path": retrieval_path,
-            "signal_types_used": ["rag_source"] if factors else [],
-        }
+        envelope["reply"] = reply_text
+        envelope["sources"] = [
+            {
+                "id": s.get("parent_id", s.get("id", "")),
+                "type": s.get("type", ""),
+                "title": s.get("title", ""),
+                "snippet": s.get("text", s.get("description", ""))[:120]
+            }
+            for s in sources
+        ]
+        envelope["retrieval_path"] = retrieval_path
+        # Re-derive confidence with retrieval_path now that we have the real path
+        envelope["confidence"] = _derive_confidence(
+            envelope["factors"],
+            retrieval_path=retrieval_path,
+        )
+        return envelope
     
     except HTTPException:
         raise
@@ -703,7 +769,7 @@ Return ONLY the JSON object, no additional text."""
         raise HTTPException(status_code=500, detail=error_message)
 
 # ---------------------------------------------------------------------------
-# Feature 2 — Career DNA
+# Feature 2 â€” Career DNA
 # ---------------------------------------------------------------------------
 @app.options("/career-dna")
 async def options_career_dna():
@@ -714,7 +780,7 @@ async def options_career_dna():
 async def career_dna(req: Dict[str, Any]):
     """Score the user across 5 DNA categories and return a full envelope.
 
-    Accepted request shape (loose — accepts both raw lists and the
+    Accepted request shape (loose â€” accepts both raw lists and the
     shape returned by /summarize-cv):
       {
         "keySkills":          ["Python", ...],     # optional
@@ -737,7 +803,7 @@ async def career_dna(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Feature 3 — Career Readiness Score
+# Feature 3 â€” Career Readiness Score
 # ---------------------------------------------------------------------------
 # Weighted aggregate (0-100). Weights are documented and MUST appear as
 # weight_component / profile_field / interview_metric factors:
@@ -833,9 +899,9 @@ async def readiness_score(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Feature 4 — Explainability wrapper for skill gap + job match
+# Feature 4 â€” Explainability wrapper for skill gap + job match
 # ---------------------------------------------------------------------------
-# These endpoints DO NOT recompute scores — the frontend already does so
+# These endpoints DO NOT recompute scores â€” the frontend already does so
 # in matchScore.js. They simply take a precomputed match result and wrap
 # it into a valid ExplainabilityEnvelope so the same ReasoningCard can
 # render it.
