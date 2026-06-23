@@ -170,9 +170,23 @@ _DATA_DIR = Path(__file__).resolve().parent / "data"
 _CORPUS_PATH = _DATA_DIR / "seed_corpus.json"
 _EMBEDDINGS_PATH = _DATA_DIR / "corpus_embeddings.json"
 
+# Hugging Face Inference Router (new API, since api-inference.huggingface.co
+# was deprecated). Both embedding and chat generation now route through here.
 HF_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-HF_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
-_HF_TIMEOUT_SECS = 5.0
+HF_URL = (
+    "https://router.huggingface.co/hf-inference/models/"
+    f"{HF_MODEL}/pipeline/feature-extraction"
+)
+_HF_TIMEOUT_SECS = 10.0
+
+# Text-generation model for /chat replies (no Gemini, pure HF + RAG).
+# Uses HF's OpenAI-compatible chat-completions router endpoint.
+# Requires an HF token with the "Make calls to Inference Providers" permission.
+# If the call fails (cold model, 401, network), we fall back to an extractive
+# templated reply built straight from the retrieved corpus sources.
+HF_GEN_MODEL = "HuggingFaceH4/zephyr-7b-beta"
+HF_GEN_URL = "https://router.huggingface.co/v1/chat/completions"
+_HF_GEN_TIMEOUT_SECS = 30.0
 _EMBED_CACHE: Dict[str, List[float]] = {}
 
 
@@ -224,6 +238,68 @@ def _hf_embed(query: str, token: str) -> List[float]:
     if isinstance(data, list) and data and isinstance(data[0], list):
         return [float(x) for x in data[0]]
     raise RuntimeError("Unexpected HF response shape")
+
+
+def _hf_generate(prompt: str, token: str, max_new_tokens: int = 320) -> str:
+    """Call HF Inference Router chat-completions endpoint and return the reply.
+
+    Uses the OpenAI-compatible `/v1/chat/completions` schema. Raises on any
+    network / API error so the caller can fall back to extractive mode.
+    """
+    payload = _json.dumps({
+        "model": HF_GEN_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_new_tokens,
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "stream": False,
+    }).encode("utf-8")
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    req = urllib.request.Request(HF_GEN_URL, data=payload, headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=_HF_GEN_TIMEOUT_SECS) as resp:
+        data = _json.loads(resp.read().decode("utf-8"))
+    # OpenAI-compatible response shape
+    if isinstance(data, dict) and "choices" in data and data["choices"]:
+        msg = data["choices"][0].get("message", {})
+        content = msg.get("content", "")
+        if isinstance(content, str) and content.strip():
+            return content.strip()
+    if isinstance(data, dict) and "error" in data:
+        raise RuntimeError(f"HF error: {data['error']}")
+    raise RuntimeError(f"Unexpected HF generation response shape: {str(data)[:200]}")
+
+
+def _extractive_reply(question: str, sources: List[Dict[str, Any]]) -> str:
+    """Deterministic fallback reply built from retrieved corpus sources.
+
+    Used when HF generation is unavailable so the chatbot ALWAYS returns
+    something useful (instead of erroring out).
+    """
+    if not sources:
+        return (
+            "I couldn't find anything in our corpus that directly matches your question. "
+            "Try asking about specific skills, roles, or technologies \u2014 for example: "
+            "\"What does a backend developer do?\" or \"How do I learn Docker?\""
+        )
+    lines = ["Here are the most relevant items I found in our corpus:", ""]
+    for s in sources[:3]:
+        title = s.get("title", "Resource")
+        kind = s.get("type", "item")
+        desc = (s.get("description", "") or "").strip()
+        skills = s.get("skills") or []
+        skills_str = ", ".join(skills[:6]) if skills else ""
+        bullet = f"\u2022 **{title}** ({kind})"
+        if skills_str:
+            bullet += f" \u2014 key skills: _{skills_str}_"
+        if desc:
+            bullet += f"\n  {desc[:240]}{'\u2026' if len(desc) > 240 else ''}"
+        lines.append(bullet)
+    lines.append("")
+    lines.append("_Tip: ask about a specific skill or role for a more focused answer._")
+    return "\n".join(lines)
 
 
 def _keyword_search(query: str, k: int = 3) -> List[Dict[str, Any]]:
@@ -354,7 +430,7 @@ class InterviewFeedbackResponse(BaseModel):
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {"message": "Gemini Chatbot API is running"}
+    return {"message": "CareerPath RAG Chatbot API is running"}
 
 @app.options("/chat")
 async def options_chat():
@@ -362,79 +438,105 @@ async def options_chat():
 
 @app.post("/chat")
 async def chat(req: Dict[str, Any]):
+    """Pure HF + RAG chatbot. No Gemini.
+
+    Pipeline:
+      1. HF retrieval (cache → HF embeddings → keyword fallback)
+      2. HF text-generation (zephyr-7b-beta) with the retrieved context
+      3. Fallback: extractive templated reply built from sources
+    """
     try:
-        # Validate API key
-        if not api_key:
-            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+        user_message = (req.get("message", "") or "").strip()
+        if not user_message:
+            raise HTTPException(status_code=400, detail="message field is required")
 
-        user_message = req.get("message", "") or ""
-
-        # --- Feature 5: retrieval BEFORE Gemini ---------------------------
-        # Try cache -> HF embeddings -> keyword fallback. Never raises;
-        # if retrieval fails completely, retrieval_path == "none" and we
-        # simply call Gemini without grounding.
+        # --- Step 1: retrieval ---------------------------------------------
         try:
             sources, retrieval_path = retrieve_sources(user_message, k=3)
         except Exception:
             sources, retrieval_path = [], "none"
 
-        # Build contents list for Gemini API
-        contents = []
+        # --- Step 2: build prompt + try HF generation ---------------------
+        hf_token = os.getenv("HF_TOKEN")
 
-        # Add conversation history
-        for item in req.get("history", []):
-            contents.append({
-                "role": item.get("role"),
-                "parts": [{"text": item.get("content")}]
-            })
-
-        # If we retrieved any sources, inject a grounding block so Gemini
-        # can cite them. Existing fields are NOT removed or renamed.
+        # Compact context block (truncate descriptions to keep prompt small)
         if sources:
-            grounding = "Relevant CareerPath corpus context:\n" + "\n".join(
-                f"- {s.get('title')} ({s.get('type')}): {s.get('description', '')[:160]}"
-                for s in sources
-            )
-            contents.append({"role": "user", "parts": [{"text": grounding}]})
+            ctx_lines = []
+            for s in sources:
+                title = s.get("title", "")
+                desc = (s.get("description", "") or "")[:200]
+                skills = s.get("skills") or []
+                skills_str = (", ".join(skills[:6])) if skills else ""
+                if skills_str:
+                    ctx_lines.append(f"- {title} | skills: {skills_str} | {desc}")
+                else:
+                    ctx_lines.append(f"- {title}: {desc}")
+            context_text = "\n".join(ctx_lines)
+        else:
+            context_text = "(no relevant context found)"
 
-        # Add current user message
-        contents.append({
-            "role": "user",
-            "parts": [{"text": user_message}]
-        })
+        # Short, recent conversation history (keep prompt size bounded)
+        history_lines = []
+        for item in (req.get("history") or [])[-4:]:
+            role = item.get("role", "user")
+            content = (item.get("content", "") or "").strip()[:300]
+            if content:
+                history_lines.append(f"{'User' if role == 'user' else 'Assistant'}: {content}")
+        history_block = ("\n".join(history_lines) + "\n") if history_lines else ""
 
-        # Call Gemini API
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=contents,
+        # Zephyr instruction format works well with this plain template too
+        prompt = (
+            "You are CareerPath Assistant, a concise and helpful career guide for students "
+            "and fresh graduates. Use only the CONTEXT below to ground specifics about jobs "
+            "and courses. If the context does not cover the user's question, answer briefly "
+            "from general career knowledge and say so. Keep replies under 180 words.\n\n"
+            f"CONTEXT:\n{context_text}\n\n"
+            f"{history_block}"
+            f"User: {user_message}\n"
+            "Assistant:"
         )
 
-        # Extract reply text from response
         reply_text = ""
-        if response.candidates and len(response.candidates) > 0:
-            candidate = response.candidates[0]
-            if candidate.content and candidate.content.parts:
-                # Concatenate all text parts
-                reply_text = "".join(part.text for part in candidate.content.parts if hasattr(part, 'text'))
+        generation_path = "none"
+        if hf_token:
+            try:
+                gen = _hf_generate(prompt, hf_token, max_new_tokens=320)
+                # Strip any echoed "Assistant:" prefix the model may emit
+                gen = gen.split("User:")[0].strip()
+                if gen.lower().startswith("assistant:"):
+                    gen = gen[len("assistant:"):].strip()
+                if gen:
+                    reply_text = gen
+                    generation_path = "hf"
+            except Exception as e:
+                print(f"HF generation failed: {e}")
 
         if not reply_text:
-            reply_text = "I'm sorry, I couldn't generate a response. Please try again."
+            reply_text = _extractive_reply(user_message, sources)
+            generation_path = "extractive"
 
-        # --- Feature 5: envelope additions (additive only) ----------------
+        # --- Step 3: build explainability envelope ------------------------
         factors = _sources_to_factors(sources)
-        used_fallback = retrieval_path in ("keyword", "none")
-        if retrieval_path == "hf" and len(sources) >= 2:
+        used_fallback = (
+            retrieval_path in ("keyword", "none") or generation_path == "extractive"
+        )
+        if retrieval_path == "hf" and generation_path == "hf" and len(sources) >= 2:
             confidence = "High"
-        elif retrieval_path == "keyword":
-            confidence = "Medium"
-        elif retrieval_path == "none":
+        elif generation_path == "extractive" and not sources:
             confidence = "Low"
+        elif used_fallback:
+            confidence = "Medium"
         else:
             confidence = _derive_confidence(factors, used_fallback)
-        basis = (
-            f"{len(sources)} source(s) retrieved via {retrieval_path}"
-            if sources else "No corpus sources retrieved"
-        )
+
+        basis_parts = []
+        if sources:
+            basis_parts.append(f"{len(sources)} source(s) via {retrieval_path}")
+        else:
+            basis_parts.append("no corpus sources retrieved")
+        basis_parts.append(f"generation={generation_path}")
+        basis = "; ".join(basis_parts)
+
         return {
             "reply": reply_text,
             "sources": [
@@ -445,15 +547,15 @@ async def chat(req: Dict[str, Any]):
             "confidence": confidence,
             "basis": basis,
             "retrieval_path": retrieval_path,
+            "generation_path": generation_path,
             "signal_types_used": ["rag_source"] if factors else [],
         }
-    
+
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in chat endpoint: {str(e)}")  # Log to Vercel logs
-        error_message = f"Error talking to Gemini: {str(e)}"
-        raise HTTPException(status_code=500, detail=error_message)
+        print(f"Error in chat endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 @app.options("/summarize-cv")
 async def options_summarize_cv():

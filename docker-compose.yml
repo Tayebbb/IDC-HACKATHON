@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    image: careerpath-backend:latest
+    container_name: careerpath-backend
+    ports:
+      - "7860:7860"
+    environment:
+      # Provide secrets via a sibling .env file or your shell environment.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY must be set}
+      HF_TOKEN: ${HF_TOKEN:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7860/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Frontend is built statically; this URL is baked into the bundle.
+        # Point it at the backend service name when both run in this stack,
+        # or override to a public URL for production builds.
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:7860}
+    image: careerpath-frontend:latest
+    container_name: careerpath-frontend
+    # Host port 18080 -> container nginx :80. Avoid 5173/8080 clashes.
+    ports:
+      - "18080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
