@@ -30,13 +30,13 @@ RUN printf 'server {\n\
     gzip on;\n\
     gzip_types text/css application/javascript application/json image/svg+xml;\n\
     location / {\n\
-        try_files $uri /index.html;\n\
+    try_files $uri /index.html;\n\
     }\n\
     location /assets/ {\n\
-        expires 1y;\n\
-        add_header Cache-Control "public, immutable";\n\
+    expires 1y;\n\
+    add_header Cache-Control "public, immutable";\n\
     }\n\
-}\n' > /etc/nginx/conf.d/default.conf
+    }\n' > /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
