@@ -1,0 +1,162 @@
+[
+  {
+    "id": "advice_001",
+    "type": "advice",
+    "question": "How do I start a career in frontend development?",
+    "answer": "Start with HTML CSS and JavaScript fundamentals. Build 3-5 portfolio projects. Learn React as your primary framework. Contribute to open source on GitHub. Apply for junior roles or internships after 6 months of consistent practice.",
+    "tags": ["career-start", "frontend", "beginner"],
+    "related_skills": ["HTML", "CSS", "JavaScript", "React"]
+  },
+  {
+    "id": "advice_002",
+    "type": "advice",
+    "question": "How do I transition from frontend to fullstack development?",
+    "answer": "Learn a backend language — Python with FastAPI or Node.js with Express are best for frontend developers. Understand databases SQL and NoSQL. Learn REST API design. Build a fullstack project connecting your React frontend to a real backend. This transition typically takes 3-6 months.",
+    "tags": ["career-transition", "fullstack", "backend"],
+    "related_skills": ["Node.js", "Python", "FastAPI", "PostgreSQL", "REST APIs"]
+  },
+  {
+    "id": "advice_003",
+    "type": "advice",
+    "question": "What skills do I need to get a DevOps job?",
+    "answer": "Master Linux command line and bash scripting first. Learn Docker for containerization. Understand CI/CD with GitHub Actions or Jenkins. Study Kubernetes for orchestration. Get AWS Cloud Practitioner certified. Practice infrastructure as code with Terraform. Most DevOps roles require 1-2 years of software development experience first.",
+    "tags": ["devops", "career", "skills"],
+    "related_skills": ["Linux", "Docker", "Kubernetes", "AWS", "Terraform", "CI/CD"]
+  },
+  {
+    "id": "advice_004",
+    "type": "advice",
+    "question": "How do I prepare for a technical interview?",
+    "answer": "Practice data structures and algorithms on LeetCode — aim for 100 medium problems. Study system design for senior roles. Review your projects and be ready to explain every decision. Practice mock interviews with peers. Research the company tech stack. Most companies test DSA plus one domain-specific round.",
+    "tags": ["interview", "preparation", "career"],
+    "related_skills": ["Algorithms", "Data Structures", "System Design", "Communication"]
+  },
+  {
+    "id": "advice_005",
+    "type": "advice",
+    "question": "How long does it take to get a job as a junior developer?",
+    "answer": "With consistent daily practice of 4-6 hours it typically takes 6-12 months from zero to first job. Having a portfolio of 3 strong projects accelerates hiring significantly. Contributing to open source and networking on LinkedIn increases your chances. Bootcamp graduates often land jobs in 4-6 months. Self-taught developers average 8-12 months.",
+    "tags": ["timeline", "junior", "job-search"],
+    "related_skills": ["Portfolio", "GitHub", "Communication"]
+  },
+  {
+    "id": "advice_006",
+    "type": "advice",
+    "question": "Should I learn Python or JavaScript first?",
+    "answer": "For web development start with JavaScript — it runs in browsers and enables immediate visual feedback. For data science AI or backend automation start with Python. If undecided choose JavaScript since it covers frontend backend and mobile with one language. Python is simpler to read and write making it better for complete beginners focused on logic.",
+    "tags": ["python", "javascript", "beginner", "language-choice"],
+    "related_skills": ["Python", "JavaScript"]
+  },
+  {
+    "id": "advice_007",
+    "type": "advice",
+    "question": "How do I build a strong developer portfolio?",
+    "answer": "Build 3-5 projects that solve real problems. Include a fullstack web app a REST API project and one data or AI project. Deploy everything to live URLs using Vercel Netlify or Railway. Write clear READMEs with screenshots and setup instructions. Put all projects on GitHub with consistent commit history. Quality beats quantity — one impressive project beats ten tutorials.",
+    "tags": ["portfolio", "github", "projects"],
+    "related_skills": ["GitHub", "React", "REST APIs", "Deployment"]
+  },
+  {
+    "id": "advice_008",
+    "type": "advice",
+    "question": "What is the best way to learn machine learning?",
+    "answer": "Start with Andrew Ng's Machine Learning course on Coursera — it builds the right intuition. Learn Python pandas and NumPy first. Practice on Kaggle competitions. Study scikit-learn for classical ML. Then move to deep learning with PyTorch. Read papers on ArXiv once comfortable with fundamentals. ML is math-heavy so strengthen linear algebra and statistics.",
+    "tags": ["machine-learning", "AI", "learning-path"],
+    "related_skills": ["Python", "pandas", "scikit-learn", "PyTorch", "Mathematics"]
+  },
+  {
+    "id": "advice_009",
+    "type": "advice",
+    "question": "How important is a computer science degree for getting a developer job?",
+    "answer": "A CS degree helps at large companies like Google and Meta but is not required for most developer roles especially in startups and mid-size companies. What matters more is your portfolio GitHub activity and ability to solve problems in interviews. Many successful developers in Bangladesh and globally are self-taught or bootcamp graduates. A degree provides fundamentals but consistent project-building compensates effectively.",
+    "tags": ["degree", "education", "career"],
+    "related_skills": ["Portfolio", "GitHub", "Algorithms"]
+  },
+  {
+    "id": "advice_010",
+    "type": "advice",
+    "question": "How do I negotiate a higher salary as a developer?",
+    "answer": "Research market rates on LinkedIn Jobs and local job boards. Know your value by benchmarking your skills against job requirements. Get multiple offers if possible — competing offers are the strongest negotiation leverage. Negotiate after receiving the offer not before. Ask for 15-20 percent above your target. Emphasize specific achievements and impact from past roles rather than just years of experience.",
+    "tags": ["salary", "negotiation", "career-growth"],
+    "related_skills": ["Communication", "Negotiation"]
+  },
+  {
+    "id": "advice_011",
+    "type": "advice",
+    "question": "What is RAG and how is it used in AI applications?",
+    "answer": "RAG stands for Retrieval Augmented Generation. It combines a retrieval system that fetches relevant documents from a knowledge base with a language model that generates answers grounded in those documents. This prevents hallucination and keeps answers factual. RAG is used in chatbots document Q&A systems and knowledge management tools. It requires a vector database for semantic search and an embedding model to convert text to vectors.",
+    "tags": ["RAG", "AI", "LLM", "vector-database"],
+    "related_skills": ["RAG", "Python", "Vector Databases", "LLMs", "HuggingFace"]
+  },
+  {
+    "id": "advice_012",
+    "type": "advice",
+    "question": "How do I get my first freelance client as a developer?",
+    "answer": "Start on Fiverr or Upwork with competitive rates to build reviews. Reach out to local small businesses that need websites — restaurants shops and clinics are good targets. Offer to build one project at reduced cost for a testimonial. Use LinkedIn to share your work publicly. Join developer communities and offer help — referrals come naturally. Your first client is always the hardest — use your network.",
+    "tags": ["freelance", "clients", "career"],
+    "related_skills": ["Communication", "Web Development", "Portfolio"]
+  },
+  {
+    "id": "advice_013",
+    "type": "advice",
+    "question": "What soft skills do developers need?",
+    "answer": "Communication is the most important — writing clear messages asking good questions and explaining technical concepts to non-technical people. Problem-solving and breaking down complex tasks matters daily. Time management for meeting sprint deadlines. Collaboration with designers PMs and other engineers. Receiving and giving code review feedback gracefully. Growth mindset for continuous learning as technology evolves rapidly.",
+    "tags": ["soft-skills", "communication", "career"],
+    "related_skills": ["Communication", "Teamwork", "Problem Solving"]
+  },
+  {
+    "id": "advice_014",
+    "type": "advice",
+    "question": "How do I stay updated with new technologies?",
+    "answer": "Follow developer Twitter and LinkedIn for daily updates. Read weekly newsletters like JavaScript Weekly Python Weekly and DevOps Weekly. Watch conference talks on YouTube from JSConf PyCon and KubeCon. Follow top GitHub repositories and watch for releases. Build small side projects with new tech rather than just reading about it. Avoid tutorial hell — pick one new thing per quarter and go deep.",
+    "tags": ["learning", "technology", "career-growth"],
+    "related_skills": ["Self-learning", "Research"]
+  },
+  {
+    "id": "advice_015",
+    "type": "advice",
+    "question": "What is the career path for a backend developer in Bangladesh?",
+    "answer": "Junior Backend Developer 0-2 years focusing on Python Node.js or PHP. Mid-level Backend Engineer 2-4 years owning features and working with databases and APIs. Senior Backend Engineer 4-6 years leading technical decisions and mentoring. Backend Architect or Engineering Manager 6+ years setting technical direction. Top companies in Bangladesh hiring backend developers include Shajgoj Chaldal Pathao and bKash. Remote opportunities at global companies are also growing rapidly.",
+    "tags": ["bangladesh", "backend", "career-path"],
+    "related_skills": ["Python", "Node.js", "PostgreSQL", "System Design"]
+  },
+  {
+    "id": "advice_016",
+    "type": "advice",
+    "question": "How do I get into AI/ML as a fresh graduate?",
+    "answer": "Build strong Python fundamentals first. Complete Andrew Ng ML course and fast.ai deep learning course. Participate in 3-5 Kaggle competitions to build practical experience. Implement classic ML papers from scratch. Apply for ML internships and research assistant positions at universities. Build a project using HuggingFace models and deploy it. Share work publicly on GitHub and LinkedIn to attract attention from AI teams.",
+    "tags": ["AI", "ML", "fresh-graduate", "career"],
+    "related_skills": ["Python", "Machine Learning", "PyTorch", "HuggingFace", "Mathematics"]
+  },
+  {
+    "id": "advice_017",
+    "type": "advice",
+    "question": "What is Docker and why should developers learn it?",
+    "answer": "Docker is a containerization platform that packages your application with all its dependencies into a portable container. It solves the it works on my machine problem. Every developer should know Docker because it is used in virtually every modern deployment pipeline. Learning Docker takes 1-2 weeks. Start with docker run docker build and docker compose. It is essential for DevOps backend and increasingly frontend development roles.",
+    "tags": ["docker", "devops", "containerization"],
+    "related_skills": ["Docker", "Linux", "DevOps", "CI/CD"]
+  },
+  {
+    "id": "advice_018",
+    "type": "advice",
+    "question": "How do I improve my coding speed and efficiency?",
+    "answer": "Learn keyboard shortcuts in your editor — VSCode shortcuts alone save hours weekly. Practice touch typing to reach 60+ WPM. Use code snippets and templates for repetitive patterns. Learn to use the terminal efficiently with aliases and scripts. Read code from senior developers and study their patterns. Practice daily coding challenges on LeetCode for 30 minutes. Speed comes naturally after 1-2 years of consistent coding.",
+    "tags": ["productivity", "coding", "efficiency"],
+    "related_skills": ["Programming", "Problem Solving"]
+  },
+  {
+    "id": "advice_019",
+    "type": "advice",
+    "question": "What is system design and when do I need to learn it?",
+    "answer": "System design is the process of designing scalable distributed systems like how Netflix handles millions of streams or how WhatsApp delivers billions of messages. You need it for senior developer interviews (3+ years experience) and when building systems that must scale. Learn it by studying real-world architectures reading the System Design Primer on GitHub and practicing designing systems like URL shorteners and social media feeds.",
+    "tags": ["system-design", "senior", "architecture"],
+    "related_skills": ["System Design", "Microservices", "Databases", "Caching"]
+  },
+  {
+    "id": "advice_020",
+    "type": "advice",
+    "question": "How do I choose between React Angular and Vue?",
+    "answer": "Choose React if you want the largest job market most community resources and flexibility. It is the safest bet for career growth especially in startups. Choose Angular if targeting enterprise companies that already use it — strong TypeScript integration. Choose Vue if joining a team that already uses it or building smaller apps where simplicity matters. React has 60 percent of the market so it maximizes your job options globally and in Bangladesh.",
+    "tags": ["react", "angular", "vue", "frontend", "framework-choice"],
+    "related_skills": ["React", "Angular", "Vue.js", "JavaScript", "TypeScript"]
+  }
+]

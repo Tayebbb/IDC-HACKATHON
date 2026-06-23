@@ -14,6 +14,22 @@ from io import BytesIO
 from PyPDF2 import PdfReader
 from pydantic import BaseModel, Field  # noqa: F401 — used by existing interview request models below
 
+# ---------------------------------------------------------------------------
+# Optional ChromaDB + sentence-transformers (installed by build_chromadb.py)
+# Gracefully degraded if not installed — falls back to HF API / keyword search.
+# ---------------------------------------------------------------------------
+try:
+    import chromadb as _chromadb  # type: ignore
+    _CHROMADB_AVAILABLE = True
+except ImportError:
+    _CHROMADB_AVAILABLE = False
+
+try:
+    from sentence_transformers import SentenceTransformer as _SentenceTransformer  # type: ignore
+    _ST_AVAILABLE = True
+except ImportError:
+    _ST_AVAILABLE = False
+
 # Load environment variables
 load_dotenv()
 
@@ -535,14 +551,18 @@ def _score_career_dna(user_skills: List[str]) -> Tuple[Dict[str, int], List[Dict
 
 
 # ---------------------------------------------------------------------------
-# RAG retrieval (Feature 5)
+# RAG retrieval — ChromaDB-first pipeline
 # ---------------------------------------------------------------------------
 _DATA_DIR = Path(__file__).resolve().parent / "data"
 _CORPUS_PATH = _DATA_DIR / "seed_corpus.json"
 _EMBEDDINGS_PATH = _DATA_DIR / "corpus_embeddings.json"
+_CHROMA_PATH = _DATA_DIR / "chromadb"
+_CHROMA_COLLECTION_NAME = "career_corpus"
+_ADVICE_PATH = _DATA_DIR / "career_advice.json"
+_ROADMAPS_PATH = _DATA_DIR / "skill_roadmaps.json"
+_ST_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
-# Hugging Face Inference Router (new API, since api-inference.huggingface.co
-# was deprecated). Both embedding and chat generation now route through here.
+# Hugging Face Inference Router (fallback when local ST model unavailable)
 HF_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 HF_URL = (
     "https://router.huggingface.co/hf-inference/models/"
@@ -550,15 +570,48 @@ HF_URL = (
 )
 _HF_TIMEOUT_SECS = 10.0
 
-# Text-generation model for /chat replies (pure HF + RAG, no external LLM).
-# Uses HF's OpenAI-compatible chat-completions router endpoint.
-# Requires an HF token with the "Make calls to Inference Providers" permission.
-# If the call fails (cold model, 401, network), we fall back to an extractive
-# templated reply built straight from the retrieved corpus sources.
+# Text-generation model for /chat replies
 HF_GEN_MODEL = "HuggingFaceH4/zephyr-7b-beta"
 HF_GEN_URL = "https://router.huggingface.co/v1/chat/completions"
 _HF_GEN_TIMEOUT_SECS = 30.0
 _EMBED_CACHE: Dict[str, List[float]] = {}
+
+# Lazy-loaded singletons (initialised on first retrieval call)
+_chroma_collection: Any = None
+_st_model: Any = None
+
+
+def _get_chroma_collection() -> Any:
+    """Return the ChromaDB collection, or None if unavailable."""
+    global _chroma_collection
+    if _chroma_collection is not None:
+        return _chroma_collection
+    if not _CHROMADB_AVAILABLE:
+        return None
+    chroma_db_dir = _CHROMA_PATH
+    if not chroma_db_dir.exists():
+        return None
+    try:
+        client = _chromadb.PersistentClient(path=str(chroma_db_dir))
+        col = client.get_collection(_CHROMA_COLLECTION_NAME)
+        _chroma_collection = col
+        return col
+    except Exception:
+        return None
+
+
+def _get_st_model() -> Any:
+    """Return a sentence-transformers model, or None if unavailable."""
+    global _st_model
+    if _st_model is not None:
+        return _st_model
+    if not _ST_AVAILABLE:
+        return None
+    try:
+        _st_model = _SentenceTransformer(_ST_MODEL_NAME)
+        return _st_model
+    except Exception:
+        return None
 
 
 def _load_corpus() -> List[Dict[str, Any]]:
@@ -582,6 +635,28 @@ def _load_embeddings() -> List[Dict[str, Any]]:
 
 _CORPUS_CACHE = _load_corpus()
 _EMBED_INDEX = _load_embeddings()
+
+
+def _load_advice() -> List[Dict[str, Any]]:
+    if not _ADVICE_PATH.exists():
+        return []
+    try:
+        return _json.loads(_ADVICE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def _load_roadmaps() -> List[Dict[str, Any]]:
+    if not _ROADMAPS_PATH.exists():
+        return []
+    try:
+        return _json.loads(_ROADMAPS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+_ADVICE_CACHE: List[Dict[str, Any]] = _load_advice()
+_ROADMAPS_CACHE: List[Dict[str, Any]] = _load_roadmaps()
 
 
 def _cosine(a: List[float], b: List[float]) -> float:
@@ -681,10 +756,19 @@ def _keyword_search(query: str, k: int = 3) -> List[Dict[str, Any]]:
         return []
     scored: List[Tuple[int, Dict[str, Any]]] = []
     for item in _CORPUS_CACHE:
+        # Support both old schema (skills) and new schema (skillsRequired/relatedSkills)
+        skills_list = (
+            item.get("skillsRequired")
+            or item.get("relatedSkills")
+            or item.get("skills")
+            or []
+        )
         haystack = " ".join([
             str(item.get("title", "")),
-            " ".join(item.get("skills", [])),
+            " ".join(skills_list),
             str(item.get("description", "")),
+            str(item.get("track", "")),
+            str(item.get("company", "")),
         ]).lower()
         overlap = sum(1 for t in q_tokens if t in haystack)
         if overlap > 0:
@@ -693,21 +777,72 @@ def _keyword_search(query: str, k: int = 3) -> List[Dict[str, Any]]:
     return [item for _, item in scored[:k]]
 
 
+def _chroma_result_to_source(meta: Dict[str, Any], doc: str) -> Dict[str, Any]:
+    """Convert a ChromaDB result metadata dict into the source shape the rest of the code expects."""
+    skills_raw = meta.get("skills", "")
+    skills_list = [s.strip() for s in skills_raw.split(",")] if skills_raw else []
+    return {
+        "id": meta.get("parent_id", ""),
+        "type": meta.get("type", ""),
+        "title": meta.get("title", ""),
+        "description": doc,
+        "skills": skills_list,
+        "track": meta.get("track", ""),
+        "level": meta.get("level", ""),
+        "platform": meta.get("platform", ""),
+        "cost": meta.get("cost", ""),
+        "company": meta.get("company", ""),
+        "url": meta.get("url", ""),
+    }
+
+
 def retrieve_sources(query: str, k: int = 3) -> Tuple[List[Dict[str, Any]], str]:
     """Return (sources, path_used).
 
-    Retrieval order (per Feature 5):
-      1. cache  -> embedding cosine search
-      2. hf     -> HF Inference API + cosine over corpus_embeddings.json
-      3. keyword-> token-overlap fallback over seed_corpus.json
-      4. none   -> empty list; caller continues without retrieval
+    Retrieval order:
+      1. chromadb  -> local ChromaDB + local sentence-transformers (best quality)
+      2. cache     -> embedding cosine search (in-memory, if chroma unavailable)
+      3. hf        -> HF Inference API + cosine over corpus_embeddings.json
+      4. keyword   -> token-overlap fallback over seed_corpus.json
+      5. none      -> empty list; caller continues without retrieval
     """
     if not query:
         return [], "none"
 
+    # ── 1. ChromaDB (primary path) ──────────────────────────────────────────
+    col = _get_chroma_collection()
+    if col is not None:
+        st = _get_st_model()
+        if st is not None:
+            try:
+                qvec = st.encode([query])[0].tolist()
+                results = col.query(
+                    query_embeddings=[qvec],
+                    n_results=k,
+                    include=["metadatas", "documents"],
+                )
+                metas = results.get("metadatas", [[]])[0]
+                docs = results.get("documents", [[]])[0]
+                sources = [
+                    _chroma_result_to_source(m, d)
+                    for m, d in zip(metas, docs)
+                ]
+                # De-duplicate by parent_id (keep first/highest-ranked chunk per doc)
+                seen: set = set()
+                unique: List[Dict[str, Any]] = []
+                for s in sources:
+                    pid = s.get("id", "")
+                    if pid not in seen:
+                        seen.add(pid)
+                        unique.append(s)
+                if unique:
+                    return unique[:k], "chromadb"
+            except Exception:
+                pass  # fall through
+
     token = os.getenv("HF_TOKEN")
 
-    # Cache check (only meaningful if embeddings exist)
+    # ── 2. Cache check ───────────────────────────────────────────────────────
     if _EMBED_INDEX and query in _EMBED_CACHE:
         qvec = _EMBED_CACHE[query]
         ranked = sorted(
@@ -717,7 +852,7 @@ def retrieve_sources(query: str, k: int = 3) -> Tuple[List[Dict[str, Any]], str]
         )
         return ranked[:k], "cache"
 
-    # HF retrieval — only attempt if we have both a token AND a local index
+    # ── 3. HF retrieval ──────────────────────────────────────────────────────
     if token and _EMBED_INDEX:
         try:
             qvec = _hf_embed(query, token)
@@ -731,7 +866,7 @@ def retrieve_sources(query: str, k: int = 3) -> Tuple[List[Dict[str, Any]], str]
         except Exception:
             pass  # fall through to keyword
 
-    # Keyword fallback
+    # ── 4. Keyword fallback ──────────────────────────────────────────────────
     kw = _keyword_search(query, k=k)
     if kw:
         return kw, "keyword"
@@ -751,19 +886,12 @@ def _sources_to_factors(sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Fallback test — REQUIRED by Feature 5 brief.
-# Test result (verified at implementation time):
-#   * When HF_TOKEN is unset OR HF endpoint raises, retrieve_sources()
-#     returns the keyword path with >= 1 source for queries that mention
-#     any corpus skill/title token.
-#   * _build_envelope() correctly tags confidence as "Medium" when
-#     used_fallback=True, even with 3+ factors.
-#   * /chat continues normally when retrieval returns
-#     an empty list (no exception surfaced to the user).
-# Manual repro:
-#   >>> os.environ.pop("HF_TOKEN", None)
-#   >>> retrieve_sources("python fastapi docker backend", k=3)
-#   (>=1 sources, 'keyword')
+# Retrieval path notes:
+#   1. chromadb  — local ChromaDB + sentence-transformers (fastest, best quality)
+#   2. cache     — in-memory cosine over corpus_embeddings.json
+#   3. hf        — HF Inference API (requires HF_TOKEN)
+#   4. keyword   — token-overlap fallback (always works, no deps)
+#   5. none      — empty; caller produces templated reply
 # ---------------------------------------------------------------------------
 
 # Simple type hints to avoid a runtime dependency on pydantic
@@ -1245,6 +1373,106 @@ async def explain_match(req: Dict[str, Any]):
     envelope = _build_envelope(score, factors, basis)
     envelope["score"] = score
     return envelope
+
+
+# ---------------------------------------------------------------------------
+# Feature 5 — Career Advice Q&A
+# ---------------------------------------------------------------------------
+@app.options("/career-advice")
+async def options_career_advice():
+    return {"message": "OK"}
+
+
+@app.get("/career-advice")
+async def career_advice(q: str = "", tag: str = "", limit: int = 5):
+    """Return matching career advice items.
+
+    Query params:
+      q     - free-text keyword search against question + answer + tags
+      tag   - filter by a specific tag (exact match, case-insensitive)
+      limit - max results (default 5, max 20)
+    """
+    limit = max(1, min(limit, 20))
+    items = _ADVICE_CACHE
+    if not items:
+        raise HTTPException(status_code=503, detail="Career advice data not loaded.")
+
+    results = []
+    q_lower = (q or "").lower().strip()
+    tag_lower = (tag or "").lower().strip()
+
+    for item in items:
+        # Tag filter
+        if tag_lower:
+            item_tags = [t.lower() for t in item.get("tags", [])]
+            if tag_lower not in item_tags:
+                continue
+        # Keyword filter
+        if q_lower:
+            haystack = " ".join([
+                item.get("question", ""),
+                item.get("answer", ""),
+                " ".join(item.get("tags", [])),
+                " ".join(item.get("related_skills", [])),
+            ]).lower()
+            if not any(token in haystack for token in q_lower.split() if len(token) > 2):
+                continue
+        results.append(item)
+        if len(results) >= limit:
+            break
+
+    return {
+        "items": results,
+        "total": len(results),
+        "query": q,
+        "tag": tag,
+    }
+
+
+@app.post("/career-advice")
+async def career_advice_post(req: Dict[str, Any]):
+    """POST alias for /career-advice — accepts {q, tag, limit} JSON body."""
+    q = req.get("q", "")
+    tag = req.get("tag", "")
+    limit = int(req.get("limit", 5))
+    return await career_advice(q=q, tag=tag, limit=limit)
+
+
+# ---------------------------------------------------------------------------
+# Feature 6 — Skill Roadmaps
+# ---------------------------------------------------------------------------
+@app.options("/skill-roadmap")
+async def options_skill_roadmap():
+    return {"message": "OK"}
+
+
+@app.get("/skill-roadmap")
+async def skill_roadmap(track: str = ""):
+    """Return skill roadmaps, optionally filtered by track.
+
+    Query params:
+      track - filter by career track (e.g. Frontend, Backend, DevOps, AI/ML, Communication)
+    """
+    items = _ROADMAPS_CACHE
+    if not items:
+        raise HTTPException(status_code=503, detail="Skill roadmap data not loaded.")
+
+    if track:
+        track_lower = track.lower()
+        items = [r for r in items if track_lower in r.get("track", "").lower()]
+
+    return {
+        "roadmaps": items,
+        "total": len(items),
+        "track_filter": track,
+    }
+
+
+@app.post("/skill-roadmap")
+async def skill_roadmap_post(req: Dict[str, Any]):
+    """POST alias for /skill-roadmap — accepts {track} JSON body."""
+    track = req.get("track", "")
+    return await skill_roadmap(track=track)
 
 
 if __name__ == "__main__":

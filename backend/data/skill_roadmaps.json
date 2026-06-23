@@ -1,0 +1,137 @@
+[
+  {
+    "id": "roadmap_frontend",
+    "type": "roadmap",
+    "track": "Frontend",
+    "title": "Frontend Development Roadmap",
+    "description": "Complete learning path from zero to senior frontend developer covering HTML CSS JavaScript React and advanced topics.",
+    "stages": [
+      {
+        "level": "beginner",
+        "duration": "0-3 months",
+        "skills": ["HTML", "CSS", "JavaScript", "Responsive Design", "Git"],
+        "milestone": "Build 2 static websites and deploy to GitHub Pages"
+      },
+      {
+        "level": "intermediate",
+        "duration": "3-8 months",
+        "skills": ["React", "TypeScript", "Tailwind CSS", "REST APIs", "npm"],
+        "milestone": "Build a fullstack React app with real API integration"
+      },
+      {
+        "level": "advanced",
+        "duration": "8-18 months",
+        "skills": ["Next.js", "Performance Optimization", "Testing", "GraphQL", "System Design"],
+        "milestone": "Lead a frontend feature end to end with tests and CI/CD"
+      }
+    ]
+  },
+  {
+    "id": "roadmap_backend",
+    "type": "roadmap",
+    "track": "Backend",
+    "title": "Backend Development Roadmap",
+    "description": "Step by step path to becoming a backend developer using Python or Node.js covering APIs databases and deployment.",
+    "stages": [
+      {
+        "level": "beginner",
+        "duration": "0-3 months",
+        "skills": ["Python", "SQL", "Git", "REST APIs", "Command Line"],
+        "milestone": "Build a CRUD REST API with a real database"
+      },
+      {
+        "level": "intermediate",
+        "duration": "3-9 months",
+        "skills": ["FastAPI", "PostgreSQL", "Docker", "Authentication", "Testing"],
+        "milestone": "Deploy a production API with auth and database on cloud"
+      },
+      {
+        "level": "advanced",
+        "duration": "9-20 months",
+        "skills": ["Microservices", "Redis", "Kafka", "System Design", "Kubernetes"],
+        "milestone": "Design and deploy a microservices architecture at scale"
+      }
+    ]
+  },
+  {
+    "id": "roadmap_devops",
+    "type": "roadmap",
+    "track": "DevOps",
+    "title": "DevOps Engineering Roadmap",
+    "description": "From developer to DevOps engineer covering Linux Docker Kubernetes CI/CD and cloud infrastructure.",
+    "stages": [
+      {
+        "level": "beginner",
+        "duration": "0-4 months",
+        "skills": ["Linux", "Bash", "Git", "Docker", "Networking Basics"],
+        "milestone": "Containerize an application and run it with Docker Compose"
+      },
+      {
+        "level": "intermediate",
+        "duration": "4-12 months",
+        "skills": ["Kubernetes", "CI/CD", "AWS", "Terraform", "Monitoring"],
+        "milestone": "Deploy app to Kubernetes on AWS with full CI/CD pipeline"
+      },
+      {
+        "level": "advanced",
+        "duration": "12-24 months",
+        "skills": ["Platform Engineering", "DevSecOps", "SRE", "Helm", "Observability"],
+        "milestone": "Build internal developer platform with golden path deployments"
+      }
+    ]
+  },
+  {
+    "id": "roadmap_aiml",
+    "type": "roadmap",
+    "track": "AI/ML",
+    "title": "AI and Machine Learning Roadmap",
+    "description": "Structured path from Python basics to production ML engineering covering classical ML deep learning and LLMs.",
+    "stages": [
+      {
+        "level": "beginner",
+        "duration": "0-4 months",
+        "skills": ["Python", "pandas", "NumPy", "scikit-learn", "Statistics"],
+        "milestone": "Build and evaluate a classification model on a real dataset"
+      },
+      {
+        "level": "intermediate",
+        "duration": "4-12 months",
+        "skills": ["PyTorch", "Deep Learning", "NLP", "HuggingFace", "Computer Vision"],
+        "milestone": "Fine-tune a transformer model and deploy as an API"
+      },
+      {
+        "level": "advanced",
+        "duration": "12-24 months",
+        "skills": ["MLOps", "RAG", "LLMs", "Vector Databases", "CUDA"],
+        "milestone": "Build and ship a production RAG system or LLM-powered product"
+      }
+    ]
+  },
+  {
+    "id": "roadmap_communication",
+    "type": "roadmap",
+    "track": "Communication",
+    "title": "Tech Communication and Leadership Roadmap",
+    "description": "Path from developer to technical leader covering communication writing presentation and management skills.",
+    "stages": [
+      {
+        "level": "beginner",
+        "duration": "0-6 months",
+        "skills": ["Technical Writing", "Documentation", "Slack Communication", "Code Review"],
+        "milestone": "Write clear README docs and give first team presentation"
+      },
+      {
+        "level": "intermediate",
+        "duration": "6-18 months",
+        "skills": ["Public Speaking", "Agile", "Scrum", "Stakeholder Management", "Mentoring"],
+        "milestone": "Lead a sprint facilitate retrospectives and present to leadership"
+      },
+      {
+        "level": "advanced",
+        "duration": "18-36 months",
+        "skills": ["Engineering Management", "Hiring", "Strategy", "OKRs", "Executive Communication"],
+        "milestone": "Manage a team of 5+ engineers and own a product area"
+      }
+    ]
+  }
+]
