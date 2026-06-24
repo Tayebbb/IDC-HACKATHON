@@ -2,48 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle, Target, TrendingUp } from 'lucide-react';
 import ReasoningCard from './ReasoningCard';
-import { buildEnvelope } from '../utils/explainability';
 
-const SkillGapCard = ({ missingSkills, matchScore, matchedSkills = [], breakdown = null }) => {
+const SkillGapCard = ({ missingSkills, matchScore, matchedSkills = [], breakdown = null, envelope = null }) => {
   if (!missingSkills || missingSkills.length === 0) {
     return null;
   }
-
-  // Build factors so the same ReasoningCard the rest of the app uses
-  // can render skill_match signals here too (Feature 4).
-  const factors = [];
-  matchedSkills.forEach((s) => factors.push({
-    label: `${s} detected (skill_match)`,
-    positive: true,
-    signal_type: 'skill_match',
-  }));
-  missingSkills.forEach((s) => factors.push({
-    label: `${s} missing (skill_match)`,
-    positive: false,
-    signal_type: 'skill_match',
-  }));
-  if (breakdown) {
-    const weights = {
-      skillScore: ['Skills component', 60],
-      expScore: ['Experience component', 20],
-      trackScore: ['Track component', 20],
-    };
-    Object.entries(weights).forEach(([k, [name, w]]) => {
-      if (breakdown[k] !== undefined && breakdown[k] !== null) {
-        factors.push({
-          label: `${name}: ${Math.round(breakdown[k])}/${w} \u00d7 ${w}% (weight_component)`,
-          positive: Number(breakdown[k]) >= w / 2,
-          signal_type: 'weight_component',
-          value: Number(breakdown[k]),
-        });
-      }
-    });
-  }
-  const envelope = buildEnvelope(
-    matchScore,
-    factors,
-    `${matchedSkills.length} skill(s) matched \u00b7 ${missingSkills.length} skill(s) missing`
-  );
 
   const getEncouragementText = (score) => {
     if (score >= 80) {
@@ -114,9 +77,9 @@ const SkillGapCard = ({ missingSkills, matchScore, matchedSkills = [], breakdown
       <ReasoningCard
         title="Why this score?"
         score={typeof matchScore === 'number' ? matchScore : undefined}
-        factors={envelope.factors}
-        basis={envelope.basis}
-        confidence={envelope.confidence}
+        factors={envelope?.factors}
+        basis={envelope?.basis}
+        confidence={envelope?.confidence}
       />
     </motion.div>
   );

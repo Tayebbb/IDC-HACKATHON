@@ -19,6 +19,7 @@ export default function Chatassistance() {
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const chatBoxRef = useRef(null);
+  const abortRef = useRef(null);
 
   // Topics the chatbot can discuss
   const allowedTopics = [
@@ -241,6 +242,9 @@ export default function Chatassistance() {
 
       // Call backend API
       const apiUrl = API_URL.replace(/\/+$/, "");
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+
       const res = await fetch(`${apiUrl}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -248,6 +252,7 @@ export default function Chatassistance() {
           message: userMessage,
           history,
         }),
+        signal: abortRef.current.signal,
       });
 
       if (!res.ok) {
@@ -263,6 +268,7 @@ export default function Chatassistance() {
       const modelMsg = {
         role: "model",
         content: reply,
+        sources: data.sources || [],
         factors: Array.isArray(data.factors) ? data.factors : [],
         confidence: data.confidence || null,
         basis: data.basis || null,
@@ -275,6 +281,7 @@ export default function Chatassistance() {
         await saveChatHistory(updatedMessages);
       }
     } catch (error) {
+      if (error.name === "AbortError") return;
       console.error("Error:", error);
       // Add error message
       const errorMessages = [
@@ -386,6 +393,19 @@ export default function Chatassistance() {
                     {msg.content}
                   </ReactMarkdown>
                 </div>
+
+                {msg.sources && msg.sources.length > 0 && (
+                  <div className="mt-2 space-y-1 mb-3">
+                    <p className="text-xs text-[#B3B3C7] font-semibold">Sources</p>
+                    {msg.sources.map((src) => (
+                      <div key={src.id} className="text-xs text-purple-400 bg-white/5 rounded px-2 py-1">
+                        <span className="capitalize">{src.type}</span>
+                        {" · "}
+                        <span className="text-[#B3B3C7]">{src.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {msg.showKeywords && (
                   <div style={styles.keywordsContainer}>

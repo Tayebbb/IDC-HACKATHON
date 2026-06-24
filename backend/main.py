@@ -4,11 +4,13 @@ from typing import TypedDict, List, Dict, Any, Optional, Tuple
 from typing import Literal
 from dotenv import load_dotenv
 import os
+import base64
 import json as _json
 import math
 import time
 import urllib.request
 import urllib.error
+import httpx
 from pathlib import Path
 from io import BytesIO
 from PyPDF2 import PdfReader
@@ -671,7 +673,7 @@ def _cosine(a: List[float], b: List[float]) -> float:
 
 
 def _hf_embed(query: str, token: str) -> List[float]:
-    payload = _json.dumps({"inputs": query, "options": {"wait_for_model": False}}).encode("utf-8")
+    payload = _json.dumps({"inputs": query, "options": {"wait_for_model": True}}).encode("utf-8")
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -907,7 +909,7 @@ class Message(TypedDict, total=False):
 class InterviewQuestionRequest(BaseModel):
     role: str = Field(..., max_length=64)
     difficulty: str = Field(..., max_length=32)
-    questionNumber: int = Field(..., ge=0, le=200)
+    questionNumber: int = Field(1, ge=0, le=200)
     # Cap previous-questions list to avoid token explosion
     previousQuestions: list[str] = Field(default_factory=list, max_length=50)
 
@@ -915,7 +917,7 @@ class InterviewAnswerRequest(BaseModel):
     question: str = Field(..., max_length=5000)
     answer: str = Field(..., max_length=10000)
     role: str = Field(..., max_length=64)
-    difficulty: str = Field(..., max_length=32)
+    difficulty: str = Field("Medium", max_length=32)
 
 class InterviewQuestionResponse(BaseModel):
     question: str
@@ -1373,6 +1375,61 @@ async def explain_match(req: Dict[str, Any]):
     envelope = _build_envelope(score, factors, basis)
     envelope["score"] = score
     return envelope
+
+
+# ---------------------------------------------------------------------------
+# Feature 7 — Facial Expression Analysis
+# ---------------------------------------------------------------------------
+HF_EXPRESSION_MODEL_URL = (
+    "https://api-inference.huggingface.co/models/trpakov/vit-face-expression"
+)
+
+
+class ExpressionRequest(BaseModel):
+    image_b64: str
+
+
+class EmotionScore(BaseModel):
+    label: str
+    score: float
+
+
+class ExpressionResponse(BaseModel):
+    emotions: list[EmotionScore]
+    retrieval_path: str
+
+
+@app.post("/analyze-expression", response_model=ExpressionResponse)
+async def analyze_expression(req: ExpressionRequest):
+    hf_token = os.getenv("HF_TOKEN", "")
+    if not hf_token:
+        return ExpressionResponse(emotions=[], retrieval_path="error")
+    try:
+        image_bytes = base64.b64decode(req.image_b64)
+    except Exception:
+        return ExpressionResponse(emotions=[], retrieval_path="error")
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                HF_EXPRESSION_MODEL_URL,
+                content=image_bytes,
+                headers={
+                    "Authorization": f"Bearer {hf_token}",
+                    "Content-Type": "image/jpeg",
+                    "X-Wait-For-Model": "true",
+                },
+            )
+        if resp.status_code != 200:
+            return ExpressionResponse(emotions=[], retrieval_path="error")
+        raw = resp.json()
+        emotions = sorted(
+            [EmotionScore(label=item["label"], score=item["score"]) for item in raw],
+            key=lambda x: x.score,
+            reverse=True,
+        )
+        return ExpressionResponse(emotions=emotions, retrieval_path="hf")
+    except Exception:
+        return ExpressionResponse(emotions=[], retrieval_path="error")
 
 
 # ---------------------------------------------------------------------------

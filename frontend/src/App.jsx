@@ -17,6 +17,7 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 // Lazy load pages for better performance
 const Home = lazy(() => import("./pages/Home"));
+const About = lazy(() => import("./pages/About"));
 const Jobs = lazy(() => import("./pages/Jobs"));
 const JobDetails = lazy(() => import("./pages/JobDetails"));
 const Resources = lazy(() => import("./pages/Resources"));
@@ -62,6 +63,7 @@ function AppContent() {
             <Routes location={location} key={location.pathname}>
             {/* Home route - show home page or redirect if logged in */}
             <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
             <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
             <Route path="/jobs/:id" element={<JobDetails />} />
             <Route path="/resources" element={<Resources />} />

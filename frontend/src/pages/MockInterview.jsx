@@ -37,6 +37,7 @@ import {
 import { db } from '../firebase';
 import ReasoningCard from '../components/ReasoningCard';
 import { buildEnvelope } from '../utils/explainability';
+import FaceExpressionOverlay from '../components/FaceExpressionOverlay';
 
 const MockInterview = () => {
   const { currentUser } = useAuth();
@@ -71,6 +72,8 @@ const MockInterview = () => {
   const speechEndRef = useRef(null);
   const lastResultTimeRef = useRef(null);
   const pauseAccumRef = useRef(0);
+  const faceOverlayRef = useRef(null);
+  const [emotionSummary, setEmotionSummary] = useState(null);
 
   // Detect SpeechRecognition support once on mount (silent fallback).
   useEffect(() => {
@@ -239,6 +242,8 @@ const MockInterview = () => {
 
   // End interview and save to history
   const endInterview = useCallback(async () => {
+    const summary = faceOverlayRef.current?.finalize();
+    if (summary) setEmotionSummary(summary);
     try {
       const avgScore = sessionScore / Math.max(questionNumber + 1, 1);
       const totalQuestions = questionNumber + 1;
@@ -809,10 +814,71 @@ const MockInterview = () => {
                     {metricsEnvelope && (
                       <ReasoningCard
                         title="Voice analysis"
-                        factors={metricsEnvelope.factors}
+                        factors={[
+                          ...metricsEnvelope.factors,
+                          ...(emotionSummary ? [
+                            {
+                              label: `Dominant expression: ${emotionSummary.dominant} (interview_metric)`,
+                              positive: !["fear","sad","angry","disgust"].includes(emotionSummary.dominant),
+                              signal_type: "interview_metric",
+                              value: emotionSummary.dominantPct,
+                            },
+                            {
+                              label: `Negative expression rate: ${emotionSummary.negativePct}% (interview_metric)`,
+                              positive: emotionSummary.negativePct <= 20,
+                              signal_type: "interview_metric",
+                              value: emotionSummary.negativePct,
+                            },
+                          ] : []),
+                        ]}
                         basis={metricsEnvelope.basis}
                         confidence={metricsEnvelope.confidence}
                       />
+                    )}
+
+                    {/* Emotion summary card */}
+                    {emotionSummary && (
+                      <div className="neon-card p-5 mt-4">
+                        <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                          <span>😐</span> Expression Analysis
+                        </h3>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[#B3B3C7] text-sm">Dominant Expression</span>
+                          <span className="text-white font-semibold capitalize">
+                            {emotionSummary.dominant}
+                            <span className="text-purple-400 ml-1 text-sm">{emotionSummary.dominantPct}%</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-[#B3B3C7] text-sm">Negative Expression Rate</span>
+                          <span className={`font-semibold text-sm ${emotionSummary.negativePct > 30 ? "text-red-400" : "text-green-400"}`}>
+                            {emotionSummary.negativePct}%
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {Object.entries(emotionSummary.distribution)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([label, pct]) => (
+                              <div key={label} className="flex items-center gap-3">
+                                <span className="text-[#B3B3C7] text-xs w-16 capitalize">{label}</span>
+                                <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${pct}%`,
+                                      background: ["fear","sad","angry","disgust"].includes(label)
+                                        ? "#ef4444" : label === "happy" ? "#22c55e" : "#a855f7",
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-[#B3B3C7] text-xs w-8 text-right">{pct}%</span>
+                              </div>
+                            ))}
+                        </div>
+                        <p className="text-[#B3B3C7] text-xs mt-3 text-right">
+                          {emotionSummary.totalFrames} frames sampled
+                        </p>
+                      </div>
                     )}
                   </motion.div>
                 )}
@@ -821,6 +887,12 @@ const MockInterview = () => {
 
             {/* Session Info Panel */}
             <div className="space-y-6">
+              {/* Face Expression Overlay — live webcam + emotion detection */}
+              <FaceExpressionOverlay
+                ref={faceOverlayRef}
+                active={interviewStarted}
+              />
+
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}

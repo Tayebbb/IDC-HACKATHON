@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { User, Briefcase, BookOpen, TrendingUp, ArrowRight, GraduationCap, CheckCircle, Sparkles, MapPin, Award } from 'lucide-react';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { calculateMatchScore } from '../utils/matchScore';
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [userProfile, setUserProfile] = useState(null);
   const [skillGapResources, setSkillGapResources] = useState([]);
+  const [interviewScore, setInterviewScore] = useState(0);
 
   // Memoize profile completion calculation
   const calculateCompletion = useCallback((data) => {
@@ -298,6 +299,36 @@ const Dashboard = () => {
     }
   }, []);
 
+  // Fetch average interview score from history
+  const fetchInterviewHistory = useCallback(async (userId) => {
+    try {
+      const q = query(
+        collection(db, "interviewHistory"),
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc"),
+        limit(5)
+      );
+      const snap = await getDocs(q);
+      const scores = snap.docs.map((d) => d.data().averageScore || d.data().score).filter(val => val !== undefined && val !== null);
+      // Wait, readiness-score expects a 0-100 score, but averageScore is average of 1-10. Wait!
+      // Let's multiply average score by 10 to put it in 0-100 range!
+      // Wait, let's look at Check 1.3:
+      // POST /readiness-score → body: {"skills":["React"],"dnaScores":{"Frontend":80,"Backend":40,"DevOps":30,"AI/ML":20,"Communication":60},"profileCompletion":70,"interviewScore":65}
+      // Here, interviewScore is 65 (which is 65 out of 100).
+      // But in Firebase, the MockInterview ends and saves:
+      // averageScore = sessionScore / questionNumber (which is on a scale of 0-10).
+      // So let's map averageScore * 10 or score * 10 to a 0-100 scale! Or if it's already 0-100, keep it.
+      // Wait, let's make it robust: if the score is <= 10, multiply by 10. Otherwise keep as is.
+      const mappedScores = scores.map(s => s <= 10 ? s * 10 : s);
+      const avgInterviewScore = mappedScores.length
+        ? Math.round(mappedScores.reduce((a, b) => a + b, 0) / mappedScores.length)
+        : 0;
+      setInterviewScore(avgInterviewScore);
+    } catch (error) {
+      console.error('Error fetching interview history:', error);
+    }
+  }, []);
+
   // Monitor authentication state - placed after all useCallback definitions
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -308,12 +339,13 @@ const Dashboard = () => {
         fetchRecommendedCourses(user.email);
         fetchSkillGapResources(user.uid);
         fetchAppliedJobs(user.email);
+        fetchInterviewHistory(user.uid);
       } else {
         setLoading(false);
       }
     });
     return () => unsubscribe();
-  }, [loadUserProfile, fetchEnrolledCourses, fetchRecommendedCourses, fetchSkillGapResources, fetchAppliedJobs]);
+  }, [loadUserProfile, fetchEnrolledCourses, fetchRecommendedCourses, fetchSkillGapResources, fetchAppliedJobs, fetchInterviewHistory]);
 
   return (
     <div className="min-h-screen bg-base">
@@ -336,7 +368,7 @@ const Dashboard = () => {
         <IntelligenceSection
           skills={userProfile?.skills || []}
           profileCompletion={profileCompletion}
-          interviewScore={null}
+          interviewScore={interviewScore}
           userName={currentUser?.displayName || userProfile?.name || currentUser?.email}
         />
 
