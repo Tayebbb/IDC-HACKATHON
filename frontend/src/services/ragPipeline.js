@@ -21,7 +21,7 @@ import { hfInference } from './hfClient';
 
 // ---------- model ids ----------------------------------------------------
 const EMBED_MODEL  = 'sentence-transformers/all-MiniLM-L6-v2';
-const RERANK_MODEL = 'cross-encoder/ms-marco-MiniLM-L-6-v2';
+const RERANK_MODEL = 'BAAI/bge-reranker-base';
 
 // ---------- chunking parameters -----------------------------------------
 const CHUNK_TOKENS = 512;   // approximated as words
@@ -34,6 +34,7 @@ const _chunks = new Map();
 const _vectors = new Map();
 
 let _profileChunkIds = new Set();
+let _profileHash = '';
 
 // ---------- BM25 state (lazy) -------------------------------------------
 let _bm25 = null;
@@ -122,6 +123,10 @@ export async function indexChunks(items) {
 
 export async function indexProfile(profile) {
   if (!profile) return;
+  // Skip re-embedding if the profile hasn't changed since last index.
+  const hash = _hashProfile(profile);
+  if (hash && hash === _profileHash) return;
+
   // drop old profile chunks first
   for (const id of _profileChunkIds) {
     _chunks.delete(id);
@@ -136,9 +141,33 @@ export async function indexProfile(profile) {
     const chunks = chunkText(text, { source: 'profile', section, idPrefix: 'profile' });
     all.push(...chunks);
   }
-  if (!all.length) return;
+  if (!all.length) {
+    _profileHash = hash;
+    return;
+  }
   await indexChunks(all);
   all.forEach((c) => _profileChunkIds.add(c.id));
+  _profileHash = hash;
+}
+
+function _hashProfile(p) {
+  // Cheap stable hash of the profile slots we actually index.
+  try {
+    const slim = {
+      s: p.skills, t: p.toolsTechnologies, l: p.experienceLevel,
+      e: p.experience || p.workExperience, ed: p.education,
+      pr: p.projects, r: p.rolesAndDomains, pt: p.preferredTrack,
+      b: p.bio || p.about || p.summary,
+    };
+    const json = JSON.stringify(slim);
+    let h = 0;
+    for (let i = 0; i < json.length; i++) {
+      h = ((h << 5) - h + json.charCodeAt(i)) | 0;
+    }
+    return String(h);
+  } catch {
+    return '';
+  }
 }
 
 function _profileSections(p) {
@@ -169,6 +198,7 @@ export function clearIndex() {
   _chunks.clear();
   _vectors.clear();
   _profileChunkIds = new Set();
+  _profileHash = '';
   _bm25 = null;
 }
 
@@ -276,15 +306,21 @@ async function rerank(query, candidates, topN = 5) {
       text: query,
       text_pair: _chunks.get(c.id)?.text || '',
     }));
-    const scores = await hfInference(
+    const raw = await hfInference(
       RERANK_MODEL,
       { inputs, options: { wait_for_model: true } },
       'text-classification'
     );
-    // Response is [{ label, score }] or [[{ label, score }]] per input.
-    const flat = scores.map((s) => (Array.isArray(s) ? s[0]?.score ?? 0 : s?.score ?? 0));
+    // bge-reranker-base returns [[{label,score},...]] (one inner array per input).
+    // Each inner list may contain one item per label; take the max score.
+    const scores = (Array.isArray(raw) ? raw : []).map((entry) => {
+      if (Array.isArray(entry)) {
+        return entry.reduce((m, x) => Math.max(m, Number(x?.score) || 0), 0);
+      }
+      return Number(entry?.score) || 0;
+    });
     return candidates
-      .map((c, i) => ({ ...c, rerankScore: flat[i] ?? 0 }))
+      .map((c, i) => ({ ...c, rerankScore: scores[i] ?? 0 }))
       .sort((a, b) => b.rerankScore - a.rerankScore)
       .slice(0, topN);
   } catch (err) {
@@ -296,13 +332,13 @@ async function rerank(query, candidates, topN = 5) {
 // =======================================================================
 // 8. PUBLIC retrieve()
 // =======================================================================
-export async function retrieve(query, { topN = 5 } = {}) {
+export async function retrieve(query, { topN = 5, rerankPool = 10 } = {}) {
   if (!query || _chunks.size === 0) return [];
   const [dense, sparse] = await Promise.all([
     denseSearch(query, 20),
     Promise.resolve(sparseSearch(query, 20)),
   ]);
-  const merged = rrfMerge(dense, sparse).slice(0, 20);
+  const merged = rrfMerge(dense, sparse).slice(0, rerankPool);
   const top = await rerank(query, merged, topN);
 
   // Force-include the best profile chunk so candidate context always

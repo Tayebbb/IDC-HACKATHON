@@ -193,6 +193,21 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay({ active
         </div>
       )}
 
+      {/* The <video> element is always rendered so videoRef is valid when
+          startCamera() resolves. Visibility is toggled with CSS. */}
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+        className="w-full rounded-xl object-cover"
+        style={{
+          transform: 'scaleX(-1)',
+          maxHeight: '280px',
+          display: cameraStarted && !camError ? 'block' : 'none',
+        }}
+      />
+
       {camError ? (
         <div className="flex flex-col items-center justify-center h-48 px-4 text-center gap-3">
           <p className="text-sm text-[#FCA5A5]">{camError}</p>
@@ -216,14 +231,6 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay({ active
         </div>
       ) : (
         <>
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="w-full rounded-xl object-cover"
-            style={{ transform: 'scaleX(-1)', maxHeight: '280px' }}
-          />
           {liveEmotion && meta && (
             <div
               className="absolute bottom-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold backdrop-blur-sm"

@@ -1,34 +1,31 @@
 /**
  * hfClient.js
  * ---------------------------------------------------------------
- * Browser-side Hugging Face Inference API client.
+ * Browser-side Hugging Face Inference client.
  *
  * Pure fetch() — runs entirely in the React bundle. NO backend hop,
  * NO Node imports, NO model loaded locally. Every AI call in the
  * Mock Interview module (and the other migrated pages) goes through
  * this one function.
  *
- * Pattern:
- *   Browser  --fetch-->  api-inference.huggingface.co  --json-->  Browser
+ * Endpoints (HF 2025 unified router):
+ *   chat-completions    → POST /v1/chat/completions          (OpenAI-compatible)
+ *   feature-extraction  → POST /hf-inference/models/{m}/pipeline/feature-extraction
+ *   text-classification → POST /hf-inference/models/{m}      (reranker pair scoring)
+ *   image-classification→ POST /hf-inference/models/{m}      (raw image bytes)
  *
- * Token: VITE_HF_API_TOKEN (public, baked into the client bundle).
- *
- * Features:
- *  - 503 cold-start retry (3x exponential backoff up to 20 s)
- *  - Typed HFError on terminal failure
- *  - In-memory concurrency gate (max 2 in-flight requests) to keep
- *    free-tier HF rate limits happy
+ * Token: VITE_HF_API_TOKEN (fine-grained with "Inference Providers"
+ * permission, baked into the client bundle).
  */
 
-const HF_ENDPOINT = 'https://api-inference.huggingface.co/models';
+const ROUTER = 'https://router.huggingface.co';
 const MAX_CONCURRENT = 2;
 const MAX_RETRIES = 3;
 const COLD_START_DELAY_MS = 20000;
 
-/** Tiny FIFO queue limiting concurrent HF requests. */
+// ---------- concurrency gate -------------------------------------------
 let _inFlight = 0;
 const _pending = [];
-
 function _acquire() {
   if (_inFlight < MAX_CONCURRENT) {
     _inFlight++;
@@ -36,7 +33,6 @@ function _acquire() {
   }
   return new Promise((resolve) => _pending.push(resolve));
 }
-
 function _release() {
   _inFlight--;
   const next = _pending.shift();
@@ -56,27 +52,35 @@ export class HFError extends Error {
 }
 
 function _getToken() {
-  // import.meta.env is replaced at build time by Vite.
   const token = import.meta.env.VITE_HF_API_TOKEN;
   if (!token) {
     console.warn(
-      '[hfClient] VITE_HF_API_TOKEN is missing — public HF inference will rate-limit aggressively. Add it to frontend/.env.'
+      '[hfClient] VITE_HF_API_TOKEN is missing — inference will return 401. Add a fine-grained token to frontend/.env.'
     );
   }
   return token || '';
 }
 
+function _endpointFor(model, taskType) {
+  if (taskType === 'chat-completions') return `${ROUTER}/v1/chat/completions`;
+  if (taskType === 'feature-extraction')
+    return `${ROUTER}/hf-inference/models/${model}/pipeline/feature-extraction`;
+  return `${ROUTER}/hf-inference/models/${model}`;
+}
+
 /**
  * Call a Hugging Face Inference endpoint directly from the browser.
  *
- * @param {string} model     - HF model id, e.g. "mistralai/Mistral-7B-Instruct-v0.3"
- * @param {*}      payload   - JSON body, OR a Blob/ArrayBuffer for image models
- * @param {('text-generation'|'feature-extraction'|'image-classification'|'text-classification')} taskType
+ * @param {string} model     - HF model id (ignored for chat-completions; pass id in payload.model).
+ * @param {*}      payload   - JSON body, OR a Blob/ArrayBuffer for image models.
+ * @param {('chat-completions'|'text-generation'|'feature-extraction'|'image-classification'|'text-classification')} taskType
  * @returns {Promise<any>}
  */
 export async function hfInference(model, payload, taskType) {
   const token = _getToken();
-  const url = `${HF_ENDPOINT}/${model}`;
+  // Legacy alias: callers using 'text-generation' get auto-routed to chat-completions.
+  if (taskType === 'text-generation') taskType = 'chat-completions';
+  const url = _endpointFor(model, taskType);
   const isBinary = payload instanceof Blob || payload instanceof ArrayBuffer;
 
   const headers = {
@@ -102,13 +106,11 @@ export async function hfInference(model, payload, taskType) {
         continue;
       }
 
-      // 503 → model is cold-loading. Wait then retry.
       if (resp.status === 503) {
         await _sleep(Math.min(COLD_START_DELAY_MS, 5000 * Math.pow(2, attempt)));
         continue;
       }
       if (resp.status === 429) {
-        // rate-limited — back off and retry
         await _sleep(2000 * Math.pow(2, attempt));
         continue;
       }

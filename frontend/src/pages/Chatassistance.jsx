@@ -56,6 +56,21 @@ export default function Chatassistance() {
     }
   }, [currentUser]);
 
+  // Warm the in-browser RAG cache (corpus + profile) once per session so
+  // the first chat reply doesn't pay for embedding hundreds of chunks
+  // on the user's first keystroke. Subsequent sends reuse the cache.
+  useEffect(() => {
+    loadCorpus().catch(() => { /* non-blocking */ });
+    if (currentUser?.uid) {
+      (async () => {
+        try {
+          const snap = await getDoc(doc(db, 'users', currentUser.uid));
+          if (snap.exists()) await indexProfile(snap.data());
+        } catch { /* non-fatal */ }
+      })();
+    }
+  }, [currentUser]);
+
   // Save messages to Firebase
   const saveChatHistory = async (messagesToSave) => {
     if (!currentUser) return;
@@ -243,18 +258,8 @@ export default function Chatassistance() {
         content: m.content,
       }));
 
-      // Preload corpus + profile into the in-browser RAG store. Both are
-      // idempotent and safe to call on every send.
-      loadCorpus().catch(() => { /* non-blocking */ });
-      if (currentUser?.uid) {
-        try {
-          const snap = await getDoc(doc(db, 'users', currentUser.uid));
-          if (snap.exists()) await indexProfile(snap.data());
-        } catch (err) {
-          // non-fatal — chat still works without profile context
-          console.warn('Profile index failed:', err?.message || err);
-        }
-      }
+      // Corpus + profile are already warmed on mount; indexProfile() is a
+      // no-op when the profile hash hasn't changed, so no per-send cost.
 
       if (abortRef.current) abortRef.current.abort();
       abortRef.current = new AbortController();
