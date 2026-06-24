@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Edit, Save, X, GraduationCap, Briefcase, Target, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { applicationsService } from '../services/firestoreService';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import { CAREER_TRACKS, EXPERIENCE_LEVELS, LOCATIONS } from '../constants/jobConstants';
@@ -134,10 +134,10 @@ const Profile = () => {
     try {
       setSaving(true);
       const userDocRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userDocRef, {
+      await setDoc(userDocRef, {
         ...updatedData,
         updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
       
       setProfile(prev => ({ ...prev, ...updatedData }));
       calculateCompletion(updatedData);

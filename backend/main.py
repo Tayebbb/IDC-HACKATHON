@@ -8,6 +8,7 @@ import base64
 import json as _json
 import math
 import time
+import socket
 import urllib.request
 import urllib.error
 import httpx
@@ -570,13 +571,15 @@ HF_URL = (
     "https://router.huggingface.co/hf-inference/models/"
     f"{HF_MODEL}/pipeline/feature-extraction"
 )
-_HF_TIMEOUT_SECS = 10.0
+_HF_TIMEOUT_SECS = 5.0
 
 # Text-generation model for /chat replies
 HF_GEN_MODEL = "HuggingFaceH4/zephyr-7b-beta"
 HF_GEN_URL = "https://router.huggingface.co/v1/chat/completions"
 _HF_GEN_TIMEOUT_SECS = 30.0
 _EMBED_CACHE: Dict[str, List[float]] = {}
+_LOCAL_MODEL: Any = None
+_USE_LOCAL_EMBEDDINGS = os.getenv("USE_LOCAL_EMBEDDINGS", "false").lower() == "true"
 
 # Lazy-loaded singletons (initialised on first retrieval call)
 _chroma_collection: Any = None
@@ -630,7 +633,11 @@ def _load_embeddings() -> List[Dict[str, Any]]:
         return []
     try:
         data = _json.loads(_EMBEDDINGS_PATH.read_text(encoding="utf-8"))
-        return data.get("items", []) if isinstance(data, dict) else []
+        if isinstance(data, dict):
+            return data.get("items", [])
+        if isinstance(data, list):
+            return data
+        return []
     except Exception:
         return []
 
@@ -670,6 +677,25 @@ def _cosine(a: List[float], b: List[float]) -> float:
     if na == 0 or nb == 0:
         return 0.0
     return dot / (na * nb)
+
+
+def _get_local_embedding(text: str) -> list | None:
+    """
+    Generate embedding locally using sentence-transformers.
+    Used when USE_LOCAL_EMBEDDINGS=true or HF API unreachable.
+    Model is loaded once and cached in _LOCAL_MODEL.
+    Returns None on failure - caller falls back to keyword.
+    """
+    global _LOCAL_MODEL
+    try:
+        if _LOCAL_MODEL is None:
+            from sentence_transformers import SentenceTransformer
+            _LOCAL_MODEL = SentenceTransformer("all-mpnet-base-v2")
+        emb = _LOCAL_MODEL.encode(text, normalize_embeddings=True)
+        return emb.tolist()
+    except Exception as e:
+        print(f"Local embedding error: {e}")
+        return None
 
 
 def _hf_embed(query: str, token: str) -> List[float]:
@@ -838,11 +864,11 @@ def retrieve_sources(query: str, k: int = 3) -> Tuple[List[Dict[str, Any]], str]
                         seen.add(pid)
                         unique.append(s)
                 if unique:
-                    return unique[:k], "chromadb"
+                    return unique[:k], "chroma"
             except Exception:
                 pass  # fall through
 
-    token = os.getenv("HF_TOKEN")
+    token = (os.getenv("HF_TOKEN") or "").strip()
 
     # ── 2. Cache check ───────────────────────────────────────────────────────
     if _EMBED_INDEX and query in _EMBED_CACHE:
@@ -855,7 +881,22 @@ def retrieve_sources(query: str, k: int = 3) -> Tuple[List[Dict[str, Any]], str]
         return ranked[:k], "cache"
 
     # ── 3. HF retrieval ──────────────────────────────────────────────────────
-    if token and _EMBED_INDEX:
+    query_embedding = None
+    if _USE_LOCAL_EMBEDDINGS:
+        query_embedding = _get_local_embedding(query)
+
+    if query_embedding is not None and _EMBED_INDEX:
+        _EMBED_CACHE[query] = query_embedding
+        ranked = sorted(
+            _EMBED_INDEX,
+            key=lambda item: _cosine(query_embedding, item.get("embedding", [])),
+            reverse=True,
+        )
+        return ranked[:k], "cache"
+
+    if not token:
+        print("HF_TOKEN missing, falling back to keyword search")
+    elif _EMBED_INDEX:
         try:
             qvec = _hf_embed(query, token)
             _EMBED_CACHE[query] = qvec
@@ -865,8 +906,17 @@ def retrieve_sources(query: str, k: int = 3) -> Tuple[List[Dict[str, Any]], str]
                 reverse=True,
             )
             return ranked[:k], "hf"
+        except urllib.error.HTTPError as e:
+            if e.code == 503:
+                print("HF model sleeping, falling back to keyword search")
+            else:
+                print(f"HF embedding HTTP error {e.code}, falling back to keyword search")
+        except urllib.error.URLError as e:
+            print(f"HF embedding network error, falling back to keyword search: {e}")
+        except socket.timeout:
+            print("HF embedding timed out, falling back to keyword search")
         except Exception:
-            pass  # fall through to keyword
+            print("HF embedding failed, falling back to keyword search")
 
     # ── 4. Keyword fallback ──────────────────────────────────────────────────
     kw = _keyword_search(query, k=k)
@@ -932,6 +982,66 @@ class InterviewFeedbackResponse(BaseModel):
 async def root():
     """Health check endpoint"""
     return {"message": "CareerPath RAG Chatbot API is running"}
+
+@app.get("/health/dependencies")
+async def health_dependencies():
+    """Diagnostic dependency health check; never raises."""
+    try:
+        gemini_set = bool((os.getenv("GEMINI_API_KEY") or "").strip())
+        hf_set = bool((os.getenv("HF_TOKEN") or "").strip())
+
+        hf_reachable = False
+        try:
+            req = urllib.request.Request(
+                "https://api-inference.huggingface.co",
+                method="HEAD",
+            )
+            with urllib.request.urlopen(req, timeout=3):
+                hf_reachable = True
+        except urllib.error.HTTPError:
+            # Any HTTP response means DNS and outbound HTTPS reached HF.
+            hf_reachable = True
+        except Exception:
+            hf_reachable = False
+
+        seed_loaded = False
+        try:
+            seed_loaded = _CORPUS_PATH.exists() and bool(
+                _json.loads(_CORPUS_PATH.read_text(encoding="utf-8"))
+            )
+        except Exception:
+            seed_loaded = False
+
+        embeddings_loaded = False
+        try:
+            embeddings_loaded = _EMBEDDINGS_PATH.exists()
+        except Exception:
+            embeddings_loaded = False
+
+        if not gemini_set or not seed_loaded:
+            overall = "critical"
+        elif not hf_reachable or not hf_set:
+            overall = "degraded"
+        else:
+            overall = "ready"
+
+        return {
+            "gemini_api_key": "set" if gemini_set else "missing",
+            "hf_token": "set" if hf_set else "missing",
+            "hf_inference_reachable": hf_reachable,
+            "seed_corpus_loaded": seed_loaded,
+            "embeddings_loaded": embeddings_loaded,
+            "overall": overall,
+        }
+    except Exception:
+        return {
+            "gemini_api_key": "missing",
+            "hf_token": "missing",
+            "hf_inference_reachable": False,
+            "seed_corpus_loaded": False,
+            "embeddings_loaded": False,
+            "overall": "critical",
+        }
 
 @app.options("/chat")
 async def options_chat():

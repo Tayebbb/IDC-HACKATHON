@@ -40,6 +40,9 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay({ active
   }, [active]);
 
   async function startCam() {
+    emotionLogRef.current = [];
+    setLiveEmotion(null);
+    setLoading(false);
     setCamError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({

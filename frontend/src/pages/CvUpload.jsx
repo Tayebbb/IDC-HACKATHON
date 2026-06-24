@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Upload, FileText, Sparkles, CheckCircle, AlertCircle, Loader, Save, Lightbulb } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { doc, updateDoc, getDoc, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, getDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../firebase";
 import toast from "react-hot-toast";
 import API_URL from "../config";
@@ -152,11 +152,11 @@ Keep it SHORT and concise.`;
       ])];
 
       // Update user profile
-      await updateDoc(userDocRef, {
+      await setDoc(userDocRef, {
         skills: allSkills,
         cvAnalyzed: true,
         lastCvUpdate: new Date().toISOString()
-      });
+      }, { merge: true });
 
       toast.success("Skills added to your profile!");
     } catch (err) {

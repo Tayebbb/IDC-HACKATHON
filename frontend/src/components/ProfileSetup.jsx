@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -58,7 +58,7 @@ const ProfileSetup = ({ initialData = null, onUpdate = null }) => {
         preferredTrack
       };
 
-      await updateDoc(userRef, profileData);
+      await setDoc(userRef, profileData, { merge: true });
       
       toast.success('Profile updated successfully!');
       

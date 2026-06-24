@@ -172,6 +172,24 @@ const Register = () => {
 
       console.log('ChatBot document successfully created for:', formData.email);
 
+      await setDoc(
+        doc(db, 'users', userCredential.user.uid),
+        {
+          name: formData.name || '',
+          email: userCredential.user.email || '',
+          education: '',
+          experienceLevel: 'beginner',
+          preferredTrack: '',
+          skills: [],
+          toolsTechnologies: [],
+          location: '',
+          createdAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      console.log('User profile document successfully created for:', userCredential.user.uid);
+
       // 4️⃣ NEW: Create document in "All_User" collection with subcollection "Interest"
       // Structure: All_User/{email}/Interest/interest
       const interestDocRef = doc(
