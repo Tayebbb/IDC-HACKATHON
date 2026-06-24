@@ -229,6 +229,8 @@ const MockInterview = () => {
     setSessionScore(0);
     setSessionAnswers([]); // Reset Q&A pairs
     setSessionFeedbacks([]); // Reset feedbacks
+    setEmotionSummary(null);
+    setMetricsEnvelope(null);
     generateQuestion();
   }, [selectedRole, generateQuestion]);
 
@@ -528,6 +530,106 @@ const MockInterview = () => {
         {!interviewStarted ? (
           /* Setup Screen */
           <div className="grid lg:grid-cols-2 gap-8">
+            {emotionSummary && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="lg:col-span-2 space-y-4"
+              >
+                {metricsEnvelope && (
+                  <ReasoningCard
+                    title="Voice analysis"
+                    factors={[
+                      ...metricsEnvelope.factors,
+                      ...(emotionSummary ? [
+                        {
+                          label: `Dominant expression: ${emotionSummary.dominant} (interview_metric)`,
+                          positive: !["fear","sad","angry","disgust"].includes(emotionSummary.dominant),
+                          signal_type: "interview_metric",
+                          value: emotionSummary.dominantPct,
+                        },
+                        {
+                          label: `Negative expression rate: ${emotionSummary.negativePct}% (interview_metric)`,
+                          positive: emotionSummary.negativePct <= 20,
+                          signal_type: "interview_metric",
+                          value: emotionSummary.negativePct,
+                        },
+                      ] : []),
+                    ]}
+                    basis={metricsEnvelope.basis}
+                    confidence={metricsEnvelope.confidence}
+                  />
+                )}
+
+                {!metricsEnvelope && (
+                  <ReasoningCard
+                    title="Expression Analysis"
+                    factors={[
+                      {
+                        label: `Dominant expression: ${emotionSummary.dominant} (interview_metric)`,
+                        positive: !["fear","sad","angry","disgust"].includes(emotionSummary.dominant),
+                        signal_type: "interview_metric",
+                        value: emotionSummary.dominantPct,
+                      },
+                      {
+                        label: `Negative expression rate: ${emotionSummary.negativePct}% (interview_metric)`,
+                        positive: emotionSummary.negativePct <= 20,
+                        signal_type: "interview_metric",
+                        value: emotionSummary.negativePct,
+                      },
+                    ]}
+                    basis={`Expression sampled across ${emotionSummary.totalFrames} frame(s) during interview`}
+                    confidence={
+                      emotionSummary.totalFrames >= 3 ? "High" :
+                      emotionSummary.totalFrames >= 1 ? "Medium" : "Low"
+                    }
+                  />
+                )}
+
+                <div className="neon-card p-5 rounded-xl">
+                  <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                    <span>Expression Analysis</span>
+                  </h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[#B3B3C7] text-sm">Dominant Expression</span>
+                    <span className="text-white font-semibold capitalize">
+                      {emotionSummary.dominant}
+                      <span className="text-purple-400 ml-1 text-sm">{emotionSummary.dominantPct}%</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[#B3B3C7] text-sm">Negative Expression Rate</span>
+                    <span className={`font-semibold text-sm ${emotionSummary.negativePct > 30 ? "text-red-400" : "text-green-400"}`}>
+                      {emotionSummary.negativePct}%
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(emotionSummary.distribution)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([label, pct]) => (
+                        <div key={label} className="flex items-center gap-3">
+                          <span className="text-[#B3B3C7] text-xs w-16 capitalize">{label}</span>
+                          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${pct}%`,
+                                background: ["fear","sad","angry","disgust"].includes(label)
+                                  ? "#ef4444" : label === "happy" ? "#22c55e" : "#a855f7",
+                              }}
+                            />
+                          </div>
+                          <span className="text-[#B3B3C7] text-xs w-8 text-right">{pct}%</span>
+                        </div>
+                      ))}
+                  </div>
+                  <p className="text-[#B3B3C7] text-xs mt-3 text-right">
+                    {emotionSummary.totalFrames} frames sampled
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Role Selection */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -833,6 +935,31 @@ const MockInterview = () => {
                         ]}
                         basis={metricsEnvelope.basis}
                         confidence={metricsEnvelope.confidence}
+                      />
+                    )}
+
+                    {!metricsEnvelope && emotionSummary && (
+                      <ReasoningCard
+                        title="Expression Analysis"
+                        factors={[
+                          {
+                            label: `Dominant expression: ${emotionSummary.dominant} (interview_metric)`,
+                            positive: !["fear","sad","angry","disgust"].includes(emotionSummary.dominant),
+                            signal_type: "interview_metric",
+                            value: emotionSummary.dominantPct,
+                          },
+                          {
+                            label: `Negative expression rate: ${emotionSummary.negativePct}% (interview_metric)`,
+                            positive: emotionSummary.negativePct <= 20,
+                            signal_type: "interview_metric",
+                            value: emotionSummary.negativePct,
+                          },
+                        ]}
+                        basis={`Expression sampled across ${emotionSummary.totalFrames} frame(s) during interview`}
+                        confidence={
+                          emotionSummary.totalFrames >= 3 ? "High" :
+                          emotionSummary.totalFrames >= 1 ? "Medium" : "Low"
+                        }
                       />
                     )}
 
