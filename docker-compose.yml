@@ -7,9 +7,8 @@ services:
     ports:
       - "8000:8000"
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    environment:
-      HF_TOKEN: ${HF_TOKEN:-}
-      USE_LOCAL_EMBEDDINGS: "true"
+    # Backend no longer performs any AI inference — frontend calls Hugging
+    # Face directly. No env vars required for AI routes.
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:7860/"]

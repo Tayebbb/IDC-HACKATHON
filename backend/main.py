@@ -1,37 +1,11 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from typing import TypedDict, List, Dict, Any, Optional, Tuple
-from typing import Literal
+from typing import List, Dict, Any, Tuple
 from dotenv import load_dotenv
-import os
-import base64
 import json as _json
-import math
-import time
-import socket
-import urllib.request
-import urllib.error
-import httpx
 from pathlib import Path
 from io import BytesIO
 from PyPDF2 import PdfReader
-from pydantic import BaseModel, Field  # noqa: F401 — used by existing interview request models below
-
-# ---------------------------------------------------------------------------
-# Optional ChromaDB + sentence-transformers (installed by build_chromadb.py)
-# Gracefully degraded if not installed — falls back to HF API / keyword search.
-# ---------------------------------------------------------------------------
-try:
-    import chromadb as _chromadb  # type: ignore
-    _CHROMADB_AVAILABLE = True
-except ImportError:
-    _CHROMADB_AVAILABLE = False
-
-try:
-    from sentence_transformers import SentenceTransformer as _SentenceTransformer  # type: ignore
-    _ST_AVAILABLE = True
-except ImportError:
-    _ST_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
@@ -108,325 +82,10 @@ def _summarize_cv_no_llm(full_text: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Interview question bank (no LLM)
+# Interview question generation + answer evaluation: DELETED.
+# The Mock Interview component now calls Hugging Face Mistral directly from
+# the browser via frontend/src/services/interviewAI.js.
 # ---------------------------------------------------------------------------
-import random as _random
-
-_INTERVIEW_QUESTIONS: Dict[str, Dict[str, List[str]]] = {
-    "frontend": {
-        "beginner": [
-            "What is the difference between HTML, CSS, and JavaScript?",
-            "What is the box model in CSS?",
-            "Explain the difference between block and inline elements.",
-            "What is a media query and how is it used?",
-            "What does the DOM stand for?",
-        ],
-        "intermediate": [
-            "How does React's virtual DOM work?",
-            "Explain the difference between props and state in React.",
-            "What is event delegation in JavaScript?",
-            "How do you handle API errors in a React app?",
-            "What is the difference between `==` and `===` in JavaScript?",
-        ],
-        "advanced": [
-            "How do you optimize a React app with performance bottlenecks?",
-            "Explain code-splitting and lazy loading in React.",
-            "What are micro-frontends and when would you use them?",
-            "How would you implement server-side rendering in Next.js?",
-            "Explain the reconciliation algorithm in React.",
-        ],
-    },
-    "backend": {
-        "beginner": [
-            "What is REST and what are its principles?",
-            "What is the difference between SQL and NoSQL?",
-            "What is an HTTP status code and name a few common ones?",
-            "What is version control and why is it important?",
-            "What is an API?",
-        ],
-        "intermediate": [
-            "What is database indexing and when should you use it?",
-            "Explain the difference between authentication and authorization.",
-            "What is Docker and why is it used?",
-            "How does connection pooling work in databases?",
-            "What is middleware in the context of web frameworks?",
-        ],
-        "advanced": [
-            "How would you design a scalable microservices architecture?",
-            "Explain CAP theorem and its implications for distributed systems.",
-            "What are the trade-offs between SQL and NoSQL at scale?",
-            "How would you implement rate limiting in an API?",
-            "Explain eventual consistency and how to handle it.",
-        ],
-    },
-    "fullstack": {
-        "beginner": [
-            "What is the role of a full-stack developer?",
-            "What is the difference between a frontend and backend?",
-            "What is a database and how does it relate to a web app?",
-            "Explain what version control is and why it matters.",
-            "What is an HTTP request?",
-        ],
-        "intermediate": [
-            "How do you connect a React frontend to a FastAPI backend?",
-            "Explain CORS and how to configure it.",
-            "What is JWT and how is it used for authentication?",
-            "How do you handle form validation on both client and server?",
-            "What is a monorepo and what are its advantages?",
-        ],
-        "advanced": [
-            "How would you architect a full-stack app for 1 million users?",
-            "Explain the trade-offs between SSR, SSG, and CSR.",
-            "How would you implement real-time features using WebSockets?",
-            "Describe your approach to CI/CD for a full-stack project.",
-            "How do you handle database migrations in a live system?",
-        ],
-    },
-    "data-science": {
-        "beginner": [
-            "What is the difference between supervised and unsupervised learning?",
-            "What is a confusion matrix?",
-            "Explain what overfitting means.",
-            "What is Pandas and what is it used for?",
-            "What is a train/test split and why is it used?",
-        ],
-        "intermediate": [
-            "How does gradient descent work?",
-            "Explain the bias-variance trade-off.",
-            "What is cross-validation and why is it important?",
-            "What are the key differences between Random Forest and XGBoost?",
-            "How do you handle missing data in a dataset?",
-        ],
-        "advanced": [
-            "Explain how a transformer model works.",
-            "How would you design an end-to-end MLOps pipeline?",
-            "What is the difference between batch and online learning?",
-            "How do you detect and handle data drift in production?",
-            "Explain how a RAG pipeline works.",
-        ],
-    },
-    "devops": {
-        "beginner": [
-            "What is Docker and what problem does it solve?",
-            "What is CI/CD?",
-            "What is the difference between a VM and a container?",
-            "What is version control and why is it used in DevOps?",
-            "What is a deployment pipeline?",
-        ],
-        "intermediate": [
-            "What is Kubernetes and what problems does it solve?",
-            "How does a load balancer work?",
-            "Explain blue-green deployment.",
-            "What is infrastructure as code and why is it valuable?",
-            "How do you monitor a production service?",
-        ],
-        "advanced": [
-            "How would you design a zero-downtime deployment strategy?",
-            "Explain how Kubernetes handles pod scheduling.",
-            "What is a service mesh and when would you use one?",
-            "How do you handle secrets management at scale?",
-            "Describe your approach to multi-region high availability.",
-        ],
-    },
-    "mobile": {
-        "beginner": [
-            "What is the difference between native and cross-platform mobile development?",
-            "What is React Native?",
-            "What is the difference between iOS and Android development?",
-            "What is a mobile app lifecycle?",
-            "What is responsive design in mobile context?",
-        ],
-        "intermediate": [
-            "How do you handle state management in React Native?",
-            "Explain the difference between Expo and bare React Native.",
-            "How do you handle offline data in a mobile app?",
-            "What are push notifications and how do you implement them?",
-            "How do you optimize performance in a React Native app?",
-        ],
-        "advanced": [
-            "How would you architect a cross-platform mobile app for 1M users?",
-            "Explain how the React Native bridge works.",
-            "How do you implement deep linking in a mobile app?",
-            "How do you approach A/B testing in a mobile app?",
-            "What is code-push and how does it enable OTA updates?",
-        ],
-    },
-    "ui-ux": {
-        "beginner": [
-            "What is the difference between UI and UX?",
-            "What is a wireframe?",
-            "What tools do you use for UI design?",
-            "What is a design system?",
-            "What is accessibility in web design?",
-        ],
-        "intermediate": [
-            "How do you conduct user research?",
-            "What is usability testing and how do you run it?",
-            "Explain the concept of information architecture.",
-            "How do you hand off designs to developers?",
-            "What is the difference between a prototype and a mockup?",
-        ],
-        "advanced": [
-            "How do you measure the success of a design change?",
-            "Describe your process for redesigning a complex product.",
-            "How do you design for accessibility (WCAG standards)?",
-            "How do you handle conflicting stakeholder feedback?",
-            "Explain design tokens and how they scale across platforms.",
-        ],
-    },
-    "product-manager": {
-        "beginner": [
-            "What does a product manager do?",
-            "What is a user story?",
-            "What is the difference between a roadmap and a backlog?",
-            "What is MVP and why is it important?",
-            "How do you prioritize features?",
-        ],
-        "intermediate": [
-            "How do you write a product requirements document?",
-            "Explain the RICE scoring model.",
-            "How do you handle disagreement between engineering and stakeholders?",
-            "What metrics would you track for a new feature launch?",
-            "How do you run an effective sprint review?",
-        ],
-        "advanced": [
-            "How would you define a go-to-market strategy for a new product?",
-            "How do you balance technical debt against new feature development?",
-            "How do you make data-driven product decisions?",
-            "Describe a time you killed a feature and why.",
-            "How do you align a product vision across multiple teams?",
-        ],
-    },
-}
-
-# Fallback bucket for unknown roles
-_INTERVIEW_QUESTIONS_FALLBACK: Dict[str, List[str]] = {
-    "beginner": [
-        "Tell me about yourself and your background.",
-        "What are your strongest technical skills?",
-        "What is version control and why is it important?",
-        "What is the difference between SQL and NoSQL?",
-        "Explain what REST API means.",
-    ],
-    "intermediate": [
-        "Explain the concept of closures in programming.",
-        "What is the difference between authentication and authorization?",
-        "What is Docker and why is it used?",
-        "Explain database indexing and when to use it.",
-        "How do you ensure code quality in a team?",
-    ],
-    "advanced": [
-        "How would you design a scalable microservices architecture?",
-        "Explain CAP theorem and its implications.",
-        "What are the trade-offs between SQL and NoSQL at scale?",
-        "Explain how you would implement a RAG pipeline.",
-        "How do you handle database migrations in a live production system?",
-    ],
-}
-
-
-def _pick_interview_question(
-    role: str,
-    difficulty: str,
-    previous_questions: List[str],
-    question_number: int,
-) -> str:
-    """Pick a question from the static bank, avoiding repeats."""
-    role_key = role.lower().strip()
-    diff_key = difficulty.lower().strip()
-    if diff_key not in ("beginner", "intermediate", "advanced"):
-        diff_key = "intermediate"
-
-    role_bank = _INTERVIEW_QUESTIONS.get(role_key, {})
-    bucket: List[str] = role_bank.get(diff_key) or _INTERVIEW_QUESTIONS_FALLBACK.get(diff_key, [])
-
-    prev_set = {q.strip().lower() for q in previous_questions}
-    candidates = [q for q in bucket if q.strip().lower() not in prev_set]
-    if not candidates:
-        candidates = bucket  # all already asked — allow repeats
-
-    # Use question_number as a deterministic-but-varied seed
-    _random.seed(question_number)
-    return _random.choice(candidates) if candidates else "Tell me about your experience in this field."
-
-
-# ---------------------------------------------------------------------------
-# Interview answer evaluator (keyword-based, no LLM)
-# ---------------------------------------------------------------------------
-
-def _evaluate_answer_no_llm(question: str, answer: str, role: str, difficulty: str) -> dict:
-    """Score an interview answer using length, keyword overlap, and structure.
-
-    Returns the same shape as before:
-      { score: float(0-10), feedback: str, strengths: list, improvements: list }
-    """
-    word_count = len(answer.split())
-    answer_lower = answer.lower()
-    question_lower = question.lower()
-
-    # --- Length score (0-100) ---
-    if word_count < 20:
-        length_score = 30
-        length_fb = "Answer is very short. Aim for at least 50 words to show understanding."
-    elif word_count < 50:
-        length_score = 65
-        length_fb = "Good start. Elaborating further would strengthen your answer."
-    elif word_count < 150:
-        length_score = 85
-        length_fb = "Well-paced answer with solid detail."
-    else:
-        length_score = 100
-        length_fb = "Comprehensive answer with strong depth."
-
-    # --- Keyword overlap (0-100) ---
-    q_words = {w.strip(".,!?") for w in question_lower.split() if len(w) > 3}
-    a_words = {w.strip(".,!?") for w in answer_lower.split()}
-    overlap = len(q_words & a_words)
-    keyword_score = min(100, overlap * 12)
-
-    # --- Structure check (0-100) ---
-    example_markers = ["example", "for instance", "such as", "like", "e.g.", "specifically", "in my experience"]
-    has_example = any(m in answer_lower for m in example_markers)
-    structure_score = 100 if has_example else 55
-
-    # --- Difficulty multiplier ---
-    diff_mult = {"beginner": 1.05, "intermediate": 1.0, "advanced": 0.95}.get(difficulty.lower(), 1.0)
-
-    raw_score = (length_score * 0.40 + keyword_score * 0.40 + structure_score * 0.20) * diff_mult
-    # Scale to 0-10
-    final_score = round(min(10.0, max(0.0, raw_score / 10)), 1)
-
-    # --- Strengths and improvements ---
-    strengths: List[str] = []
-    improvements: List[str] = []
-
-    if word_count >= 50:
-        strengths.append("Detailed and well-elaborated response")
-    else:
-        improvements.append("Provide a more detailed and thorough answer")
-
-    if has_example:
-        strengths.append("Good use of concrete examples")
-    else:
-        improvements.append("Include a specific, concrete example to illustrate your point")
-
-    if overlap >= 2:
-        strengths.append("Answer is relevant and directly addresses the question")
-    else:
-        improvements.append("Make sure to directly address all parts of the question")
-
-    # Ensure non-empty lists
-    if not strengths:
-        strengths = ["You attempted the question"]
-    if not improvements:
-        improvements = ["Consider adding more depth to further impress the interviewer"]
-
-    return {
-        "score": final_score,
-        "feedback": length_fb,
-        "strengths": strengths,
-        "improvements": improvements,
-    }
 
 # ---------------------------------------------------------------------------
 # Explainability Layer (additive)
@@ -554,429 +213,33 @@ def _score_career_dna(user_skills: List[str]) -> Tuple[Dict[str, int], List[Dict
 
 
 # ---------------------------------------------------------------------------
-# RAG retrieval — ChromaDB-first pipeline
+# Static data caches (career_advice + skill_roadmaps)
+# ---------------------------------------------------------------------------
+# All RAG / embedding / HF-inference / chat-generation logic is now in the
+# browser bundle (frontend/src/services/ragPipeline.js + hfClient.js).
+# The backend keeps only the static JSON caches consumed by the data routes
+# /career-advice and /skill-roadmap, plus the seed_corpus path used by the
+# /health/dependencies endpoint.
 # ---------------------------------------------------------------------------
 _DATA_DIR = Path(__file__).resolve().parent / "data"
 _CORPUS_PATH = _DATA_DIR / "seed_corpus.json"
-_EMBEDDINGS_PATH = _DATA_DIR / "corpus_embeddings.json"
-_CHROMA_PATH = _DATA_DIR / "chromadb"
-_CHROMA_COLLECTION_NAME = "career_corpus"
 _ADVICE_PATH = _DATA_DIR / "career_advice.json"
 _ROADMAPS_PATH = _DATA_DIR / "skill_roadmaps.json"
-_ST_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-
-# Hugging Face Inference Router (fallback when local ST model unavailable)
-HF_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-HF_URL = (
-    "https://router.huggingface.co/hf-inference/models/"
-    f"{HF_MODEL}/pipeline/feature-extraction"
-)
-_HF_TIMEOUT_SECS = 5.0
-
-# Text-generation model for /chat replies
-HF_GEN_MODEL = "HuggingFaceH4/zephyr-7b-beta"
-HF_GEN_URL = "https://router.huggingface.co/v1/chat/completions"
-_HF_GEN_TIMEOUT_SECS = 30.0
-_EMBED_CACHE: Dict[str, List[float]] = {}
-_LOCAL_MODEL: Any = None
-_USE_LOCAL_EMBEDDINGS = os.getenv("USE_LOCAL_EMBEDDINGS", "false").lower() == "true"
-
-# Lazy-loaded singletons (initialised on first retrieval call)
-_chroma_collection: Any = None
-_st_model: Any = None
 
 
-def _get_chroma_collection() -> Any:
-    """Return the ChromaDB collection, or None if unavailable."""
-    global _chroma_collection
-    if _chroma_collection is not None:
-        return _chroma_collection
-    if not _CHROMADB_AVAILABLE:
-        return None
-    chroma_db_dir = _CHROMA_PATH
-    if not chroma_db_dir.exists():
-        return None
-    try:
-        client = _chromadb.PersistentClient(path=str(chroma_db_dir))
-        col = client.get_collection(_CHROMA_COLLECTION_NAME)
-        _chroma_collection = col
-        return col
-    except Exception:
-        return None
-
-
-def _get_st_model() -> Any:
-    """Return a sentence-transformers model, or None if unavailable."""
-    global _st_model
-    if _st_model is not None:
-        return _st_model
-    if not _ST_AVAILABLE:
-        return None
-    try:
-        _st_model = _SentenceTransformer(_ST_MODEL_NAME)
-        return _st_model
-    except Exception:
-        return None
-
-
-def _load_corpus() -> List[Dict[str, Any]]:
-    if not _CORPUS_PATH.exists():
+def _load_json(path: Path) -> "List[Dict[str, Any]]":
+    if not path.exists():
         return []
     try:
-        return _json.loads(_CORPUS_PATH.read_text(encoding="utf-8"))
+        data = _json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, list) else []
     except Exception:
         return []
 
 
-def _load_embeddings() -> List[Dict[str, Any]]:
-    if not _EMBEDDINGS_PATH.exists():
-        return []
-    try:
-        data = _json.loads(_EMBEDDINGS_PATH.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            return data.get("items", [])
-        if isinstance(data, list):
-            return data
-        return []
-    except Exception:
-        return []
+_ADVICE_CACHE: "List[Dict[str, Any]]" = _load_json(_ADVICE_PATH)
+_ROADMAPS_CACHE: "List[Dict[str, Any]]" = _load_json(_ROADMAPS_PATH)
 
-
-_CORPUS_CACHE = _load_corpus()
-_EMBED_INDEX = _load_embeddings()
-
-
-def _load_advice() -> List[Dict[str, Any]]:
-    if not _ADVICE_PATH.exists():
-        return []
-    try:
-        return _json.loads(_ADVICE_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return []
-
-
-def _load_roadmaps() -> List[Dict[str, Any]]:
-    if not _ROADMAPS_PATH.exists():
-        return []
-    try:
-        return _json.loads(_ROADMAPS_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return []
-
-
-_ADVICE_CACHE: List[Dict[str, Any]] = _load_advice()
-_ROADMAPS_CACHE: List[Dict[str, Any]] = _load_roadmaps()
-
-
-def _cosine(a: List[float], b: List[float]) -> float:
-    if not a or not b or len(a) != len(b):
-        return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(x * x for x in b))
-    if na == 0 or nb == 0:
-        return 0.0
-    return dot / (na * nb)
-
-
-def _get_local_embedding(text: str) -> list | None:
-    """
-    Generate embedding locally using sentence-transformers.
-    Used when USE_LOCAL_EMBEDDINGS=true or HF API unreachable.
-    Model is loaded once and cached in _LOCAL_MODEL.
-    Returns None on failure - caller falls back to keyword.
-    """
-    global _LOCAL_MODEL
-    try:
-        if _LOCAL_MODEL is None:
-            from sentence_transformers import SentenceTransformer
-            _LOCAL_MODEL = SentenceTransformer("all-mpnet-base-v2")
-        emb = _LOCAL_MODEL.encode(text, normalize_embeddings=True)
-        return emb.tolist()
-    except Exception as e:
-        print(f"Local embedding error: {e}")
-        return None
-
-
-def _hf_embed(query: str, token: str) -> List[float]:
-    payload = _json.dumps({"inputs": query, "options": {"wait_for_model": True}}).encode("utf-8")
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
-    req = urllib.request.Request(HF_URL, data=payload, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=_HF_TIMEOUT_SECS) as resp:
-        data = _json.loads(resp.read().decode("utf-8"))
-    if isinstance(data, list) and data and isinstance(data[0], (int, float)):
-        return [float(x) for x in data]
-    if isinstance(data, list) and data and isinstance(data[0], list):
-        return [float(x) for x in data[0]]
-    raise RuntimeError("Unexpected HF response shape")
-
-
-def _hf_generate(prompt: str, token: str, max_new_tokens: int = 320) -> str:
-    """Call HF Inference Router chat-completions endpoint and return the reply.
-
-    Uses the OpenAI-compatible `/v1/chat/completions` schema. Raises on any
-    network / API error so the caller can fall back to extractive mode.
-    """
-    payload = _json.dumps({
-        "model": HF_GEN_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": max_new_tokens,
-        "temperature": 0.7,
-        "top_p": 0.95,
-        "stream": False,
-    }).encode("utf-8")
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
-    req = urllib.request.Request(HF_GEN_URL, data=payload, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=_HF_GEN_TIMEOUT_SECS) as resp:
-        data = _json.loads(resp.read().decode("utf-8"))
-    # OpenAI-compatible response shape
-    if isinstance(data, dict) and "choices" in data and data["choices"]:
-        msg = data["choices"][0].get("message", {})
-        content = msg.get("content", "")
-        if isinstance(content, str) and content.strip():
-            return content.strip()
-    if isinstance(data, dict) and "error" in data:
-        raise RuntimeError(f"HF error: {data['error']}")
-    raise RuntimeError(f"Unexpected HF generation response shape: {str(data)[:200]}")
-
-
-def _extractive_reply(question: str, sources: List[Dict[str, Any]]) -> str:
-    """Deterministic fallback reply built from retrieved corpus sources.
-
-    Used when HF generation is unavailable so the chatbot ALWAYS returns
-    something useful (instead of erroring out).
-    """
-    if not sources:
-        return (
-            "I couldn't find anything in our corpus that directly matches your question. "
-            "Try asking about specific skills, roles, or technologies \u2014 for example: "
-            "\"What does a backend developer do?\" or \"How do I learn Docker?\""
-        )
-    lines = ["Here are the most relevant items I found in our corpus:", ""]
-    for s in sources[:3]:
-        title = s.get("title", "Resource")
-        kind = s.get("type", "item")
-        desc = (s.get("description", "") or "").strip()
-        skills = s.get("skills") or []
-        skills_str = ", ".join(skills[:6]) if skills else ""
-        bullet = f"\u2022 **{title}** ({kind})"
-        if skills_str:
-            bullet += f" \u2014 key skills: _{skills_str}_"
-        if desc:
-            bullet += f"\n  {desc[:240]}{'\u2026' if len(desc) > 240 else ''}"
-        lines.append(bullet)
-    lines.append("")
-    lines.append("_Tip: ask about a specific skill or role for a more focused answer._")
-    return "\n".join(lines)
-
-
-def _keyword_search(query: str, k: int = 3) -> List[Dict[str, Any]]:
-    if not _CORPUS_CACHE:
-        return []
-    q_tokens = {t for t in (query or "").lower().split() if len(t) > 2}
-    if not q_tokens:
-        return []
-    scored: List[Tuple[int, Dict[str, Any]]] = []
-    for item in _CORPUS_CACHE:
-        # Support both old schema (skills) and new schema (skillsRequired/relatedSkills)
-        skills_list = (
-            item.get("skillsRequired")
-            or item.get("relatedSkills")
-            or item.get("skills")
-            or []
-        )
-        haystack = " ".join([
-            str(item.get("title", "")),
-            " ".join(skills_list),
-            str(item.get("description", "")),
-            str(item.get("track", "")),
-            str(item.get("company", "")),
-        ]).lower()
-        overlap = sum(1 for t in q_tokens if t in haystack)
-        if overlap > 0:
-            scored.append((overlap, item))
-    scored.sort(key=lambda p: p[0], reverse=True)
-    return [item for _, item in scored[:k]]
-
-
-def _chroma_result_to_source(meta: Dict[str, Any], doc: str) -> Dict[str, Any]:
-    """Convert a ChromaDB result metadata dict into the source shape the rest of the code expects."""
-    skills_raw = meta.get("skills", "")
-    skills_list = [s.strip() for s in skills_raw.split(",")] if skills_raw else []
-    return {
-        "id": meta.get("parent_id", ""),
-        "type": meta.get("type", ""),
-        "title": meta.get("title", ""),
-        "description": doc,
-        "skills": skills_list,
-        "track": meta.get("track", ""),
-        "level": meta.get("level", ""),
-        "platform": meta.get("platform", ""),
-        "cost": meta.get("cost", ""),
-        "company": meta.get("company", ""),
-        "url": meta.get("url", ""),
-    }
-
-
-def retrieve_sources(query: str, k: int = 3) -> Tuple[List[Dict[str, Any]], str]:
-    """Return (sources, path_used).
-
-    Retrieval order:
-      1. chromadb  -> local ChromaDB + local sentence-transformers (best quality)
-      2. cache     -> embedding cosine search (in-memory, if chroma unavailable)
-      3. hf        -> HF Inference API + cosine over corpus_embeddings.json
-      4. keyword   -> token-overlap fallback over seed_corpus.json
-      5. none      -> empty list; caller continues without retrieval
-    """
-    if not query:
-        return [], "none"
-
-    # ── 1. ChromaDB (primary path) ──────────────────────────────────────────
-    col = _get_chroma_collection()
-    if col is not None:
-        st = _get_st_model()
-        if st is not None:
-            try:
-                qvec = st.encode([query])[0].tolist()
-                results = col.query(
-                    query_embeddings=[qvec],
-                    n_results=k,
-                    include=["metadatas", "documents"],
-                )
-                metas = results.get("metadatas", [[]])[0]
-                docs = results.get("documents", [[]])[0]
-                sources = [
-                    _chroma_result_to_source(m, d)
-                    for m, d in zip(metas, docs)
-                ]
-                # De-duplicate by parent_id (keep first/highest-ranked chunk per doc)
-                seen: set = set()
-                unique: List[Dict[str, Any]] = []
-                for s in sources:
-                    pid = s.get("id", "")
-                    if pid not in seen:
-                        seen.add(pid)
-                        unique.append(s)
-                if unique:
-                    return unique[:k], "chroma"
-            except Exception:
-                pass  # fall through
-
-    token = (os.getenv("HF_TOKEN") or "").strip()
-
-    # ── 2. Cache check ───────────────────────────────────────────────────────
-    if _EMBED_INDEX and query in _EMBED_CACHE:
-        qvec = _EMBED_CACHE[query]
-        ranked = sorted(
-            _EMBED_INDEX,
-            key=lambda item: _cosine(qvec, item.get("embedding", [])),
-            reverse=True,
-        )
-        return ranked[:k], "cache"
-
-    # ── 3. HF retrieval ──────────────────────────────────────────────────────
-    query_embedding = None
-    if _USE_LOCAL_EMBEDDINGS:
-        query_embedding = _get_local_embedding(query)
-
-    if query_embedding is not None and _EMBED_INDEX:
-        _EMBED_CACHE[query] = query_embedding
-        ranked = sorted(
-            _EMBED_INDEX,
-            key=lambda item: _cosine(query_embedding, item.get("embedding", [])),
-            reverse=True,
-        )
-        return ranked[:k], "cache"
-
-    if not token:
-        print("HF_TOKEN missing, falling back to keyword search")
-    elif _EMBED_INDEX:
-        try:
-            qvec = _hf_embed(query, token)
-            _EMBED_CACHE[query] = qvec
-            ranked = sorted(
-                _EMBED_INDEX,
-                key=lambda item: _cosine(qvec, item.get("embedding", [])),
-                reverse=True,
-            )
-            return ranked[:k], "hf"
-        except urllib.error.HTTPError as e:
-            if e.code == 503:
-                print("HF model sleeping, falling back to keyword search")
-            else:
-                print(f"HF embedding HTTP error {e.code}, falling back to keyword search")
-        except urllib.error.URLError as e:
-            print(f"HF embedding network error, falling back to keyword search: {e}")
-        except socket.timeout:
-            print("HF embedding timed out, falling back to keyword search")
-        except Exception:
-            print("HF embedding failed, falling back to keyword search")
-
-    # ── 4. Keyword fallback ──────────────────────────────────────────────────
-    kw = _keyword_search(query, k=k)
-    if kw:
-        return kw, "keyword"
-
-    return [], "none"
-
-
-def _sources_to_factors(sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    return [
-        {
-            "label": f"Matched: {s.get('title', 'corpus item')} (rag_source)",
-            "positive": True,
-            "signal_type": "rag_source",
-        }
-        for s in sources
-    ]
-
-
-# ---------------------------------------------------------------------------
-# Retrieval path notes:
-#   1. chromadb  — local ChromaDB + sentence-transformers (fastest, best quality)
-#   2. cache     — in-memory cosine over corpus_embeddings.json
-#   3. hf        — HF Inference API (requires HF_TOKEN)
-#   4. keyword   — token-overlap fallback (always works, no deps)
-#   5. none      — empty; caller produces templated reply
-# ---------------------------------------------------------------------------
-
-# Simple type hints to avoid a runtime dependency on pydantic
-class Message(TypedDict, total=False):
-    role: Literal["user", "model"]
-    content: str
-
-# Endpoints will accept plain dicts (JSON) for requests and return plain dicts for responses.
-# Expected shapes:
-#   Chat request JSON: {"message": "<text>", "history": [{"role":"user","content":"..."}, ...]}
-#   Chat response JSON: {"reply": "<text>"}
-
-class InterviewQuestionRequest(BaseModel):
-    role: str = Field(..., max_length=64)
-    difficulty: str = Field(..., max_length=32)
-    questionNumber: int = Field(1, ge=0, le=200)
-    # Cap previous-questions list to avoid token explosion
-    previousQuestions: list[str] = Field(default_factory=list, max_length=50)
-
-class InterviewAnswerRequest(BaseModel):
-    question: str = Field(..., max_length=5000)
-    answer: str = Field(..., max_length=10000)
-    role: str = Field(..., max_length=64)
-    difficulty: str = Field("Medium", max_length=32)
-
-class InterviewQuestionResponse(BaseModel):
-    question: str
-
-class InterviewFeedbackResponse(BaseModel):
-    score: float
-    feedback: str
-    strengths: list[str]
-    improvements: list[str]
 
 @app.get("/")
 async def root():
@@ -985,25 +248,14 @@ async def root():
 
 @app.get("/health/dependencies")
 async def health_dependencies():
-    """Diagnostic dependency health check; never raises."""
+    """Diagnostic dependency health check; never raises.
+
+    NOTE: all AI inference (LLM, embeddings, vision) now runs from the
+    browser directly against Hugging Face. The backend keeps only data
+    routes (/career-dna, /readiness-score, /career-advice, /skill-roadmap,
+    /summarize-cv PDF parser).
+    """
     try:
-        gemini_set = bool((os.getenv("GEMINI_API_KEY") or "").strip())
-        hf_set = bool((os.getenv("HF_TOKEN") or "").strip())
-
-        hf_reachable = False
-        try:
-            req = urllib.request.Request(
-                "https://api-inference.huggingface.co",
-                method="HEAD",
-            )
-            with urllib.request.urlopen(req, timeout=3):
-                hf_reachable = True
-        except urllib.error.HTTPError:
-            # Any HTTP response means DNS and outbound HTTPS reached HF.
-            hf_reachable = True
-        except Exception:
-            hf_reachable = False
-
         seed_loaded = False
         try:
             seed_loaded = _CORPUS_PATH.exists() and bool(
@@ -1012,161 +264,22 @@ async def health_dependencies():
         except Exception:
             seed_loaded = False
 
-        embeddings_loaded = False
-        try:
-            embeddings_loaded = _EMBEDDINGS_PATH.exists()
-        except Exception:
-            embeddings_loaded = False
-
-        if not gemini_set or not seed_loaded:
-            overall = "critical"
-        elif not hf_reachable or not hf_set:
-            overall = "degraded"
-        else:
-            overall = "ready"
+        overall = "ready" if seed_loaded else "degraded"
 
         return {
-            "gemini_api_key": "set" if gemini_set else "missing",
-            "hf_token": "set" if hf_set else "missing",
-            "hf_inference_reachable": hf_reachable,
             "seed_corpus_loaded": seed_loaded,
-            "embeddings_loaded": embeddings_loaded,
             "overall": overall,
         }
     except Exception:
         return {
-            "gemini_api_key": "missing",
-            "hf_token": "missing",
-            "hf_inference_reachable": False,
             "seed_corpus_loaded": False,
-            "embeddings_loaded": False,
             "overall": "critical",
         }
 
-@app.options("/chat")
-async def options_chat():
-    return {"message": "OK"}
-
-@app.post("/chat")
-async def chat(req: Dict[str, Any]):
-    """Pure HF + RAG chatbot.
-
-    Pipeline:
-      1. HF retrieval (cache → HF embeddings → keyword fallback)
-      2. HF text-generation (zephyr-7b-beta) with the retrieved context
-      3. Fallback: extractive templated reply built from sources
-    """
-    try:
-        user_message = (req.get("message", "") or "").strip()
-        if not user_message:
-            raise HTTPException(status_code=400, detail="message field is required")
-
-        # --- Step 1: retrieval ---------------------------------------------
-        try:
-            sources, retrieval_path = retrieve_sources(user_message, k=3)
-        except Exception:
-            sources, retrieval_path = [], "none"
-
-        # --- Step 2: build prompt + try HF generation ---------------------
-        hf_token = os.getenv("HF_TOKEN")
-
-        # Compact context block (truncate descriptions to keep prompt small)
-        if sources:
-            ctx_lines = []
-            for s in sources:
-                title = s.get("title", "")
-                desc = (s.get("description", "") or "")[:200]
-                skills = s.get("skills") or []
-                skills_str = (", ".join(skills[:6])) if skills else ""
-                if skills_str:
-                    ctx_lines.append(f"- {title} | skills: {skills_str} | {desc}")
-                else:
-                    ctx_lines.append(f"- {title}: {desc}")
-            context_text = "\n".join(ctx_lines)
-        else:
-            context_text = "(no relevant context found)"
-
-        # Short, recent conversation history (keep prompt size bounded)
-        history_lines = []
-        for item in (req.get("history") or [])[-4:]:
-            role = item.get("role", "user")
-            content = (item.get("content", "") or "").strip()[:300]
-            if content:
-                history_lines.append(f"{'User' if role == 'user' else 'Assistant'}: {content}")
-        history_block = ("\n".join(history_lines) + "\n") if history_lines else ""
-
-        # Zephyr instruction format works well with this plain template too
-        prompt = (
-            "You are CareerPath Assistant, a concise and helpful career guide for students "
-            "and fresh graduates. Use only the CONTEXT below to ground specifics about jobs "
-            "and courses. If the context does not cover the user's question, answer briefly "
-            "from general career knowledge and say so. Keep replies under 180 words.\n\n"
-            f"CONTEXT:\n{context_text}\n\n"
-            f"{history_block}"
-            f"User: {user_message}\n"
-            "Assistant:"
-        )
-
-        reply_text = ""
-        generation_path = "none"
-        if hf_token:
-            try:
-                gen = _hf_generate(prompt, hf_token, max_new_tokens=320)
-                # Strip any echoed "Assistant:" prefix the model may emit
-                gen = gen.split("User:")[0].strip()
-                if gen.lower().startswith("assistant:"):
-                    gen = gen[len("assistant:"):].strip()
-                if gen:
-                    reply_text = gen
-                    generation_path = "hf"
-            except Exception as e:
-                print(f"HF generation failed: {e}")
-
-        if not reply_text:
-            reply_text = _extractive_reply(user_message, sources)
-            generation_path = "extractive"
-
-        # --- Step 3: build explainability envelope ------------------------
-        factors = _sources_to_factors(sources)
-        used_fallback = (
-            retrieval_path in ("keyword", "none") or generation_path == "extractive"
-        )
-        if retrieval_path == "hf" and generation_path == "hf" and len(sources) >= 2:
-            confidence = "High"
-        elif generation_path == "extractive" and not sources:
-            confidence = "Low"
-        elif used_fallback:
-            confidence = "Medium"
-        else:
-            confidence = _derive_confidence(factors, used_fallback)
-
-        basis_parts = []
-        if sources:
-            basis_parts.append(f"{len(sources)} source(s) via {retrieval_path}")
-        else:
-            basis_parts.append("no corpus sources retrieved")
-        basis_parts.append(f"generation={generation_path}")
-        basis = "; ".join(basis_parts)
-
-        return {
-            "reply": reply_text,
-            "sources": [
-                {"id": s.get("id"), "title": s.get("title"), "type": s.get("type")}
-                for s in sources
-            ],
-            "factors": factors,
-            "confidence": confidence,
-            "basis": basis,
-            "retrieval_path": retrieval_path,
-            "generation_path": generation_path,
-            "signal_types_used": ["rag_source"] if factors else [],
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error in chat endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+# ---------------------------------------------------------------------------
+# /chat — DELETED. The chatbot now calls Hugging Face directly from the
+# browser via frontend/src/services/interviewAI.js (careerChat).
+# ---------------------------------------------------------------------------
 
 @app.options("/summarize-cv")
 async def options_summarize_cv():
@@ -1223,63 +336,11 @@ async def summarize_cv(file: UploadFile = File(...)):
         error_message = f"Error processing CV: {str(e)}"
         raise HTTPException(status_code=500, detail=error_message)
 
-@app.options("/generate-interview-question")
-async def options_generate_question():
-    return {"message": "OK"}
-
-@app.post("/generate-interview-question", response_model=InterviewQuestionResponse)
-async def generate_interview_question(req: InterviewQuestionRequest):
-    try:
-        # Map role to readable name
-        role_names = {
-            'frontend': 'Frontend Developer',
-            'backend': 'Backend Developer',
-            'fullstack': 'Full Stack Developer',
-            'data-science': 'Data Scientist',
-            'mobile': 'Mobile Developer',
-            'devops': 'DevOps Engineer',
-            'ui-ux': 'UI/UX Designer',
-            'product-manager': 'Product Manager'
-        }
-        
-        role_name = role_names.get(req.role, req.role)
-        
-        # Pick a question from the static bank (no LLM)
-        question_text = _pick_interview_question(
-            role=req.role,
-            difficulty=req.difficulty,
-            previous_questions=req.previousQuestions,
-            question_number=req.questionNumber,
-        )
-        return InterviewQuestionResponse(question=question_text)
-    
-    except Exception as e:
-        error_message = f"Error generating interview question: {str(e)}"
-        raise HTTPException(status_code=500, detail=error_message)
-
-@app.options("/evaluate-interview-answer")
-async def options_evaluate_answer():
-    return {"message": "OK"}
-
-@app.post("/evaluate-interview-answer", response_model=InterviewFeedbackResponse)
-async def evaluate_interview_answer(req: InterviewAnswerRequest):
-    try:
-        # Evaluate using keyword-based scoring (no LLM)
-        result = _evaluate_answer_no_llm(
-            question=req.question,
-            answer=req.answer,
-            role=req.role,
-            difficulty=req.difficulty,
-        )
-        return InterviewFeedbackResponse(
-            score=result["score"],
-            feedback=result["feedback"],
-            strengths=result["strengths"],
-            improvements=result["improvements"],
-        )
-    except Exception as e:
-        error_message = f"Error evaluating answer: {str(e)}"
-        raise HTTPException(status_code=500, detail=error_message)
+# ---------------------------------------------------------------------------
+# /generate-interview-question + /evaluate-interview-answer — DELETED.
+# The Mock Interview component now calls Hugging Face Mistral directly
+# via frontend/src/services/interviewAI.js.
+# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # Feature 2 — Career DNA
@@ -1488,58 +549,11 @@ async def explain_match(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Feature 7 — Facial Expression Analysis
+# Feature 7 — Facial Expression Analysis: DELETED.
+# Camera capture + emotion classification runs in the browser. Frontend
+# calls trpakov/vit-face-expression on Hugging Face directly from
+# frontend/src/components/FaceExpressionOverlay.jsx.
 # ---------------------------------------------------------------------------
-HF_EXPRESSION_MODEL_URL = (
-    "https://api-inference.huggingface.co/models/trpakov/vit-face-expression"
-)
-
-
-class ExpressionRequest(BaseModel):
-    image_b64: str
-
-
-class EmotionScore(BaseModel):
-    label: str
-    score: float
-
-
-class ExpressionResponse(BaseModel):
-    emotions: list[EmotionScore]
-    retrieval_path: str
-
-
-@app.post("/analyze-expression", response_model=ExpressionResponse)
-async def analyze_expression(req: ExpressionRequest):
-    hf_token = os.getenv("HF_TOKEN", "")
-    if not hf_token:
-        return ExpressionResponse(emotions=[], retrieval_path="error")
-    try:
-        image_bytes = base64.b64decode(req.image_b64)
-    except Exception:
-        return ExpressionResponse(emotions=[], retrieval_path="error")
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(
-                HF_EXPRESSION_MODEL_URL,
-                content=image_bytes,
-                headers={
-                    "Authorization": f"Bearer {hf_token}",
-                    "Content-Type": "image/jpeg",
-                    "X-Wait-For-Model": "true",
-                },
-            )
-        if resp.status_code != 200:
-            return ExpressionResponse(emotions=[], retrieval_path="error")
-        raw = resp.json()
-        emotions = sorted(
-            [EmotionScore(label=item["label"], score=item["score"]) for item in raw],
-            key=lambda x: x.score,
-            reverse=True,
-        )
-        return ExpressionResponse(emotions=emotions, retrieval_path="hf")
-    except Exception:
-        return ExpressionResponse(emotions=[], retrieval_path="error")
 
 
 # ---------------------------------------------------------------------------

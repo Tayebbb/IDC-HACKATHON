@@ -5,7 +5,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import API_URL from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mic, 
@@ -32,12 +31,20 @@ import {
   where, 
   orderBy, 
   getDocs,
+  doc,
+  getDoc,
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import ReasoningCard from '../components/ReasoningCard';
 import { buildEnvelope } from '../utils/explainability';
 import FaceExpressionOverlay from '../components/FaceExpressionOverlay';
+import { indexProfile } from '../services/ragPipeline';
+import { loadCorpus } from '../services/corpusLoader';
+import {
+  generateInterviewQuestion,
+  evaluateInterviewAnswer,
+} from '../services/interviewAI';
 
 const MockInterview = () => {
   const { currentUser } = useAuth();
@@ -125,28 +132,19 @@ const MockInterview = () => {
     }
   }, [currentUser]);
 
-  // Generate interview question using Gemini AI
+  // Generate interview question via Hugging Face (browser direct, RAG-augmented)
   const generateQuestion = useCallback(async () => {
     setLoading(true);
     try {
-      const apiUrl = API_URL.replace(/\/+$/, '');
-      const response = await fetch(`${apiUrl}/generate-interview-question`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          role: selectedRole,
-          difficulty: difficulty,
-          questionNumber: questionNumber + 1,
-          previousQuestions: sessionQuestions // Send previous questions to avoid duplicates
-        })
+      const question = await generateInterviewQuestion({
+        role: selectedRole,
+        difficulty,
+        questionNumber: questionNumber + 1,
+        previousQuestions: sessionQuestions,
       });
-
-      if (!response.ok) throw new Error('Failed to generate question');
-
-      const data = await response.json();
-      setCurrentQuestion(data.question);
-      setSessionQuestions(prev => [...prev, data.question]);
-      
+      if (!question) throw new Error('Empty question returned from model');
+      setCurrentQuestion(question);
+      setSessionQuestions(prev => [...prev, question]);
       toast.success('New question generated!');
     } catch (error) {
       console.error('Error generating question:', error);
@@ -156,7 +154,7 @@ const MockInterview = () => {
     }
   }, [selectedRole, difficulty, questionNumber, sessionQuestions]);
 
-  // Evaluate answer using Gemini AI
+  // Evaluate answer via Hugging Face (browser direct, RAG-augmented)
   const evaluateAnswer = useCallback(async () => {
     if (!userAnswer.trim()) {
       toast.error('Please provide an answer');
@@ -165,21 +163,12 @@ const MockInterview = () => {
 
     setLoading(true);
     try {
-      const apiUrl = API_URL.replace(/\/+$/, '');
-      const response = await fetch(`${apiUrl}/evaluate-interview-answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: currentQuestion,
-          answer: userAnswer,
-          role: selectedRole,
-          difficulty: difficulty
-        })
+      const data = await evaluateInterviewAnswer({
+        question: currentQuestion,
+        answer: userAnswer,
+        role: selectedRole,
+        difficulty,
       });
-
-      if (!response.ok) throw new Error('Failed to evaluate answer');
-
-      const data = await response.json();
       setFeedback(data);
 
       // Feature 6 — build a client-side interview_metric envelope from
@@ -217,8 +206,9 @@ const MockInterview = () => {
     }
   }, [userAnswer, currentQuestion, selectedRole, difficulty]);
 
-  // Start interview
-  const startInterview = useCallback(() => {
+  // Start interview — load the user's profile + general corpus into the
+  // in-browser RAG store, then generate the first question.
+  const startInterview = useCallback(async () => {
     if (!selectedRole) {
       toast.error('Please select a job role');
       return;
@@ -231,8 +221,22 @@ const MockInterview = () => {
     setSessionFeedbacks([]); // Reset feedbacks
     setEmotionSummary(null);
     setMetricsEnvelope(null);
+
+    // Fire-and-forget corpus load (cached after first run).
+    loadCorpus().catch(() => { /* non-blocking */ });
+
+    // Index user profile so retrieve() can ground answers in it.
+    if (currentUser?.uid) {
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (snap.exists()) await indexProfile(snap.data());
+      } catch (err) {
+        console.warn('Profile indexing failed:', err?.message || err);
+      }
+    }
+
     generateQuestion();
-  }, [selectedRole, generateQuestion]);
+  }, [selectedRole, currentUser, generateQuestion]);
 
   // Next question
   const nextQuestion = useCallback(() => {
@@ -703,7 +707,7 @@ const MockInterview = () => {
                   <div>
                     <h3 className="font-semibold mb-1">AI-Generated Questions</h3>
                     <p className="text-sm text-muted">
-                      Role-specific questions powered by Google Gemini AI
+                      Role-specific questions powered by Hugging Face Mistral
                     </p>
                   </div>
                 </div>

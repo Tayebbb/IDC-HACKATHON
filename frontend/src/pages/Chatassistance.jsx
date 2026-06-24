@@ -7,12 +7,16 @@ import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, serverTimestamp
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import ReasoningCard from "../components/ReasoningCard";
-import API_URL from "../config";
+import { careerChat } from "../services/interviewAI";
+import { loadCorpus } from "../services/corpusLoader";
+import { indexProfile } from "../services/ragPipeline";
+
+const GREETING = "Hi! I'm your CareerPath assistant. Ask me anything about jobs, skills, interviews, or career growth.";
 
 export default function Chatassistance() {
   const { currentUser } = useAuth();
   const [messages, setMessages] = useState([
-    { role: "model", content: "Hi! I'm a Gemini-powered chatbot. I'm here to help you with questions about youth development, skill development, job opportunities, and career guidance. How can I assist you?" }
+    { role: "model", content: GREETING }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,11 +102,10 @@ export default function Chatassistance() {
         const data = docSnap.data();
         // Keep the initial greeting and add saved messages (skip the default greeting if it exists)
         if (data.messages && data.messages.length > 0) {
-          // Filter out the default greeting if it's the only message
-          const savedMessages = data.messages.filter(m => m.content !== "Hi! I'm a Gemini-powered chatbot. I'm here to help you with questions about youth development, skill development, job opportunities, and career guidance. How can I assist you?");
+          const savedMessages = data.messages.filter(m => m.content !== GREETING);
           if (savedMessages.length > 0) {
             setMessages([
-              { role: "model", content: "Hi! I'm a Gemini-powered chatbot. I'm here to help you with questions about youth development, skill development, job opportunities, and career guidance. How can I assist you?" },
+              { role: "model", content: GREETING },
               ...savedMessages
             ]);
           }
@@ -132,7 +135,7 @@ export default function Chatassistance() {
 
       // Reset messages to initial state
       setMessages([
-        { role: "model", content: "Hi! I'm a Gemini-powered chatbot. I'm here to help you with questions about youth development, skill development, job opportunities, and career guidance. How can I assist you?" }
+        { role: "model", content: GREETING }
       ]);
       toast.success("Chat history cleared");
     } catch (error) {
@@ -240,38 +243,36 @@ export default function Chatassistance() {
         content: m.content,
       }));
 
-      // Call backend API
-      const apiUrl = API_URL.replace(/\/+$/, "");
+      // Preload corpus + profile into the in-browser RAG store. Both are
+      // idempotent and safe to call on every send.
+      loadCorpus().catch(() => { /* non-blocking */ });
+      if (currentUser?.uid) {
+        try {
+          const snap = await getDoc(doc(db, 'users', currentUser.uid));
+          if (snap.exists()) await indexProfile(snap.data());
+        } catch (err) {
+          // non-fatal — chat still works without profile context
+          console.warn('Profile index failed:', err?.message || err);
+        }
+      }
+
       if (abortRef.current) abortRef.current.abort();
       abortRef.current = new AbortController();
 
-      const res = await fetch(`${apiUrl}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage,
-          history,
-        }),
-        signal: abortRef.current.signal,
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server error: ${res.status}`);
-      }
-
-      const data = await res.json();
-      const reply = data.reply;
+      const data = await careerChat({ message: userMessage, history });
+      const reply = data.reply || "I'm not sure how to answer that — could you rephrase?";
 
       // Feature 5 — attach RAG explainability to the model message so
-      // ReasoningCard can render below it. Backend is additive: these
-      // fields may be missing on older deployments — default safely.
+      // ReasoningCard can render below it.
       const modelMsg = {
         role: "model",
         content: reply,
         sources: data.sources || [],
-        factors: Array.isArray(data.factors) ? data.factors : [],
-        confidence: data.confidence || null,
-        basis: data.basis || null,
+        factors: [],
+        confidence: data.sources?.length ? 'High' : 'Medium',
+        basis: data.sources?.length
+          ? `${data.sources.length} retrieved chunk(s) via in-browser RAG`
+          : 'no corpus sources retrieved',
       };
       const updatedMessages = [...newMessages, modelMsg];
       setMessages(updatedMessages);

@@ -6,6 +6,9 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { Sparkles, Target, Zap, CheckCircle, ArrowRight, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 import WhatIfSimulator from '../components/WhatIfSimulator';
+import { generateCareerRoadmap } from '../services/interviewAI';
+import { loadCorpus } from '../services/corpusLoader';
+import { indexProfile } from '../services/ragPipeline';
 
 export default function CareerRoadmap() {
   const { currentUser } = useAuth();
@@ -109,61 +112,13 @@ export default function CareerRoadmap() {
     setError(null);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        throw new Error('Gemini API key not configured');
-      }
+      // Warm corpus + profile in the in-browser RAG store so the
+      // roadmap can ground itself in real candidate data.
+      loadCorpus().catch(() => { /* non-blocking */ });
+      try { await indexProfile(userData); } catch { /* non-fatal */ }
 
-      const prompt = `You are a career counselor. Analyze this user profile and create a detailed career roadmap.
-
-User Profile:
-- Experience Level: ${userData?.experienceLevel || 'beginner'}
-- Current Skills: ${userData?.skills?.length > 0 ? userData.skills.join(', ') : 'No skills listed yet'}
-- Goal Position: ${goalJob}
-
-Generate a structured roadmap with:
-1. Current Assessment (brief summary of current position)
-2. Skills Gap (list 4-6 key skills needed for the goal role)
-3. Step-by-Step Path (5-7 actionable steps to reach the goal)
-4. Timeline (realistic timeframe for each step)
-5. Resources (specific courses, tools, or certifications)
-6. Quick Wins (2-3 things they can do immediately)
-
-Format clearly with headers and bullet points.`;
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt,
-                  },
-                ],
-              },
-            ],
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to generate roadmap');
-      }
-
-      const data = await response.json();
-      const roadmapContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!roadmapContent) {
-        throw new Error('No roadmap generated');
-      }
+      const roadmapContent = await generateCareerRoadmap({ goalJob, profile: userData });
+      if (!roadmapContent) throw new Error('No roadmap generated');
 
       setRoadmap({
         goalJob,

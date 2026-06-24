@@ -6,7 +6,7 @@
 
 ## 1. One-paragraph summary
 
-CareerPath is a full-stack AI career platform for students and fresh graduates. The stack is **React 18 + Vite** on the frontend, **FastAPI (Python 3.12)** on the backend, **Firebase Auth + Firestore** for identity and persistence, and **Google Gemini 2.0 Flash** for LLM calls. The product's defining feature is a unified **Explainability Layer**: every visible AI output — readiness score, job match, skill gap, chat reply, interview evaluation, simulated what-if score — is wrapped in a common `ExplainabilityEnvelope` and rendered through a single `ReasoningCard` component. Nine features ("Feature 1" through "Feature 9") implement this layer end to end and are documented below.
+CareerPath is a full-stack AI career platform for students and fresh graduates. The stack is **React 18 + Vite** on the frontend, **FastAPI (Python 3.12)** on the backend, and **Firebase Auth + Firestore** for identity and persistence. As of June 2026 the entire AI inference layer runs **directly in the browser against the Hugging Face Inference API** — `mistralai/Mistral-7B-Instruct-v0.3` for text generation, `sentence-transformers/all-MiniLM-L6-v2` for embeddings, `cross-encoder/ms-marco-MiniLM-L-6-v2` for reranking, and `trpakov/vit-face-expression` for facial-expression analysis. The backend no longer proxies any AI request; it serves only static-data routes (`/career-dna`, `/readiness-score`, `/explain-match`, `/career-advice`, `/skill-roadmap`) and the PDF text-extraction route `/summarize-cv`. The product's defining feature is a unified **Explainability Layer**: every visible AI output — readiness score, job match, skill gap, chat reply, interview evaluation, simulated what-if score — is wrapped in a common `ExplainabilityEnvelope` and rendered through a single `ReasoningCard` component.
 
 ---
 
@@ -69,7 +69,7 @@ IDC HACKATHON/
 │   ├── data/
 │   │   ├── seed_corpus.json           # 32 jobs + 25 courses (Feature 5)
 │   │   └── corpus_embeddings.json     # generated; optional
-│   ├── .env                           # GEMINI_API_KEY (gitignored)
+│   ├── .env                           # (empty in dev; FRONTEND_URL optional)
 │   ├── .env.example
 │   └── .venv/                         # local Python venv
 ├── Code Front/                        # raw logo source files for branding
@@ -193,8 +193,8 @@ The **only** component that may render explanations is `ReasoningCard`. If `fact
 | 2   | Career DNA radar               | `IntelligenceSection.jsx` → mounted in `Dashboard.jsx`          | `POST /career-dna`                         |
 | 3   | Readiness Score                | `IntelligenceSection.jsx`                                       | `POST /readiness-score`                    |
 | 4   | Skill-gap + Job-match wrappers | `SkillGapCard.jsx`, `JobCard.jsx`, `Jobs.jsx`                   | `POST /explain-match`                      |
-| 5   | RAG-grounded chat              | `Chatassistance.jsx`                                            | `POST /chat` (internal extension only)     |
-| 6   | Voice Interview Coach          | `MockInterview.jsx` (Web Speech API)                            | `POST /evaluate-interview-answer` (frozen) |
+| 5   | Career chat (HF + browser RAG) | `Chatassistance.jsx` → `services/interviewAI.careerChat`        | none (browser calls HF directly)           |
+| 6   | Mock Interview (HF + RAG)      | `MockInterview.jsx` + `FaceExpressionOverlay.jsx`               | none (browser calls HF directly)           |
 | 7   | What-If Career Simulator       | `WhatIfSimulator.jsx` mounted in `CareerRoadmap.jsx`            | none (pure client)                         |
 | 8   | Mindsparks Badge + Certificate | `MindsparksCredential.jsx` mounted in `IntelligenceSection.jsx` | none (jsPDF client)                        |
 | 9   | Knowledge Graph                | `pages/KnowledgeGraph.jsx` (`@xyflow/react`)                    | none (uses existing data)                  |
@@ -205,24 +205,28 @@ The **only** component that may render explanations is `ReasoningCard`. If `fact
 
 Base URL in dev: `http://127.0.0.1:8000`. OpenAPI at `/docs` and `/redoc`.
 
-### Frozen routes (request/response shape MUST NOT change)
+The backend no longer performs any AI inference — all LLM / embedding / vision
+calls happen in the browser against the Hugging Face Inference API. The
+remaining backend routes serve static data and a PDF text extractor.
 
-| Method | Path                           | Purpose                                                                 |
-| ------ | ------------------------------ | ----------------------------------------------------------------------- |
-| `GET`  | `/`                            | Health check returning `{ "message": "Gemini Chatbot API is running" }` |
-| `POST` | `/summarize-cv`                | Multipart PDF upload → structured CV JSON                               |
-| `POST` | `/generate-interview-question` | Returns a question + difficulty                                         |
-| `POST` | `/evaluate-interview-answer`   | Returns `{ score, feedback, strengths[], improvements[] }`              |
+| Method | Path                  | Purpose                                                                 |
+| ------ | --------------------- | ----------------------------------------------------------------------- |
+| `GET`  | `/`                   | Health check returning `{ "message": "CareerPath RAG Chatbot API is running" }` |
+| `GET`  | `/health/dependencies`| Static data readiness check (seed_corpus presence)                       |
+| `POST` | `/summarize-cv`       | Multipart PDF upload → raw text + keyword-extracted CV JSON (no LLM)     |
+| `POST` | `/career-dna`         | Score the user across 5 DNA categories (envelope)                        |
+| `POST` | `/readiness-score`    | Composite readiness score (envelope)                                     |
+| `POST` | `/explain-match`      | Per-job match breakdown (envelope)                                       |
+| `GET`  | `/career-advice`      | Search the static career-advice JSON                                     |
+| `POST` | `/career-advice`      | Same as GET, body form (legacy)                                          |
+| `GET`  | `/skill-roadmap`      | Search the static roadmaps JSON                                          |
+| `POST` | `/skill-roadmap`      | Same as GET, body form (legacy)                                          |
 
-### Extended route
+### Routes removed in the June 2026 overhaul
 
-- `POST /chat` — Body: `{ message, history? }`. Existing response fields preserved. **New fields added**:
-  - `sources: { id, type, title, snippet }[]`
-  - `factors: Factor[]`
-  - `confidence: "High" | "Medium" | "Low"`
-  - `basis: string`
-  - `retrieval_path: "cache" | "hf" | "keyword" | "none"`
-  - `signal_types_used: SignalType[]`
+- `POST /chat` — chat replies now come from `frontend/src/services/interviewAI.careerChat` (HF Mistral + in-browser RAG).
+- `POST /generate-interview-question` and `POST /evaluate-interview-answer` — replaced by browser-side calls in `MockInterview.jsx`.
+- `POST /analyze-expression` — webcam frames now POST directly to `trpakov/vit-face-expression` on HF from `FaceExpressionOverlay.jsx`.
 
 ### New explainability routes
 
@@ -287,20 +291,21 @@ Same readiness formula, computed client-side. Each toggled skill adds **+8** to 
 
 ### Embeddings
 
-- Model: `sentence-transformers/all-MiniLM-L6-v2` via the Hugging Face Inference API.
-- Generator: `backend/scripts/build_embeddings.py` (reads `HF_TOKEN` env var, writes `backend/data/corpus_embeddings.json`).
-- Cosine similarity is **pure Python** (`math.sqrt`) — no numpy.
+- Model: `sentence-transformers/all-MiniLM-L6-v2` via the Hugging Face Inference API, called **directly from the browser** (`frontend/src/services/ragPipeline.js`).
+- Backend embedding generation is no longer used.
+- Cosine similarity is implemented in pure JS in the frontend RAG service.
 
-### Retrieval order (in `retrieve_sources`)
+### Retrieval order (in `frontend/src/services/ragPipeline.js`)
 
-1. **cache** — in-memory query → sources map.
-2. **hf** — call HF for the query embedding, cosine vs corpus, top-k = 3, 5 s timeout.
-3. **keyword** — token-overlap fallback when HF is unavailable or returns nothing.
-4. **none** — nothing matched. ReasoningCard simply doesn't render.
+1. **dense**   — HF embedding of query → in-memory cosine vs indexed chunks (top-20).
+2. **sparse**  — inline BM25 (k1=1.5, b=0.75) over the same chunks (top-20).
+3. **fuse**    — Reciprocal Rank Fusion (k=60) of dense + sparse → top-20.
+4. **rerank**  — HF cross-encoder `ms-marco-MiniLM-L-6-v2` → top-5.
+5. The single best profile chunk is force-injected so candidate context always reaches the LLM.
 
-### Augmenting `/chat`
+### Augmenting the chat / interview prompts
 
-When `retrieve_sources` returns sources, they're injected as a user-role content block into the Gemini conversation **before** the model call. The model is instructed (system-style) to ground its answer in those items.
+The retrieved chunks are prefixed to the user prompt as a labelled `[Profile · ...]` / `[general · ...]` block before being sent to `mistralai/Mistral-7B-Instruct-v0.3` via the same browser HF client.
 
 ---
 
@@ -387,13 +392,22 @@ Props: `{ title, score?, factors, basis, confidence }`.
 ### `backend/.env`
 
 ```env
-GEMINI_API_KEY=...        # required for /chat, /summarize-cv, interview routes
-HF_TOKEN=...              # optional; without it RAG falls back to keyword search
+# All AI inference now runs from the browser. No backend secret is required
+# for AI calls. The file may be empty in development.
+FRONTEND_URL=http://localhost:5173    # optional, used by CORS allowlist
 ```
 
-### `frontend/.env` (Firebase web config)
+### `frontend/.env`
 
-Variables follow the Vite `VITE_` prefix convention. See `frontend/src/firebase.js` for the exact names consumed.
+Variables follow the Vite `VITE_` prefix convention.
+
+```env
+VITE_API_URL=http://localhost:8000    # FastAPI base for the static-data routes
+VITE_HF_API_TOKEN=hf_...              # Hugging Face Inference token (Read role)
+# Plus the standard VITE_FIREBASE_* keys consumed by frontend/src/firebase.js
+```
+
+> The HF token is **bundled into the client**. Use a Read-only token scoped to inference only.
 
 ---
 

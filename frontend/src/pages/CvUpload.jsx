@@ -6,6 +6,7 @@ import { doc, setDoc, getDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../firebase";
 import toast from "react-hot-toast";
 import API_URL from "../config";
+import { structureCv, suggestHotSkills } from "../services/interviewAI";
 
 export default function CvUpload() {
   const { currentUser } = useAuth();
@@ -37,53 +38,10 @@ export default function CvUpload() {
   const getHotSkillsSuggestion = async (cvAnalysis) => {
     try {
       setLoadingSuggestion(true);
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        console.warn("Gemini API key not configured");
-        return;
-      }
-
-      const prompt = `Based on this CV analysis, suggest exactly 2 hot/trending skills that would make this person MORE marketable but are currently MISSING from their profile. 
-
-Current Skills: ${cvAnalysis.keySkills?.join(", ") || "None"}
-Tools & Tech: ${cvAnalysis.toolsTechnologies?.join(", ") || "None"}
-Roles: ${cvAnalysis.rolesAndDomains?.join(", ") || "None"}
-
-Respond in EXACTLY 2 lines. Each line should have one skill with a brief reason.
-Format: "Skill Name - Why it's important for their profile"
-Keep it SHORT and concise.`;
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt,
-                  },
-                ],
-              },
-            ],
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const suggestion = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (suggestion) {
-          setSkillsSuggestion(suggestion);
-        }
-      }
+      const suggestion = await suggestHotSkills(cvAnalysis);
+      if (suggestion) setSkillsSuggestion(suggestion);
     } catch (err) {
-      console.error("Error getting Gemini suggestion:", err);
+      console.error("Error getting hot-skill suggestion:", err);
     } finally {
       setLoadingSuggestion(false);
     }
@@ -117,11 +75,24 @@ Keep it SHORT and concise.`;
       }
 
       const data = await res.json();
-      setCvData(data.data);
+      // Backend now returns keyword-extracted skills only (no LLM).
+      // Augment with HF-powered structuring for higher recall.
+      let merged = data.data || { keySkills: [], toolsTechnologies: [], rolesAndDomains: [] };
+      try {
+        const llmStructured = await structureCv(data.raw_text);
+        merged = {
+          keySkills: Array.from(new Set([...(merged.keySkills || []), ...llmStructured.keySkills])),
+          toolsTechnologies: Array.from(new Set([...(merged.toolsTechnologies || []), ...llmStructured.toolsTechnologies])),
+          rolesAndDomains: Array.from(new Set([...(merged.rolesAndDomains || []), ...llmStructured.rolesAndDomains])),
+        };
+      } catch (llmErr) {
+        console.warn('HF CV structuring failed, using keyword extraction only:', llmErr?.message || llmErr);
+      }
+      setCvData(merged);
       setRawText(data.raw_text);
-      
-      // Get Gemini suggestion for hot skills
-      await getHotSkillsSuggestion(data.data);
+
+      // Get HF suggestion for hot skills
+      await getHotSkillsSuggestion(merged);
     } catch (err) {
       console.error("Error:", err);
       setError(err.message || "Failed to process CV. Please try again.");

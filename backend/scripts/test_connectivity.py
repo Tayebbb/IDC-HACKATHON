@@ -43,7 +43,6 @@ def main() -> int:
     _load_env()
 
     hf_token = (os.getenv("HF_TOKEN") or "").strip()
-    gemini_key = (os.getenv("GEMINI_API_KEY") or "").strip()
 
     checks: list[bool] = []
     checks.append(
@@ -53,26 +52,12 @@ def main() -> int:
             {"Authorization": f"Bearer {hf_token}"} if hf_token else {},
         )
     )
-    checks.append(
-        _check_head(
-            "Gemini API",
-            "https://generativelanguage.googleapis.com",
-        )
-    )
 
     if hf_token:
-        print("PASS HF_TOKEN: set")
+        print("PASS HF_TOKEN: set (server-side, optional; frontend uses VITE_HF_API_TOKEN)")
         checks.append(True)
     else:
-        print("FAIL HF_TOKEN: missing")
-        checks.append(False)
-
-    if gemini_key:
-        print("PASS GEMINI_API_KEY: set")
-        checks.append(True)
-    else:
-        print("FAIL GEMINI_API_KEY: missing")
-        checks.append(False)
+        print("INFO HF_TOKEN: missing (only required if backend ever needs HF; frontend handles AI now)")
 
     return 0 if all(checks) else 1
 
