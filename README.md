@@ -187,17 +187,17 @@ The **only** component that may render explanations is `ReasoningCard`. If `fact
 
 ## 6. Feature map (1–9)
 
-| #   | Name                           | Frontend home                                                   | Backend route                              |
-| --- | ------------------------------ | --------------------------------------------------------------- | ------------------------------------------ |
-| 1   | ReasoningCard                  | `components/ReasoningCard.jsx`                                  | —                                          |
-| 2   | Career DNA radar               | `IntelligenceSection.jsx` → mounted in `Dashboard.jsx`          | `POST /career-dna`                         |
-| 3   | Readiness Score                | `IntelligenceSection.jsx`                                       | `POST /readiness-score`                    |
-| 4   | Skill-gap + Job-match wrappers | `SkillGapCard.jsx`, `JobCard.jsx`, `Jobs.jsx`                   | `POST /explain-match`                      |
-| 5   | Career chat (HF + browser RAG) | `Chatassistance.jsx` → `services/interviewAI.careerChat`        | none (browser calls HF directly)           |
-| 6   | Mock Interview (HF + RAG)      | `MockInterview.jsx` + `FaceExpressionOverlay.jsx`               | none (browser calls HF directly)           |
-| 7   | What-If Career Simulator       | `WhatIfSimulator.jsx` mounted in `CareerRoadmap.jsx`            | none (pure client)                         |
-| 8   | Mindsparks Badge + Certificate | `MindsparksCredential.jsx` mounted in `IntelligenceSection.jsx` | none (jsPDF client)                        |
-| 9   | Knowledge Graph                | `pages/KnowledgeGraph.jsx` (`@xyflow/react`)                    | none (uses existing data)                  |
+| #   | Name                           | Frontend home                                                   | Backend route                                          |
+| --- | ------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------ |
+| 1   | ReasoningCard                  | `components/ReasoningCard.jsx`                                  | —                                                      |
+| 2   | Career DNA radar               | `IntelligenceSection.jsx` → mounted in `Dashboard.jsx`          | `POST /career-dna`                                     |
+| 3   | Readiness Score                | `IntelligenceSection.jsx`                                       | `POST /readiness-score`                                |
+| 4   | Skill-gap + Job-match wrappers | `SkillGapCard.jsx`, `JobCard.jsx`, `Jobs.jsx`                   | `POST /explain-match`                                  |
+| 5   | Career chat                    | `Chatassistance.jsx`                                            | `POST /chat` (hybrid BM25 + dense RAG)                 |
+| 6   | Mock Interview                 | `MockInterview.jsx` + `FaceExpressionOverlay.jsx`               | `POST /interview/question`, `POST /interview/evaluate` |
+| 7   | What-If Career Simulator       | `WhatIfSimulator.jsx` mounted in `CareerRoadmap.jsx`            | none (pure client)                                     |
+| 8   | Mindsparks Badge + Certificate | `MindsparksCredential.jsx` mounted in `IntelligenceSection.jsx` | none (jsPDF client)                                    |
+| 9   | Knowledge Graph                | `pages/KnowledgeGraph.jsx` (`@xyflow/react`)                    | none (uses existing data)                              |
 
 ---
 
@@ -205,28 +205,34 @@ The **only** component that may render explanations is `ReasoningCard`. If `fact
 
 Base URL in dev: `http://127.0.0.1:8000`. OpenAPI at `/docs` and `/redoc`.
 
-The backend no longer performs any AI inference — all LLM / embedding / vision
-calls happen in the browser against the Hugging Face Inference API. The
-remaining backend routes serve static data and a PDF text extractor.
+All LLM / RAG calls run server-side via `_hf_chat` (HF Llama-3.1-8B-Instruct
+router) and `_rag_context` (BM25 + dense hybrid retrieval over
+`backend/data/seed_corpus.json`). The only HF call still made directly from
+the browser is the face-expression model in `FaceExpressionOverlay.jsx`.
 
-| Method | Path                  | Purpose                                                                 |
-| ------ | --------------------- | ----------------------------------------------------------------------- |
-| `GET`  | `/`                   | Health check returning `{ "message": "CareerPath RAG Chatbot API is running" }` |
-| `GET`  | `/health/dependencies`| Static data readiness check (seed_corpus presence)                       |
-| `POST` | `/summarize-cv`       | Multipart PDF upload → raw text + keyword-extracted CV JSON (no LLM)     |
-| `POST` | `/career-dna`         | Score the user across 5 DNA categories (envelope)                        |
-| `POST` | `/readiness-score`    | Composite readiness score (envelope)                                     |
-| `POST` | `/explain-match`      | Per-job match breakdown (envelope)                                       |
-| `GET`  | `/career-advice`      | Search the static career-advice JSON                                     |
-| `POST` | `/career-advice`      | Same as GET, body form (legacy)                                          |
-| `GET`  | `/skill-roadmap`      | Search the static roadmaps JSON                                          |
-| `POST` | `/skill-roadmap`      | Same as GET, body form (legacy)                                          |
+| Method | Path                   | Purpose                                                                            |
+| ------ | ---------------------- | ---------------------------------------------------------------------------------- |
+| `GET`  | `/`                    | Health check returning `{ "message": "CareerPath RAG Chatbot API is running" }`    |
+| `GET`  | `/health/dependencies` | Static data readiness check (seed_corpus, embeddings, HF token, Chroma)            |
+| `POST` | `/chat`                | Hybrid-RAG career chat (BM25 + dense; builds reply from retrieved sources)         |
+| `POST` | `/roadmap`             | LLM-generated personalized career roadmap (markdown)                               |
+| `POST` | `/interview/question`  | LLM-generated interview question (role / difficulty / previousQuestions / profile) |
+| `POST` | `/interview/evaluate`  | LLM evaluation of an answer → `{ score 1-10, feedback, strengths, improvements }`  |
+| `POST` | `/summarize-cv`        | Multipart PDF → keyword + LLM-merged skills + hot-skill suggestion                 |
+| `POST` | `/career-dna`          | Score the user across 5 DNA categories (envelope)                                  |
+| `POST` | `/readiness-score`     | Composite readiness score (envelope)                                               |
+| `POST` | `/explain-match`       | Per-job match breakdown (envelope)                                                 |
+| `GET`  | `/career-advice`       | Search the static career-advice JSON                                               |
+| `POST` | `/career-advice`       | Same as GET, body form                                                             |
+| `GET`  | `/skill-roadmap`       | Search the static roadmaps JSON                                                    |
+| `POST` | `/skill-roadmap`       | Same as GET, body form                                                             |
 
-### Routes removed in the June 2026 overhaul
+### Migration log (June 2026)
 
-- `POST /chat` — chat replies now come from `frontend/src/services/interviewAI.careerChat` (HF Mistral + in-browser RAG).
-- `POST /generate-interview-question` and `POST /evaluate-interview-answer` — replaced by browser-side calls in `MockInterview.jsx`.
-- `POST /analyze-expression` — webcam frames now POST directly to `trpakov/vit-face-expression` on HF from `FaceExpressionOverlay.jsx`.
+- All LLM inference moved **back to the backend** in `POST /chat`, `POST /roadmap`, `POST /interview/question`, `POST /interview/evaluate`, and the enriched `POST /summarize-cv`.
+- Legacy heuristic routes `POST /generate-interview-question` and `POST /evaluate-interview-answer` were deleted.
+- Deleted frontend services: `services/ragPipeline.js`, `services/corpusLoader.js`, `services/interviewAI.js`.
+- Only `services/hfClient.js` remains, used solely by `FaceExpressionOverlay.jsx` for the in-browser face-expression model.
 
 ### New explainability routes
 
@@ -291,21 +297,20 @@ Same readiness formula, computed client-side. Each toggled skill adds **+8** to 
 
 ### Embeddings
 
-- Model: `sentence-transformers/all-MiniLM-L6-v2` via the Hugging Face Inference API, called **directly from the browser** (`frontend/src/services/ragPipeline.js`).
-- Backend embedding generation is no longer used.
-- Cosine similarity is implemented in pure JS in the frontend RAG service.
+- Model: `sentence-transformers/all-mpnet-base-v2` (local via `sentence_transformers`) with HF Inference API as fallback when `HF_TOKEN` is set.
+- Pure-Python cosine similarity, embeddings cached per item at startup in `_ITEM_EMBED_CACHE`.
 
-### Retrieval order (in `frontend/src/services/ragPipeline.js`)
+### Retrieval order (in `backend/main.py`)
 
-1. **dense**   — HF embedding of query → in-memory cosine vs indexed chunks (top-20).
-2. **sparse**  — inline BM25 (k1=1.5, b=0.75) over the same chunks (top-20).
-3. **fuse**    — Reciprocal Rank Fusion (k=60) of dense + sparse → top-20.
-4. **rerank**  — HF cross-encoder `ms-marco-MiniLM-L-6-v2` → top-5.
-5. The single best profile chunk is force-injected so candidate context always reaches the LLM.
+1. **filter** — `_filter_corpus` narrows by `preferredTrack` + `experienceLevel`.
+2. **BM25** — `_bm25_score` (k1=1.5, b=0.75) over the filtered corpus.
+3. **dense** — cosine vs `_ITEM_EMBED_CACHE`.
+4. **fuse** — `_hybrid_retrieve` linearly combines normalized BM25 + dense (alpha=0.5) → top-k.
+5. **layout**— `_build_context_window` reorders top chunks (rank1, rank3.., rank2) to mitigate lost-in-the-middle.
 
 ### Augmenting the chat / interview prompts
 
-The retrieved chunks are prefixed to the user prompt as a labelled `[Profile · ...]` / `[general · ...]` block before being sent to `mistralai/Mistral-7B-Instruct-v0.3` via the same browser HF client.
+The retrieved context block is prefixed to the user prompt and sent to `meta-llama/Llama-3.1-8B-Instruct` via the HF chat-completions router (`_hf_chat` in `backend/main.py`).
 
 ---
 
@@ -402,12 +407,11 @@ FRONTEND_URL=http://localhost:5173    # optional, used by CORS allowlist
 Variables follow the Vite `VITE_` prefix convention.
 
 ```env
-VITE_API_URL=http://localhost:8000    # FastAPI base for the static-data routes
-VITE_HF_API_TOKEN=hf_...              # Hugging Face Inference token (Read role)
+VITE_API_URL=http://localhost:8000    # FastAPI base for ALL AI + data routes
 # Plus the standard VITE_FIREBASE_* keys consumed by frontend/src/firebase.js
 ```
 
-> The HF token is **bundled into the client**. Use a Read-only token scoped to inference only.
+> Do **not** add `VITE_HF_API_TOKEN` here. The HF token now lives only in `backend/.env` as `HF_TOKEN`.
 
 ---
 

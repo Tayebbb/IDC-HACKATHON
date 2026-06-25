@@ -45,12 +45,7 @@ import { db } from '../firebase';
 import ReasoningCard from '../components/ReasoningCard';
 import { buildEnvelope } from '../utils/explainability';
 import FaceExpressionOverlay, { getExpressionCoaching } from '../components/FaceExpressionOverlay';
-import { indexProfile } from '../services/ragPipeline';
-import { loadCorpus } from '../services/corpusLoader';
-import {
-  generateInterviewQuestion,
-  evaluateInterviewAnswer,
-} from '../services/interviewAI';
+import API_URL from '../config';
 
 // ── CHANGE 3: Voice coaching pure function ──────────────────────────────────
 function getVoiceCoaching(wpm, fillerCount, pauseSeconds) {
@@ -239,6 +234,7 @@ const MockInterview = () => {
   const [sessionScore, setSessionScore] = useState(0);
   const [sessionAnswers, setSessionAnswers] = useState([]); // Store Q&A pairs
   const [sessionFeedbacks, setSessionFeedbacks] = useState([]); // Store all feedbacks
+  const [interviewProfile, setInterviewProfile] = useState(null); // candidate profile snapshot for backend RAG
 
   // Feature 6 — Voice Interview Coach state
   // FALLBACK TEST (verified at implementation time):
@@ -331,16 +327,28 @@ const MockInterview = () => {
     }
   }, [currentUser]);
 
-  // Generate interview question via Hugging Face (browser direct, RAG-augmented)
+  // Generate interview question via backend (server-side RAG + HF Llama)
   const generateQuestion = useCallback(async () => {
     setLoading(true);
     try {
-      const question = await generateInterviewQuestion({
-        role: selectedRole,
-        difficulty,
-        questionNumber: questionNumber + 1,
-        previousQuestions: sessionQuestions,
+      const apiUrl = API_URL.replace(/\/+$/, '');
+      const res = await fetch(`${apiUrl}/interview/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: selectedRole,
+          difficulty,
+          questionNumber: questionNumber + 1,
+          previousQuestions: sessionQuestions,
+          profile: interviewProfile || {},
+        }),
       });
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(detail || `Question request failed (${res.status})`);
+      }
+      const data = await res.json();
+      const question = data.question;
       if (!question) throw new Error('Empty question returned from model');
       setCurrentQuestion(question);
       setSessionQuestions(prev => [...prev, question]);
@@ -351,9 +359,9 @@ const MockInterview = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedRole, difficulty, questionNumber, sessionQuestions]);
+  }, [selectedRole, difficulty, questionNumber, sessionQuestions, interviewProfile]);
 
-  // Evaluate answer via Hugging Face (browser direct, RAG-augmented)
+  // Evaluate answer via backend (server-side RAG + HF Llama)
   const evaluateAnswer = useCallback(async () => {
     if (!userAnswer.trim()) {
       toast.error('Please provide an answer');
@@ -362,12 +370,23 @@ const MockInterview = () => {
 
     setLoading(true);
     try {
-      const data = await evaluateInterviewAnswer({
-        question: currentQuestion,
-        answer: userAnswer,
-        role: selectedRole,
-        difficulty,
+      const apiUrl = API_URL.replace(/\/+$/, '');
+      const res = await fetch(`${apiUrl}/interview/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: currentQuestion,
+          answer: userAnswer,
+          role: selectedRole,
+          difficulty,
+          profile: interviewProfile || {},
+        }),
       });
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(detail || `Evaluate request failed (${res.status})`);
+      }
+      const data = await res.json();
       setFeedback(data);
 
       // Feature 6 — build a client-side interview_metric envelope from
@@ -413,10 +432,10 @@ const MockInterview = () => {
     } finally {
       setLoading(false);
     }
-  }, [userAnswer, currentQuestion, selectedRole, difficulty]);
+  }, [userAnswer, currentQuestion, selectedRole, difficulty, interviewProfile]);
 
-  // Start interview — load the user's profile + general corpus into the
-  // in-browser RAG store, then generate the first question.
+  // Start interview — snapshot the user's profile so subsequent
+  // question/evaluate calls can ground server-side RAG, then generate Q1.
   const startInterview = useCallback(async () => {
     if (!selectedRole) {
       toast.error('Please select a job role');
@@ -437,16 +456,14 @@ const MockInterview = () => {
     setInterviewEnded(false);
     liveEmotionsRef.current = null;
 
-    // Fire-and-forget corpus load (cached after first run).
-    loadCorpus().catch(() => { /* non-blocking */ });
-
-    // Index user profile so retrieve() can ground answers in it.
+    // Fetch the candidate profile from Firestore and snapshot it so the
+    // backend can use it for RAG retrieval on every /interview/* call.
     if (currentUser?.uid) {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        if (snap.exists()) await indexProfile(snap.data());
+        if (snap.exists()) setInterviewProfile(snap.data());
       } catch (err) {
-        console.warn('Profile indexing failed:', err?.message || err);
+        console.warn('Profile fetch failed:', err?.message || err);
       }
     }
 

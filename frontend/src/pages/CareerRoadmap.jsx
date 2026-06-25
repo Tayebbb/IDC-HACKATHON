@@ -6,9 +6,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { Sparkles, Target, Zap, CheckCircle, ArrowRight, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 import WhatIfSimulator from '../components/WhatIfSimulator';
-import { generateCareerRoadmap } from '../services/interviewAI';
-import { loadCorpus } from '../services/corpusLoader';
-import { indexProfile } from '../services/ragPipeline';
+import API_URL from '../config';
 
 export default function CareerRoadmap() {
   const { currentUser } = useAuth();
@@ -112,12 +110,18 @@ export default function CareerRoadmap() {
     setError(null);
 
     try {
-      // Warm corpus + profile in the in-browser RAG store so the
-      // roadmap can ground itself in real candidate data.
-      loadCorpus().catch(() => { /* non-blocking */ });
-      try { await indexProfile(userData); } catch { /* non-fatal */ }
-
-      const roadmapContent = await generateCareerRoadmap({ goalJob, profile: userData });
+      const apiUrl = API_URL.replace(/\/+$/, '');
+      const res = await fetch(`${apiUrl}/roadmap`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goalJob, profile: userData }),
+      });
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(detail || `Roadmap request failed (${res.status})`);
+      }
+      const data = await res.json();
+      const roadmapContent = data.content || '';
       if (!roadmapContent) throw new Error('No roadmap generated');
 
       setRoadmap({

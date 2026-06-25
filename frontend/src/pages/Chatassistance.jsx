@@ -8,8 +8,6 @@ import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import ReasoningCard from "../components/ReasoningCard";
 import API_URL from "../config";
-import { loadCorpus } from "../services/corpusLoader";
-import { indexProfile } from "../services/ragPipeline";
 
 const GREETING = "Hi! I'm your CareerPath assistant. Ask me anything about jobs, skills, interviews, or career growth.";
 
@@ -36,21 +34,6 @@ export default function Chatassistance() {
   useEffect(() => {
     if (currentUser) {
       loadChatHistory();
-    }
-  }, [currentUser]);
-
-  // Warm the in-browser RAG cache (corpus + profile) once per session so
-  // the first chat reply doesn't pay for embedding hundreds of chunks
-  // on the user's first keystroke. Subsequent sends reuse the cache.
-  useEffect(() => {
-    loadCorpus().catch(() => { /* non-blocking */ });
-    if (currentUser?.uid) {
-      (async () => {
-        try {
-          const snap = await getDoc(doc(db, 'users', currentUser.uid));
-          if (snap.exists()) await indexProfile(snap.data());
-        } catch { /* non-fatal */ }
-      })();
     }
   }, [currentUser]);
 
@@ -195,9 +178,6 @@ export default function Chatassistance() {
         role: m.role,
         content: m.content,
       }));
-
-      // Corpus + profile are already warmed on mount; indexProfile() is a
-      // no-op when the profile hash hasn't changed, so no per-send cost.
 
       if (abortRef.current) abortRef.current.abort();
       controller = new AbortController();

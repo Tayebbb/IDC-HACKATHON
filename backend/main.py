@@ -86,9 +86,9 @@ def _summarize_cv_no_llm(full_text: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Interview question generation + answer evaluation: DELETED.
-# The Mock Interview component now calls Hugging Face Mistral directly from
-# the browser via frontend/src/services/interviewAI.js.
+# Interview question generation + answer evaluation moved to:
+#   POST /interview/question  and  POST /interview/evaluate
+# (HF Llama-3.1-8B-Instruct via _hf_chat, server-side RAG via _rag_context).
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -219,11 +219,10 @@ def _score_career_dna(user_skills: List[str]) -> Tuple[Dict[str, int], List[Dict
 # ---------------------------------------------------------------------------
 # Static data caches (career_advice + skill_roadmaps)
 # ---------------------------------------------------------------------------
-# All RAG / embedding / HF-inference / chat-generation logic is now in the
-# browser bundle (frontend/src/services/ragPipeline.js + hfClient.js).
-# The backend keeps only the static JSON caches consumed by the data routes
-# /career-advice and /skill-roadmap, plus the seed_corpus path used by the
-# /health/dependencies endpoint.
+# RAG / embedding / chat-generation runs server-side again (see _hf_chat,
+# _rag_context, /chat, /roadmap, /interview/*). The static JSON caches below
+# back the data routes /career-advice and /skill-roadmap, plus the
+# seed_corpus path used by /health/dependencies.
 # ---------------------------------------------------------------------------
 _DATA_DIR = Path(__file__).resolve().parent / "data"
 _CORPUS_PATH = _DATA_DIR / "seed_corpus.json"
@@ -342,11 +341,34 @@ async def summarize_cv(file: UploadFile = File(...)):
         if not full_text.strip():
             raise HTTPException(status_code=400, detail="No text found in PDF.")
         
-        # Extract CV data using pure keyword matching (no LLM)
+        # Step 1: regex/keyword extraction (always runs, never fails)
         parsed_data = _summarize_cv_no_llm(full_text)
+
+        # Step 2: best-effort LLM structuring server-side (additive). Falls
+        # back silently to keyword-only output if HF_TOKEN is missing or HF
+        # request fails — the frontend never sees a partial failure here.
+        try:
+            llm_struct = await _llm_structure_cv(full_text)
+            for key in ('keySkills', 'toolsTechnologies', 'rolesAndDomains'):
+                merged = list(dict.fromkeys(
+                    [s for s in parsed_data.get(key, []) if s]
+                    + [s for s in llm_struct.get(key, []) if s]
+                ))
+                parsed_data[key] = merged
+        except Exception as merge_err:
+            print(f'[summarize-cv] LLM merge skipped: {merge_err}')
+
+        # Step 3: best-effort hot-skill suggestion (also server-side).
+        try:
+            hot_skills_suggestion = await _llm_hot_skills(parsed_data)
+        except Exception as hs_err:
+            print(f'[summarize-cv] hot-skills skipped: {hs_err}')
+            hot_skills_suggestion = ''
+
         return {
             "data": parsed_data,
-            "raw_text": full_text
+            "raw_text": full_text,
+            "hotSkillsSuggestion": hot_skills_suggestion,
         }
     
     except HTTPException:
@@ -356,9 +378,8 @@ async def summarize_cv(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=error_message)
 
 # ---------------------------------------------------------------------------
-# /generate-interview-question + /evaluate-interview-answer — DELETED.
-# The Mock Interview component now calls Hugging Face Mistral directly
-# via frontend/src/services/interviewAI.js.
+# Interview routes live further down: POST /interview/question and
+# POST /interview/evaluate (HF Llama via _hf_chat, server-side RAG).
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -676,143 +697,11 @@ async def skill_roadmap_post(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Missing Backend Routes (Phase 2)
+# Legacy /generate-interview-question and /evaluate-interview-answer routes
+# (keyword-based heuristic stubs) were removed during the RAG → backend
+# migration. The replacements are LLM-backed: see /interview/question and
+# /interview/evaluate further down in this file.
 # ---------------------------------------------------------------------------
-
-INTERVIEW_QUESTIONS = {
-    "beginner": [
-        {"question": "What is the difference between let, const, and var in JavaScript?", "difficulty": "beginner"},
-        {"question": "Explain what a REST API is and how it works.", "difficulty": "beginner"},
-        {"question": "What is version control and why do developers use Git?", "difficulty": "beginner"},
-        {"question": "What is the CSS box model?", "difficulty": "beginner"},
-        {"question": "What is the difference between SQL and NoSQL databases?", "difficulty": "beginner"},
-        {"question": "What does HTML stand for and what is its purpose?", "difficulty": "beginner"},
-        {"question": "What is a function in programming and why is it useful?", "difficulty": "beginner"},
-        {"question": "What is the difference between frontend and backend development?", "difficulty": "beginner"},
-    ],
-    "intermediate": [
-        {"question": "Explain closures in JavaScript with an example.", "difficulty": "intermediate"},
-        {"question": "What is the difference between authentication and authorization?", "difficulty": "intermediate"},
-        {"question": "How does React's virtual DOM improve performance?", "difficulty": "intermediate"},
-        {"question": "Explain database indexing and when you would use it.", "difficulty": "intermediate"},
-        {"question": "What is Docker and what problem does it solve?", "difficulty": "intermediate"},
-        {"question": "What is the difference between synchronous and asynchronous code?", "difficulty": "intermediate"},
-        {"question": "Explain the MVC architecture pattern.", "difficulty": "intermediate"},
-        {"question": "What are HTTP status codes and give examples of 200 400 and 500.", "difficulty": "intermediate"},
-        {"question": "What is a foreign key in a relational database?", "difficulty": "intermediate"},
-        {"question": "How does JWT authentication work?", "difficulty": "intermediate"},
-    ],
-    "advanced": [
-        {"question": "How would you design a URL shortening service at scale?", "difficulty": "advanced"},
-        {"question": "Explain the CAP theorem and its implications for distributed systems.", "difficulty": "advanced"},
-        {"question": "How do you optimize a React application that has performance bottlenecks?", "difficulty": "advanced"},
-        {"question": "What are the tradeoffs between microservices and monolithic architecture?", "difficulty": "advanced"},
-        {"question": "How would you implement a rate limiter for an API?", "difficulty": "advanced"},
-        {"question": "Explain eventual consistency in distributed databases.", "difficulty": "advanced"},
-        {"question": "How does Kubernetes handle service discovery and load balancing?", "difficulty": "advanced"},
-        {"question": "What is a RAG pipeline and how does it reduce LLM hallucination?", "difficulty": "advanced"},
-    ]
-}
-
-class InterviewQuestionRequest(BaseModel):
-    difficulty: str = "intermediate"
-    track: str = ""
-
-@app.post("/generate-interview-question")
-async def generate_interview_question(request: InterviewQuestionRequest):
-    difficulty = request.difficulty.lower()
-    if difficulty not in INTERVIEW_QUESTIONS:
-        difficulty = "intermediate"
-    question_obj = random.choice(INTERVIEW_QUESTIONS[difficulty])
-    return {
-        "question": question_obj["question"],
-        "difficulty": question_obj["difficulty"]
-    }
-
-class InterviewEvaluationRequest(BaseModel):
-    question: str
-    answer: str
-    difficulty: str = "intermediate"
-
-@app.post("/evaluate-interview-answer")
-async def evaluate_interview_answer(request: InterviewEvaluationRequest):
-    question = request.question
-    answer = request.answer
-    word_count = len(answer.split())
-
-    # Length scoring (40%)
-    if word_count < 20:
-        length_score = 30
-        length_fb = "Answer is too short. Aim for at least 50 words with a clear explanation."
-    elif word_count < 50:
-        length_score = 65
-        length_fb = "Decent length. Elaborate more — add an example or explain your reasoning."
-    elif word_count <= 200:
-        length_score = 100
-        length_fb = "Good length. Clear and concise."
-    else:
-        length_score = 85
-        length_fb = "Slightly long. Focus on the most important points."
-
-    # Keyword relevance scoring (40%)
-    q_words = set(question.lower().replace('?','').split())
-    a_words = set(answer.lower().split())
-    overlap = len(q_words & a_words)
-    keyword_score = min(100, overlap * 12)
-
-    # Structure scoring (20%) — checks for examples and structure
-    has_example = any(w in answer.lower() for w in [
-        "example", "for instance", "such as", "like", "for example",
-        "in my experience", "i used", "we built", "i worked"
-    ])
-    has_structure = any(w in answer.lower() for w in [
-        "first", "second", "finally", "additionally", "however",
-        "because", "therefore", "this means", "as a result"
-    ])
-    structure_score = 100 if (has_example and has_structure) else \
-                      80 if (has_example or has_structure) else 50
-
-    # Final weighted score
-    final_score = round(
-        (length_score * 0.40) +
-        (keyword_score * 0.40) +
-        (structure_score * 0.20)
-    )
-    final_score = max(0, min(100, final_score))
-
-    # Build strengths and improvements
-    strengths = []
-    improvements = []
-
-    if word_count >= 50:
-        strengths.append("Well-developed answer with sufficient detail")
-    else:
-        improvements.append("Provide a more detailed answer — aim for 50+ words")
-
-    if has_example:
-        strengths.append("Good use of a concrete example")
-    else:
-        improvements.append("Add a specific example to strengthen your answer")
-
-    if has_structure:
-        strengths.append("Clear logical structure in your response")
-    else:
-        improvements.append("Use structured language: 'First... Then... Finally...'")
-
-    if overlap >= 3:
-        strengths.append("Directly addressed the question asked")
-    else:
-        improvements.append("Make sure to directly answer what was asked")
-
-    if not strengths:
-        strengths.append("You attempted the question — keep practicing")
-
-    return {
-        "score": final_score,
-        "feedback": length_fb,
-        "strengths": strengths,
-        "improvements": improvements
-    }
 
 # ── RAG GLOBALS ──────────────────────────────────────────────
 import math
@@ -1708,6 +1597,403 @@ async def chat(req: Dict[str, Any]):
     except Exception as e:
         print(f'Error in chat endpoint: {e}')
         raise HTTPException(status_code=500, detail=f'Chat error: {e}')
+
+
+# ===========================================================================
+# RAG → BACKEND MIGRATION (server-side HF LLM endpoints)
+# ---------------------------------------------------------------------------
+# These routes replace the browser-direct HF calls that previously lived in
+# frontend/src/services/{ragPipeline,interviewAI,corpusLoader}.js.
+# The frontend now POSTs structured payloads and the backend handles HF
+# retrieval + generation. Token lives ONLY in backend/.env as HF_TOKEN.
+# ===========================================================================
+import asyncio as _asyncio
+
+_HF_CHAT_URL = 'https://router.huggingface.co/v1/chat/completions'
+_HF_CHAT_MODEL = 'meta-llama/Llama-3.1-8B-Instruct'
+_HF_CHAT_TIMEOUT = 30
+_HF_CHAT_MAX_RETRIES = 3
+
+_LLM_SYSTEM_PROMPT = (
+    'You are CareerPath Assistant — a concise, supportive expert in careers, '
+    'technical interviews, and skill development for students and fresh '
+    'graduates. Always ground your answers in the candidate context when '
+    'provided.'
+)
+
+
+def _hf_chat_sync(
+    user_content: str,
+    max_tokens: int = 512,
+    temperature: float = 0.7,
+) -> str:
+    """Blocking POST to HF chat-completions router. Returns assistant text.
+
+    Raises RuntimeError on token-missing or all-retries-exhausted.
+    """
+    if not _HF_TOKEN:
+        raise RuntimeError('HF_TOKEN is not set on the backend.')
+
+    import urllib.request
+    import urllib.error
+    import time
+
+    body = _json.dumps({
+        'model': _HF_CHAT_MODEL,
+        'messages': [
+            {'role': 'system', 'content': _LLM_SYSTEM_PROMPT},
+            {'role': 'user', 'content': user_content},
+        ],
+        'max_tokens': max_tokens,
+        'temperature': temperature,
+        'stream': False,
+    }).encode('utf-8')
+
+    headers = {
+        'Authorization': f'Bearer {_HF_TOKEN}',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Wait-For-Model': 'true',
+    }
+
+    last_err = None
+    for attempt in range(_HF_CHAT_MAX_RETRIES):
+        try:
+            req = urllib.request.Request(_HF_CHAT_URL, data=body, headers=headers)
+            with urllib.request.urlopen(req, timeout=_HF_CHAT_TIMEOUT) as r:
+                payload = _json.loads(r.read())
+            try:
+                return (payload['choices'][0]['message']['content'] or '').strip()
+            except (KeyError, IndexError, TypeError):
+                raise RuntimeError(f'Unexpected HF chat payload: {payload}')
+        except urllib.error.HTTPError as e:  # type: ignore[attr-defined]
+            last_err = e
+            if e.code in (429, 503):
+                time.sleep(min(5 * (2 ** attempt), 20))
+                continue
+            try:
+                detail = e.read().decode('utf-8', errors='ignore')[:300]
+            except Exception:
+                detail = ''
+            raise RuntimeError(f'HF chat HTTP {e.code}: {detail}')
+        except Exception as e:
+            last_err = e
+            time.sleep(1.0 * (2 ** attempt))
+    raise RuntimeError(f'HF chat exhausted retries: {last_err}')
+
+
+async def _hf_chat(
+    user_content: str,
+    max_tokens: int = 512,
+    temperature: float = 0.7,
+) -> str:
+    """Async wrapper — runs blocking HF call in a worker thread."""
+    return await _asyncio.to_thread(
+        _hf_chat_sync, user_content, max_tokens, temperature
+    )
+
+
+def _profile_summary(profile: 'Dict[str, Any] | None') -> str:
+    """Compact one-liner describing the candidate; safe on missing fields."""
+    if not isinstance(profile, dict):
+        return ''
+    skills = profile.get('skills') or []
+    if isinstance(skills, list):
+        skills_s = ', '.join(str(s) for s in skills if s)[:300]
+    else:
+        skills_s = str(skills)[:300]
+    tools = profile.get('toolsTechnologies') or []
+    if isinstance(tools, list):
+        tools_s = ', '.join(str(t) for t in tools if t)[:300]
+    else:
+        tools_s = str(tools)[:300]
+    parts = []
+    if skills_s:
+        parts.append(f'Skills: {skills_s}')
+    if tools_s:
+        parts.append(f'Tools: {tools_s}')
+    level = profile.get('experienceLevel') or profile.get('level')
+    if level:
+        parts.append(f'Experience level: {level}')
+    track = profile.get('preferredTrack') or profile.get('track')
+    if track:
+        parts.append(f'Preferred track: {track}')
+    return ' \u00b7 '.join(parts)
+
+
+async def _rag_context(
+    query: str,
+    profile: 'Dict[str, Any] | None' = None,
+    top_k: int = 4,
+) -> str:
+    """Server-side RAG: filter corpus by profile, hybrid-retrieve, format."""
+    if not _HYBRID_READY or not _HYBRID_CORPUS:
+        return ''
+    preferred_track = None
+    experience_level = None
+    if isinstance(profile, dict):
+        preferred_track = profile.get('preferredTrack') or profile.get('track')
+        experience_level = (
+            profile.get('experienceLevel') or profile.get('level')
+        )
+    filtered = _filter_corpus(
+        _HYBRID_CORPUS,
+        preferred_track=preferred_track,
+        experience_level=experience_level,
+    )
+    try:
+        top = await _hybrid_retrieve(query, filtered, top_k=top_k, alpha=0.5)
+    except Exception as e:
+        print(f'[rag_context] retrieve failed: {e}')
+        return ''
+    return _build_context_window(top)
+
+
+def _strip_code_fences(text: str) -> str:
+    return (
+        re.sub(r'```(?:json)?', '', text or '', flags=re.IGNORECASE)
+        .replace('```', '')
+        .strip()
+    )
+
+
+def _safe_json_parse(text: str):
+    """Extract the first JSON object or array from a model response."""
+    if not text:
+        return None
+    cleaned = _strip_code_fences(text)
+    starts = [(cleaned.find('{'), cleaned.rfind('}'))]
+    starts.append((cleaned.find('['), cleaned.rfind(']')))
+    for start, end in starts:
+        if start != -1 and end != -1 and end > start:
+            try:
+                return _json.loads(cleaned[start:end + 1])
+            except Exception:
+                continue
+    try:
+        return _json.loads(cleaned)
+    except Exception:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# POST /roadmap — replaces frontend generateCareerRoadmap()
+# ---------------------------------------------------------------------------
+@app.options('/roadmap')
+async def options_roadmap():
+    return {'message': 'OK'}
+
+
+@app.post('/roadmap')
+async def roadmap(req: Dict[str, Any]):
+    goal_job = (req.get('goalJob') or '').strip()
+    if not goal_job:
+        raise HTTPException(status_code=400, detail='goalJob is required')
+    profile = req.get('profile') or {}
+    level = (
+        profile.get('experienceLevel') or profile.get('level') or 'beginner'
+    )
+    skills_list = profile.get('skills') if isinstance(profile, dict) else None
+    if isinstance(skills_list, list) and skills_list:
+        skills_s = ', '.join(str(s) for s in skills_list if s)
+    else:
+        skills_s = 'none listed'
+
+    context = await _rag_context(
+        f'{goal_job} skills roadmap for {level} candidate', profile, top_k=5,
+    )
+
+    user_prompt = (
+        (f'{context}\n\n---\n\n' if context else '')
+        + 'Produce a structured roadmap in clean markdown.\n\n'
+        + f'Candidate profile:\n- Experience level: {level}\n'
+        + f'- Current skills: {skills_s}\n- Goal role: {goal_job}\n\n'
+        + 'Sections (use ## headers):\n'
+        + '1. Current Assessment\n2. Skills Gap (4-6 bullets)\n'
+        + '3. Step-by-Step Path (5-7 numbered steps)\n4. Timeline (per step)\n'
+        + '5. Recommended Resources\n6. Quick Wins (2-3 bullets)'
+    )
+
+    try:
+        content = await _hf_chat(user_prompt, max_tokens=900, temperature=0.65)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f'Roadmap generation failed: {e}')
+
+    return {'content': content}
+
+
+# ---------------------------------------------------------------------------
+# POST /interview/question — replaces frontend generateInterviewQuestion()
+# ---------------------------------------------------------------------------
+@app.options('/interview/question')
+async def options_interview_question():
+    return {'message': 'OK'}
+
+
+@app.post('/interview/question')
+async def interview_question(req: Dict[str, Any]):
+    role = (req.get('role') or '').strip()
+    difficulty = (req.get('difficulty') or 'intermediate').strip()
+    if not role:
+        raise HTTPException(status_code=400, detail='role is required')
+
+    try:
+        question_number = int(req.get('questionNumber') or 1)
+    except (TypeError, ValueError):
+        question_number = 1
+    question_number = max(1, min(question_number, 50))
+
+    previous = req.get('previousQuestions') or []
+    if not isinstance(previous, list):
+        previous = []
+    previous = [str(p)[:300] for p in previous if p][-10:]
+    previous_block = (
+        '\nAvoid repeating any of these previously-asked questions:\n- '
+        + '\n- '.join(previous)
+        if previous else ''
+    )
+
+    profile = req.get('profile') or {}
+    profile_line = _profile_summary(profile)
+    context = await _rag_context(
+        f'{difficulty} {role} interview question', profile, top_k=4,
+    )
+
+    user_prompt = (
+        (f'{context}\n\n---\n\n' if context else '')
+        + (f'Candidate context: {profile_line}\n\n' if profile_line else '')
+        + f'Generate exactly ONE {difficulty}-level interview question '
+        + f'(number {question_number}) for a {role} candidate.\n'
+        + 'Personalize the question to the candidate background when possible.'
+        + previous_block + '\n\n'
+        + 'Respond with the question text ONLY — no preamble, no numbering, '
+        + 'no markdown.'
+    )
+
+    try:
+        raw = await _hf_chat(user_prompt, max_tokens=256, temperature=0.8)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f'Question generation failed: {e}')
+
+    cleaned = re.sub(r'^(question[:\s\-]*|q[\s.:\-]*)', '', raw, flags=re.IGNORECASE)
+    cleaned = re.sub(r'^[\-\*\d\.\)\s]+', '', cleaned)
+    cleaned = cleaned.strip().strip('"').strip("'")
+    return {'question': cleaned}
+
+
+# ---------------------------------------------------------------------------
+# POST /interview/evaluate — replaces frontend evaluateInterviewAnswer()
+# ---------------------------------------------------------------------------
+@app.options('/interview/evaluate')
+async def options_interview_evaluate():
+    return {'message': 'OK'}
+
+
+@app.post('/interview/evaluate')
+async def interview_evaluate(req: Dict[str, Any]):
+    question = (req.get('question') or '').strip()
+    answer = (req.get('answer') or '').strip()
+    if not question or not answer:
+        raise HTTPException(status_code=400, detail='question and answer are required')
+
+    # Hard caps so we never ship a megaprompt to HF
+    question = question[:2000]
+    answer = answer[:4000]
+
+    role = (req.get('role') or '').strip()
+    difficulty = (req.get('difficulty') or 'intermediate').strip()
+    profile = req.get('profile') or {}
+    context = await _rag_context(f'{question}\n\n{answer}', profile, top_k=4)
+
+    user_prompt = (
+        (f'{context}\n\n---\n\n' if context else '')
+        + 'Evaluate the following interview answer on a 1-10 scale '
+        + '(clarity, relevance, technical depth).\n'
+        + (f'Role: {role} ({difficulty})\n' if role else f'Difficulty: {difficulty}\n')
+        + f'Question: {question}\n'
+        + f'Candidate answer: """{answer}"""\n\n'
+        + 'Return ONLY valid minified JSON in this exact schema, nothing else:\n'
+        + '{"score": <number 1-10>, "feedback": "<2-3 sentences>", '
+        + '"strengths": ["...","..."], "improvements": ["...","..."]}'
+    )
+
+    try:
+        raw = await _hf_chat(user_prompt, max_tokens=400, temperature=0.3)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f'Answer evaluation failed: {e}')
+
+    parsed = _safe_json_parse(raw)
+    if isinstance(parsed, dict) and isinstance(parsed.get('score'), (int, float)):
+        try:
+            score = int(round(float(parsed.get('score') or 0)))
+        except (TypeError, ValueError):
+            score = 5
+        score = max(1, min(10, score))
+        raw_strengths = parsed.get('strengths')
+        raw_improvements = parsed.get('improvements')
+        strengths = raw_strengths if isinstance(raw_strengths, list) else []
+        improvements = raw_improvements if isinstance(raw_improvements, list) else []
+        return {
+            'score': score,
+            'feedback': str(parsed.get('feedback') or '')[:1000],
+            'strengths': [str(s)[:200] for s in strengths][:5],
+            'improvements': [str(s)[:200] for s in improvements][:5],
+        }
+
+    # Model failed to return parseable JSON — degrade gracefully.
+    return {
+        'score': 5,
+        'feedback': (raw or '')[:400] or 'Unable to parse model response.',
+        'strengths': [],
+        'improvements': ['Provide more specific examples in your answer.'],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Helpers reused by the extended /summarize-cv route
+# ---------------------------------------------------------------------------
+async def _llm_structure_cv(raw_text: str) -> Dict[str, List[str]]:
+    trimmed = (raw_text or '')[:6000]
+    prompt = (
+        'Extract structured information from this CV. Return ONLY '
+        'minified JSON:\n'
+        '{"keySkills":["..."],"toolsTechnologies":["..."],'
+        '"rolesAndDomains":["..."]}\n\nCV TEXT:\n"""' + trimmed + '"""'
+    )
+    try:
+        raw = await _hf_chat(prompt, max_tokens=400, temperature=0.2)
+    except Exception as e:
+        print(f'[cv-structure] HF chat failed: {e}')
+        return {'keySkills': [], 'toolsTechnologies': [], 'rolesAndDomains': []}
+    parsed = _safe_json_parse(raw)
+    if not isinstance(parsed, dict):
+        return {'keySkills': [], 'toolsTechnologies': [], 'rolesAndDomains': []}
+    def _coerce(key: str) -> List[str]:
+        val = parsed.get(key)
+        return [str(x)[:80] for x in val if x] if isinstance(val, list) else []
+    return {
+        'keySkills': _coerce('keySkills'),
+        'toolsTechnologies': _coerce('toolsTechnologies'),
+        'rolesAndDomains': _coerce('rolesAndDomains'),
+    }
+
+
+async def _llm_hot_skills(cv_analysis: Dict[str, List[str]]) -> str:
+    key_skills = ', '.join(cv_analysis.get('keySkills') or []) or 'None'
+    tools = ', '.join(cv_analysis.get('toolsTechnologies') or []) or 'None'
+    roles = ', '.join(cv_analysis.get('rolesAndDomains') or []) or 'None'
+    prompt = (
+        'Based on this CV summary, name exactly 2 hot/trending skills the '
+        'candidate is missing.\n'
+        f'Current Skills: {key_skills}\nTools: {tools}\nRoles: {roles}\n\n'
+        'Respond in exactly 2 lines, each formatted: '
+        '"Skill Name - one-sentence reason".'
+    )
+    try:
+        return await _hf_chat(prompt, max_tokens=180, temperature=0.6)
+    except Exception as e:
+        print(f'[hot-skills] HF chat failed: {e}')
+        return ''
 
 
 @app.on_event("startup")

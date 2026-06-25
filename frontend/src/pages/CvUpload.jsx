@@ -6,7 +6,6 @@ import { doc, setDoc, getDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../firebase";
 import toast from "react-hot-toast";
 import API_URL from "../config";
-import { structureCv, suggestHotSkills } from "../services/interviewAI";
 
 export default function CvUpload() {
   const { currentUser } = useAuth();
@@ -18,7 +17,6 @@ export default function CvUpload() {
   const [showRawText, setShowRawText] = useState(false);
   const [saving, setSaving] = useState(false);
   const [skillsSuggestion, setSkillsSuggestion] = useState(null);
-  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -32,18 +30,6 @@ export default function CvUpload() {
         setCvData(null);
         setRawText("");
       }
-    }
-  };
-
-  const getHotSkillsSuggestion = async (cvAnalysis) => {
-    try {
-      setLoadingSuggestion(true);
-      const suggestion = await suggestHotSkills(cvAnalysis);
-      if (suggestion) setSkillsSuggestion(suggestion);
-    } catch (err) {
-      console.error("Error getting hot-skill suggestion:", err);
-    } finally {
-      setLoadingSuggestion(false);
     }
   };
 
@@ -75,24 +61,14 @@ export default function CvUpload() {
       }
 
       const data = await res.json();
-      // Backend now returns keyword-extracted skills only (no LLM).
-      // Augment with HF-powered structuring for higher recall.
-      let merged = data.data || { keySkills: [], toolsTechnologies: [], rolesAndDomains: [] };
-      try {
-        const llmStructured = await structureCv(data.raw_text);
-        merged = {
-          keySkills: Array.from(new Set([...(merged.keySkills || []), ...llmStructured.keySkills])),
-          toolsTechnologies: Array.from(new Set([...(merged.toolsTechnologies || []), ...llmStructured.toolsTechnologies])),
-          rolesAndDomains: Array.from(new Set([...(merged.rolesAndDomains || []), ...llmStructured.rolesAndDomains])),
-        };
-      } catch (llmErr) {
-        console.warn('HF CV structuring failed, using keyword extraction only:', llmErr?.message || llmErr);
-      }
+      // Backend now does keyword + LLM merge + hot-skill suggestion in one
+      // call. The response shape is:
+      //   { data: {keySkills, toolsTechnologies, rolesAndDomains},
+      //     raw_text, hotSkillsSuggestion }
+      const merged = data.data || { keySkills: [], toolsTechnologies: [], rolesAndDomains: [] };
       setCvData(merged);
-      setRawText(data.raw_text);
-
-      // Get HF suggestion for hot skills
-      await getHotSkillsSuggestion(merged);
+      setRawText(data.raw_text || "");
+      if (data.hotSkillsSuggestion) setSkillsSuggestion(data.hotSkillsSuggestion);
     } catch (err) {
       console.error("Error:", err);
       setError(err.message || "Failed to process CV. Please try again.");
@@ -369,25 +345,6 @@ export default function CvUpload() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            )}
-
-            {loadingSuggestion && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                style={{
-                  margin: "0 2rem",
-                  padding: "1rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.75rem",
-                  color: "#A855F7",
-                }}
-              >
-                <Loader size={18} style={{ animation: "spin 1s linear infinite" }} />
-                <span>Getting hot skills suggestions...</span>
               </motion.div>
             )}
 
