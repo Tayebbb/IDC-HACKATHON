@@ -18,13 +18,14 @@ load_dotenv()
 app = FastAPI()
 
 # Configure CORS middleware FIRST (before routes)
+# allow_origins=["*"] is safe here because allow_credentials=False (no cookies
+# cross-origin; the only auth header we send is the HF token, which lives
+# entirely server-side). This is what lets the deployed frontend (Vercel,
+# Netlify, etc.) reach the deployed backend without per-domain whitelisting.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -1875,9 +1876,15 @@ async def interview_question(req: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f'Question generation failed: {e}')
 
-    cleaned = re.sub(r'^(question[:\s\-]*|q[\s.:\-]*)', '', raw, flags=re.IGNORECASE)
-    cleaned = re.sub(r'^[\-\*\d\.\)\s]+', '', cleaned)
+    # Conservative cleanup: only strip 'Question:'/'Q:' style prefixes when
+    # followed by an actual separator, and only strip leading bullets/numbers,
+    # never a leading letter of the real question.
+    cleaned = re.sub(r'^(question|q)\s*[:.\-]\s*', '', raw, flags=re.IGNORECASE)
+    cleaned = re.sub(r'^\s*\d+\s*[\.\)]\s*', '', cleaned)
+    cleaned = re.sub(r'^\s*[\-\*\u2022\u00b7]+\s*', '', cleaned)
     cleaned = cleaned.strip().strip('"').strip("'")
+    if not cleaned:
+        cleaned = raw.strip()  # never return empty string
     return {'question': cleaned}
 
 
