@@ -1436,11 +1436,12 @@ const MockInterview = () => {
                 active={interviewStarted}
               />
 
-              {/* Coaching tips below the camera */}
-              {expressionCoaching.length > 0 ? (
+              {/* End-of-session coaching summary — only renders after End Interview.
+                  Live per-frame tips already render inside FaceExpressionOverlay above. */}
+              {expressionCoaching.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-[10px] text-white/40 uppercase tracking-widest">
-                    Coaching Tips
+                    Session Coaching
                   </p>
                   {expressionCoaching.map((item, i) => (
                     <div
@@ -1451,12 +1452,6 @@ const MockInterview = () => {
                       <p className="text-xs text-white/80 leading-relaxed">{item.tip}</p>
                     </div>
                   ))}
-                </div>
-              ) : (
-                <div className="rounded-xl bg-[#0D1117] border border-white/[0.06] p-4 text-center">
-                  <p className="text-xs text-white/40 leading-relaxed">
-                    Tips will appear here based on your live expression. Stay relaxed — natural confidence reads well on camera.
-                  </p>
                 </div>
               )}
 
