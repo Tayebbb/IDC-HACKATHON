@@ -65,18 +65,16 @@ IDC HACKATHON/
 │   ├── requirements.txt
 │   ├── vercel.json                    # serverless deploy config (optional)
 │   ├── scripts/
-│   │   └── build_embeddings.py        # offline RAG embedding builder
+│   │   ├── build_chunks.py            # offline RAG chunk builder
+│   │   ├── build_embeddings.py        # offline RAG embedding builder
+│   │   ├── smoke_new_endpoints.py     # functional smoke test against a running server
+│   │   └── test_connectivity.py       # HF/Chroma connectivity probe
 │   ├── data/
 │   │   ├── seed_corpus.json           # 32 jobs + 25 courses (Feature 5)
 │   │   └── corpus_embeddings.json     # generated; optional
-│   ├── .env                           # (empty in dev; FRONTEND_URL optional)
+│   ├── .env                           # HF_TOKEN + FRONTEND_URL (gitignored)
 │   ├── .env.example
 │   └── .venv/                         # local Python venv
-├── Code Front/                        # raw logo source files for branding
-│   ├── AUST IDC - White.png
-│   ├── AUST IDC - Black.png
-│   ├── Code front.png
-│   └── Mindsparks 26 Logo.png
 └── README.md                          # this file
 ```
 

@@ -11,10 +11,12 @@ services:
       USE_LOCAL_EMBEDDINGS: "true"
       CHROMA_HOST: "chroma"
       CHROMA_PORT: "8000"
+      # HF_TOKEN is required for /chat RAG, /roadmap, /interview/*, and the
+      # LLM-augmented /summarize-cv. Set it in a .env file next to this
+      # compose file (docker-compose reads it automatically).
+      HF_TOKEN: ${HF_TOKEN:-}
     depends_on:
       - chroma
-    # Backend no longer performs any AI inference — frontend calls Hugging
-    # Face directly. No env vars required for AI routes.
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/"]
@@ -30,7 +32,7 @@ services:
         # Frontend is built statically; this URL is baked into the bundle.
         # Point it at the backend service name when both run in this stack,
         # or override to a public URL for production builds.
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:7860}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
     image: careerpath-frontend:latest
     container_name: careerpath-frontend
     # Host port 18080 -> container nginx :80. Avoid 5173/8080 clashes.
