@@ -2136,9 +2136,39 @@ async def interview_evaluate(req: Dict[str, Any]):
     role = (req.get('role') or '').strip()
     difficulty = (req.get('difficulty') or 'intermediate').strip()
     profile = req.get('profile') or {}
+
+    # Optional multimodal signals from FaceExpressionOverlay. All four are
+    # optional — when absent the route behaves exactly as before.
+    emotion_summary  = req.get('emotionSummary')  or req.get('emotion_summary')
+    presence_score   = req.get('presenceScore')   or req.get('presence_score')
+    dominant_emotion = req.get('dominantEmotion') or req.get('dominant_emotion')
+    negative_pct_raw = req.get('negativePct')     or req.get('negative_pct')
+    try:
+        negative_pct = float(negative_pct_raw) if negative_pct_raw is not None else None
+    except (TypeError, ValueError):
+        negative_pct = None
+    has_emotion = bool(emotion_summary) and presence_score is not None
+
+    emotion_context = ''
+    if has_emotion:
+        neg = negative_pct or 0
+        if neg >= 40:
+            interpretation = 'High stress detected during delivery'
+        elif neg >= 20:
+            interpretation = 'Moderate nervousness'
+        else:
+            interpretation = 'Composed and confident delivery'
+        emotion_context = (
+            '\nCANDIDATE EXPRESSION ANALYSIS:\n'
+            f'- Presence Score: {presence_score}/100\n'
+            f"- Dominant Expression: {dominant_emotion or 'neutral'}\n"
+            f'- Stress/Negative Expression Rate: {neg}%\n'
+            f'- Interpretation: {interpretation}\n'
+        )
+
     context = await _rag_context(f'{question}\n\n{answer}', profile, top_k=4)
 
-    user_prompt = (
+    base_prompt = (
         (f'{context}\n\n---\n\n' if context else '')
         + 'Evaluate the following interview answer on a 1-10 scale '
         + '(clarity, relevance, technical depth).\n'
@@ -2149,6 +2179,17 @@ async def interview_evaluate(req: Dict[str, Any]):
         + '{"score": <number 1-10>, "feedback": "<2-3 sentences>", '
         + '"strengths": ["...","..."], "improvements": ["...","..."]}'
     )
+
+    multimodal_directive = (
+        '\nBased on both the answer content AND the expression analysis '
+        'above, the feedback field MUST address: (1) content quality of '
+        'the answer; (2) whether the delivery confidence matched the '
+        'content quality, and specific advice to improve composure. '
+        'Keep feedback concise and actionable (3-4 sentences max).\n'
+        if has_emotion else ''
+    )
+
+    user_prompt = base_prompt + emotion_context + multimodal_directive
 
     try:
         raw = await _hf_chat(user_prompt, max_tokens=400, temperature=0.3)
@@ -2166,20 +2207,35 @@ async def interview_evaluate(req: Dict[str, Any]):
         raw_improvements = parsed.get('improvements')
         strengths = raw_strengths if isinstance(raw_strengths, list) else []
         improvements = raw_improvements if isinstance(raw_improvements, list) else []
-        return {
+        out: Dict[str, Any] = {
             'score': score,
             'feedback': str(parsed.get('feedback') or '')[:1000],
             'strengths': [str(s)[:200] for s in strengths][:5],
             'improvements': [str(s)[:200] for s in improvements][:5],
         }
+        if has_emotion:
+            out['expression_feedback'] = (
+                'Your answer was strong but stress showed in your '
+                'expression \u2014 practice this topic until your face '
+                'matches your knowledge.'
+                if (negative_pct or 0) >= 30 else None
+            )
+        return out
 
     # Model failed to return parseable JSON — degrade gracefully.
-    return {
+    out = {
         'score': 5,
         'feedback': (raw or '')[:400] or 'Unable to parse model response.',
         'strengths': [],
         'improvements': ['Provide more specific examples in your answer.'],
     }
+    if has_emotion:
+        out['expression_feedback'] = (
+            'Your answer was strong but stress showed in your expression '
+            '\u2014 practice this topic until your face matches your knowledge.'
+            if (negative_pct or 0) >= 30 else None
+        )
+    return out
 
 
 @app.post("/evaluate-interview-answer")
@@ -2246,46 +2302,81 @@ _HF_FACE_URL = f'https://router.huggingface.co/hf-inference/models/{_HF_FACE_MOD
 
 
 def _hf_face_classify_sync(image_bytes: bytes) -> List[Dict[str, Any]]:
-    """Blocking POST of a JPEG to the HF image-classification endpoint."""
-    if not _HF_TOKEN:
-        raise RuntimeError('HF_TOKEN is not set on the backend.')
+    """Blocking POST of a JPEG to the HF image-classification endpoint.
 
-    import urllib.request
-    import urllib.error
-    import time
+    Returns a list of {"label": <lowercase>, "score": <float>} dicts sorted
+    by score descending. Returns [] on ANY failure (missing token, network
+    error, unexpected payload, exhausted retries) so the /face-expression
+    route can always degrade to HTTP 200 instead of surfacing a 502.
+    """
+    try:
+        if not _HF_TOKEN:
+            print('[FACE] HF classify failed: HF_TOKEN is not set on the backend.')
+            return []
 
-    headers = {
-        'Authorization': f'Bearer {_HF_TOKEN}',
-        'Content-Type': 'image/jpeg',
-        'Accept': 'application/json',
-        'X-Wait-For-Model': 'true',
-    }
+        import urllib.request
+        import urllib.error
+        import time
 
-    last_err = None
-    for attempt in range(_HF_CHAT_MAX_RETRIES):
-        try:
-            req = urllib.request.Request(_HF_FACE_URL, data=image_bytes, headers=headers)
-            with urllib.request.urlopen(req, timeout=_HF_CHAT_TIMEOUT) as r:
-                payload = _json.loads(r.read())
-            if isinstance(payload, list) and payload and isinstance(payload[0], list):
-                payload = payload[0]
-            if not isinstance(payload, list):
-                raise RuntimeError(f'Unexpected HF face payload: {payload}')
-            return payload
-        except urllib.error.HTTPError as e:  # type: ignore[attr-defined]
-            last_err = e
-            if e.code in (429, 503):
-                time.sleep(min(5 * (2 ** attempt), 20))
+        headers = {
+            'Authorization': f'Bearer {_HF_TOKEN}',
+            'Content-Type': 'image/jpeg',
+            'Accept': 'application/json',
+            'X-Wait-For-Model': 'true',
+        }
+
+        raw = None
+        last_err = None
+        for attempt in range(_HF_CHAT_MAX_RETRIES):
+            try:
+                req = urllib.request.Request(_HF_FACE_URL, data=image_bytes, headers=headers)
+                with urllib.request.urlopen(req, timeout=_HF_CHAT_TIMEOUT) as r:
+                    payload = _json.loads(r.read())
+                if isinstance(payload, list) and payload and isinstance(payload[0], list):
+                    payload = payload[0]
+                if not isinstance(payload, list):
+                    last_err = RuntimeError(f'Unexpected HF face payload: {payload}')
+                    break
+                raw = payload
+                break
+            except urllib.error.HTTPError as e:  # type: ignore[attr-defined]
+                last_err = e
+                if e.code in (429, 503):
+                    time.sleep(min(5 * (2 ** attempt), 20))
+                    continue
+                try:
+                    detail = e.read().decode('utf-8', errors='ignore')[:300]
+                except Exception:
+                    detail = ''
+                last_err = RuntimeError(f'HF face HTTP {e.code}: {detail}')
+                break
+            except Exception as e:
+                last_err = e
+                time.sleep(1.0 * (2 ** attempt))
+
+        if raw is None:
+            print(f'[FACE] HF classify failed: {last_err}')
+            return []
+
+        # Normalise: lowercase labels (HF returns "Happy"/"Sad"/..., frontend
+        # expects "happy"/"sad"/...) and sort by score descending.
+        normalised: List[Dict[str, Any]] = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            label = item.get('label')
+            score = item.get('score')
+            if label is None or score is None:
                 continue
             try:
-                detail = e.read().decode('utf-8', errors='ignore')[:300]
-            except Exception:
-                detail = ''
-            raise RuntimeError(f'HF face HTTP {e.code}: {detail}')
-        except Exception as e:
-            last_err = e
-            time.sleep(1.0 * (2 ** attempt))
-    raise RuntimeError(f'HF face exhausted retries: {last_err}')
+                normalised.append({'label': str(label).lower(), 'score': float(score)})
+            except (TypeError, ValueError):
+                continue
+        normalised.sort(key=lambda x: x['score'], reverse=True)
+        return normalised
+    except Exception as e:
+        print(f'[FACE] HF classify failed: {e}')
+        return []
 
 
 @app.options('/face-expression')
@@ -2295,7 +2386,14 @@ async def options_face_expression():
 
 @app.post('/face-expression')
 async def face_expression(file: UploadFile = File(...)):
-    """Forward a webcam JPEG frame to the HF expression classifier."""
+    """Forward a webcam JPEG frame to the HF expression classifier.
+
+    Always returns HTTP 200 with a graceful-degradation envelope:
+      { labels, top_label, top_score, retrieval_path, success }
+    The route never surfaces an HF 502 to the frontend; failure paths
+    return success=False and an empty labels list so the live coaching
+    layer can keep sampling.
+    """
     MAX_BYTES = 2 * 1024 * 1024  # 2 MB hard cap per frame
     if not file.content_type or not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail='Please upload an image.')
@@ -2310,8 +2408,22 @@ async def face_expression(file: UploadFile = File(...)):
     try:
         labels = await _asyncio.to_thread(_hf_face_classify_sync, image_bytes)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f'Face classify failed: {e}')
-    return {'labels': labels}
+        # Belt-and-suspenders: _hf_face_classify_sync already swallows its
+        # own errors and returns []. This guards against an unexpected
+        # raise from the to_thread wrapper itself.
+        print(f'[FACE] Route error: {e}')
+        labels = []
+
+    if not isinstance(labels, list):
+        labels = []
+
+    return {
+        'labels': labels,
+        'top_label': labels[0]['label'] if labels else None,
+        'top_score': labels[0]['score'] if labels else None,
+        'retrieval_path': 'hf' if labels else 'error',
+        'success': bool(labels),
+    }
 
 
 @app.post("/analyze-expression")
