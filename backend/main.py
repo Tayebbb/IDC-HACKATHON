@@ -20,7 +20,10 @@ app = FastAPI()
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
-    history: list[dict] = Field(default_factory=list, max_length=50)
+    # No hard cap on history length — old Firestore conversations can be very
+    # long; we clip to the most recent 50 turns inside the /chat handler
+    # instead of rejecting the request with 422.
+    history: list[dict] = Field(default_factory=list)
     preferred_track: str | None = Field(None, max_length=64)
     experience_level: str | None = Field(None, max_length=32)
     preferredTrack: str | None = Field(None, max_length=64)
@@ -1625,7 +1628,9 @@ async def chat(body: ChatRequest):
     """Hybrid RAG career assistant."""
     try:
         user_message = (body.message or '').strip()
-        history = body.history
+        # Clip absurdly long client-side histories defensively (Firestore can
+        # accumulate 100+ turns across sessions).
+        history = (body.history or [])[-50:]
         if not user_message:
             raise HTTPException(status_code=400, detail='message field is required')
 

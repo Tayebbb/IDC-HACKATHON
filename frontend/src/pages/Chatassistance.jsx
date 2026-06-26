@@ -173,11 +173,15 @@ export default function Chatassistance() {
     let controller = null;
 
     try {
-      // Build history (excluding the current user message)
-      const history = messages.map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Build history (excluding the current user message).
+      // Cap to the last 40 turns so we never exceed the backend's 50-item
+      // ChatRequest.history limit (Firestore can accumulate hundreds).
+      const history = messages
+        .map(m => ({
+          role: m.role,
+          content: m.content,
+        }))
+        .slice(-40);
 
       if (abortRef.current) abortRef.current.abort();
       controller = new AbortController();
