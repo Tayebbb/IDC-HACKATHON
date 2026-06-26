@@ -37,6 +37,18 @@ const SAMPLE_INTERVAL_MS = 3000;
 const TIP_FADE_AFTER_MS = 4000;
 const NEGATIVE_EMOTIONS = new Set(['angry', 'disgust', 'fear', 'sad']);
 
+// Smoothing window: 5 frames × 3 s = 15 s of context per decision.
+// Below this many frames we keep showing "warming up" instead of guessing.
+const SMOOTH_WINDOW = 5;
+const SMOOTH_MIN_FRAMES = 2;
+// Minimum top-1 score (across 7 labels) required to trust a frame.
+// HF ViT outputs sum to 1 across 7 labels; a top score under 0.35 means
+// the model is essentially undecided (face partly out of view / motion blur).
+const MIN_FRAME_CONFIDENCE = 0.35;
+// Allow the same tip to re-emit after this many ms so good behaviour is
+// reinforced over a long interview instead of fired exactly once.
+const TIP_REEMIT_MS = 20_000;
+
 function isInsecureContext() {
   if (typeof window === 'undefined') return false;
   const { protocol, hostname } = window.location;
@@ -71,22 +83,80 @@ function _pickRealtimeTip(expressions) {
   if (!expressions || Object.keys(expressions).length === 0) {
     return { tip: 'Move closer to the camera — face not detected', type: 'warning', icon: 'Eye' };
   }
-  if ((expressions.neutral || 0) > 0.85) {
-    return { tip: 'Great composure — you look calm and professional', type: 'positive', icon: 'CheckCircle2' };
+
+  // Normalised totals so the priority chain reasons over RELATIVE weights,
+  // not raw thresholds. With 7 labels, any single label > 0.50 is a strong
+  // signal; 0.30-0.50 is moderate; below that the model is undecided.
+  const happy     = expressions.happy     || 0;
+  const neutral   = expressions.neutral   || 0;
+  const sad       = expressions.sad       || 0;
+  const fearful   = expressions.fearful   || expressions.fear     || 0;
+  const angry     = expressions.angry     || 0;
+  const disgusted = expressions.disgusted || expressions.disgust  || 0;
+  const surprised = expressions.surprised || expressions.surprise || 0;
+  const negativeTotal = sad + fearful + angry + disgusted;
+
+  // Rank-1 emotion drives the tip. Ties broken in favour of positive labels.
+  const ranked = [
+    ['happy',     happy],
+    ['neutral',   neutral],
+    ['surprised', surprised],
+    ['sad',       sad],
+    ['fearful',   fearful],
+    ['angry',     angry],
+    ['disgusted', disgusted],
+  ].sort((a, b) => b[1] - a[1]);
+  const [topLabel, topScore] = ranked[0];
+
+  // Strong negative signal → always warn first.
+  if (negativeTotal >= 0.55) {
+    if (fearful >= 0.30 || surprised >= 0.45) {
+      return { tip: 'Take a breath — slow down and speak with intention', type: 'warning', icon: 'AlertCircle' };
+    }
+    if (angry >= 0.30 || disgusted >= 0.25) {
+      return { tip: 'Relax your jaw and brow — aim for an open, neutral face', type: 'warning', icon: 'AlertCircle' };
+    }
+    if (sad >= 0.30) {
+      return { tip: 'Lift your chin slightly and maintain an upright posture', type: 'warning', icon: 'AlertCircle' };
+    }
   }
-  if ((expressions.happy || 0) > 0.6) {
+
+  // Positive signals (checked BEFORE neutral so a smiling candidate isn't
+  // overridden by a marginally higher neutral score).
+  if (happy >= 0.50 || (happy >= 0.35 && happy >= neutral * 0.8)) {
     return { tip: 'Natural warmth showing — keep that confident energy', type: 'positive', icon: 'CheckCircle2' };
   }
-  if ((expressions.fearful || 0) > 0.35 || (expressions.surprised || 0) > 0.5) {
-    return { tip: 'Take a breath — slow down and speak with intention', type: 'warning', icon: 'AlertCircle' };
+  if (topLabel === 'neutral' && topScore >= 0.55 && negativeTotal < 0.25) {
+    return { tip: 'Great composure — you look calm and professional', type: 'positive', icon: 'CheckCircle2' };
   }
-  if ((expressions.disgusted || 0) > 0.3 || (expressions.angry || 0) > 0.3) {
-    return { tip: 'Relax your jaw and brow — aim for an open, neutral face', type: 'warning', icon: 'AlertCircle' };
+
+  // Mild surprise (often a thinking expression) — informational, not a warning.
+  if (surprised >= 0.30 && surprised > negativeTotal) {
+    return { tip: 'Engaged and thinking — take a brief pause before answering', type: 'info', icon: 'CheckCircle2' };
   }
-  if ((expressions.sad || 0) > 0.35) {
-    return { tip: 'Lift your chin slightly and maintain an upright posture', type: 'warning', icon: 'AlertCircle' };
+
+  // Mild negative tilt without crossing the strong-signal bar.
+  if (negativeTotal >= 0.30) {
+    return { tip: 'Soften your expression — relax the brow and breathe', type: 'warning', icon: 'AlertCircle' };
   }
+
   return { tip: 'Hold your position — looking good', type: 'positive', icon: 'CheckCircle2' };
+}
+
+// Smooth a rolling buffer of per-frame label→score maps into a single
+// averaged distribution. This is what we feed to _pickRealtimeTip so a
+// single noisy frame can never flip a tip on its own.
+function _averageDistribution(buffer) {
+  if (!buffer || buffer.length === 0) return {};
+  const sum = {};
+  for (const frame of buffer) {
+    for (const [k, v] of Object.entries(frame)) {
+      sum[k] = (sum[k] || 0) + v;
+    }
+  }
+  const avg = {};
+  for (const [k, v] of Object.entries(sum)) avg[k] = v / buffer.length;
+  return avg;
 }
 
 function _iconFor(name) {
@@ -110,33 +180,50 @@ function _colorClasses(type) {
 export function getExpressionCoaching(distribution) {
   if (!distribution || Object.keys(distribution).length === 0) return [];
 
-  const coaching = [];
-  const negativeTotal =
-    (distribution.sad || 0) + (distribution.fear || 0) +
-    (distribution.angry || 0) + (distribution.disgust || 0);
+  const happy   = distribution.happy   || 0;
+  const sad     = distribution.sad     || 0;
+  const fear    = distribution.fear    || 0;
+  const angry   = distribution.angry   || 0;
+  const disgust = distribution.disgust || 0;
+  const neutral = distribution.neutral || 0;
+  const negativeTotal = sad + fear + angry + disgust;
 
-  if (negativeTotal > 50) {
+  const coaching = [];
+
+  // === Strong negative pattern (highest priority) ==========================
+  if (negativeTotal >= 50) {
     coaching.push({ icon: '😟', priority: 'high',
-      tip: 'Relax your facial muscles — you appeared tense overall. Practise slow breathing before answering.' });
+      tip: 'You appeared tense for most of the interview. Practise slow breathing before answering and unclench your jaw between questions.' });
   }
-  if ((distribution.sad || 0) > 30) {
-    coaching.push({ icon: '💪', priority: 'high',
-      tip: 'Try to lift the corners of your mouth slightly — a neutral-to-positive expression reads more confident.' });
-  }
-  if ((distribution.fear || 0) > 25) {
+  if (fear >= 25) {
     coaching.push({ icon: '🧘', priority: 'high',
-      tip: 'You looked anxious. Slow your speech, look at the lens, and pause before answering.' });
+      tip: 'Anxiety read on camera. Slow your speech, look at the lens, and take a deliberate pause before each answer.' });
   }
-  if ((distribution.angry || 0) > 15) {
+  if (sad >= 25) {
+    coaching.push({ icon: '💪', priority: 'high',
+      tip: 'Your face read low-energy at times. Lift the corners of your mouth slightly — a neutral-to-positive expression projects confidence.' });
+  }
+  if (angry >= 15 || disgust >= 12) {
     coaching.push({ icon: '😌', priority: 'medium',
-      tip: 'Your expression read as intense at times. Soften your brow and keep an open face.' });
+      tip: 'Your expression read as intense or guarded. Soften the brow and keep an open, approachable face.' });
   }
-  if ((distribution.happy || 0) > 40) {
+
+  // === Positive patterns (only surfaced when negatives are under control) ==
+  if (happy >= 30 && negativeTotal < 40) {
     coaching.push({ icon: '✅', priority: 'good',
-      tip: 'Great positive energy — keep that going.' });
-  } else if ((distribution.happy || 0) < 10 && negativeTotal < 40) {
+      tip: 'Great positive energy — your warmth came through clearly. Keep that going.' });
+  } else if (neutral >= 60 && negativeTotal < 25 && happy < 30) {
+    coaching.push({ icon: '🧊', priority: 'medium',
+      tip: 'Very composed but quite flat. A small, genuine smile when greeting and closing each answer would lift engagement.' });
+  } else if (happy < 10 && negativeTotal < 30) {
     coaching.push({ icon: '😊', priority: 'medium',
-      tip: 'Try to show more enthusiasm — a small smile signals engagement.' });
+      tip: 'Try to show more enthusiasm — a small smile when delivering your answer signals genuine interest.' });
+  }
+
+  // === Final reassurance card if nothing else fired ========================
+  if (coaching.length === 0) {
+    coaching.push({ icon: '👍', priority: 'good',
+      tip: 'Balanced and professional on camera. No specific facial-expression concerns from this session.' });
   }
   return coaching;
 }
@@ -189,8 +276,10 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const streamRef        = useRef(null);
   const intervalRef      = useRef(null);
   const inFlightRef      = useRef(false);
-  const emotionLogRef    = useRef([]);
+  const emotionLogRef    = useRef([]);     // every accepted frame's full score map
+  const smoothBufferRef  = useRef([]);     // last SMOOTH_WINDOW frames for rolling avg
   const lastTipKeyRef    = useRef('');     // dedup onCoachingUpdate calls
+  const lastTipAtRef     = useRef(0);      // ms timestamp of last emitted tip
 
   const [tipQueue,      setTipQueue]      = useState([]); // [{ tip, type, icon, addedAt }]
   const [, _setTick]    = useState(0);                    // ticker for fade re-render
@@ -210,10 +299,16 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
 
   const _pushTip = useCallback((tipObj) => {
     const key = `${tipObj.type}::${tipObj.tip}`;
-    if (key === lastTipKeyRef.current) return; // dedup: same tip → no update
+    const now = Date.now();
+    // Same tip back-to-back? Suppress UNLESS more than TIP_REEMIT_MS has
+    // passed, in which case re-surface it so good behaviour is reinforced.
+    if (key === lastTipKeyRef.current && (now - lastTipAtRef.current) < TIP_REEMIT_MS) {
+      return;
+    }
     lastTipKeyRef.current = key;
+    lastTipAtRef.current  = now;
 
-    setTipQueue((prev) => [{ ...tipObj, addedAt: Date.now() }, ...prev].slice(0, 3));
+    setTipQueue((prev) => [{ ...tipObj, addedAt: now }, ...prev].slice(0, 3));
     if (typeof onCoachingUpdate === 'function') {
       onCoachingUpdate({ tip: tipObj.tip, type: tipObj.type, icon: tipObj.icon });
     }
@@ -270,19 +365,43 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       const list = Array.isArray(data?.labels) ? data.labels : [];
 
       if (Array.isArray(list) && list.length) {
-        // Log the dominant label for the cumulative summary (powers
-        // MockInterview.jsx's end-of-interview ReasoningCard).
-        emotionLogRef.current.push(list[0]);
         setHfError(null); // clear any stale error indicator
+
+        // Confidence gate: skip frames where the model is undecided. ViT's
+        // top-1 score on a clean, well-lit face is usually 0.6+; anything
+        // below MIN_FRAME_CONFIDENCE is almost certainly noise.
+        const topScore = Math.max(...list.map((x) => x?.score ?? 0));
+        if (topScore < MIN_FRAME_CONFIDENCE) {
+          // Don't push a tip, don't pollute the log — just keep sampling.
+          setFaceVisible(true);
+          _drawBoundingBox(overlayCanvasRef.current, videoRef.current);
+          return;
+        }
+
+        // Log the FULL score distribution for an accurate score-averaged
+        // end-of-interview summary (powers MockInterview.jsx's ReasoningCard).
+        const expressions = _normalizeScores(list);
+        emotionLogRef.current.push({ scores: expressions, dominant: list[0] });
+
+        // Maintain a rolling smoothing buffer so a single noisy frame can't
+        // flip the live tip.
+        smoothBufferRef.current.push(expressions);
+        if (smoothBufferRef.current.length > SMOOTH_WINDOW) {
+          smoothBufferRef.current.shift();
+        }
 
         // Draw bounding box (no text per redesign spec).
         setFaceVisible(true);
         _drawBoundingBox(overlayCanvasRef.current, videoRef.current);
 
-        // Map this frame to a single coaching tip (priority chain).
-        const expressions = _normalizeScores(list);
-        const tip = _pickRealtimeTip(expressions);
-        _pushTip(tip);
+        if (smoothBufferRef.current.length < SMOOTH_MIN_FRAMES) {
+          // Need at least 2 frames (~6 s) before we trust the average.
+          _pushTip({ tip: 'Reading your expression… hold steady', type: 'info', icon: 'Eye' });
+        } else {
+          const smoothed = _averageDistribution(smoothBufferRef.current);
+          const tip = _pickRealtimeTip(smoothed);
+          _pushTip(tip);
+        }
       } else {
         _pushTip({ tip: 'Move closer to the camera — face not detected',
                    type: 'warning', icon: 'Eye' });
@@ -304,8 +423,10 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const startCamera = useCallback(async () => {
     setCamError(null);
     emotionLogRef.current = [];
-    setTipQueue([]);
+    smoothBufferRef.current = [];
     lastTipKeyRef.current = '';
+    lastTipAtRef.current = 0;
+    setTipQueue([]);
     setFaceVisible(false);
 
     if (!navigator?.mediaDevices?.getUserMedia) {
@@ -363,21 +484,39 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
 
   function _computeSummary(log) {
     if (!log.length) return null;
-    const counts = {};
-    let negCount = 0;
-    for (const { label } of log) {
-      counts[label] = (counts[label] || 0) + 1;
-      if (NEGATIVE_EMOTIONS.has(label)) negCount++;
+
+    // Score-averaged distribution (each frame contributes its full label
+    // distribution, not just its argmax). Far more robust than counting
+    // dominant labels — single misclassifications no longer skew the result.
+    const sumScores = {};
+    for (const entry of log) {
+      const scores = entry.scores || {};
+      for (const [label, value] of Object.entries(scores)) {
+        // Skip the face-api aliases (fearful/surprised/disgusted) so the
+        // distribution sums to 1 and matches the HF label set.
+        if (label === 'fearful' || label === 'surprised' || label === 'disgusted') continue;
+        sumScores[label] = (sumScores[label] || 0) + value;
+      }
     }
-    const total    = log.length;
-    const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    const total = log.length;
     const distribution = {};
-    for (const [label, count] of Object.entries(counts))
-      distribution[label] = Math.round((count / total) * 100);
+    let dominant = '';
+    let dominantPct = 0;
+    for (const [label, sum] of Object.entries(sumScores)) {
+      const pct = Math.round((sum / total) * 100);
+      distribution[label] = pct;
+      if (pct > dominantPct) {
+        dominant = label;
+        dominantPct = pct;
+      }
+    }
+    const negativePct =
+      (distribution.sad || 0) + (distribution.fear || 0) +
+      (distribution.angry || 0) + (distribution.disgust || 0);
     return {
       dominant,
-      dominantPct: distribution[dominant],
-      negativePct: Math.round((negCount / total) * 100),
+      dominantPct,
+      negativePct,
       totalFrames: total,
       distribution,
     };
