@@ -2,12 +2,14 @@ import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { AIMark } from './branding';
+import { useAuth } from '../contexts/AuthContext';
 
 const FloatingAIButton = () => {
   const location = useLocation();
+  const { currentUser } = useAuth();
 
-  // Hide button on chatassistance page and admin routes
-  if (location.pathname === '/chatassistance' || location.pathname.startsWith('/admin')) {
+  // Hide button on chatassistance page and admin routes, and if not logged in
+  if (!currentUser || location.pathname === '/chatassistance' || location.pathname.startsWith('/admin')) {
     return null;
   }
 
