@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Bot, User, Trash2 } from "lucide-react";
+import { Send, Sparkles, User, Trash2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, serverTimestamp } from "firebase/firestore";
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import ReasoningCard from "../components/ReasoningCard";
+import { AIAvatar } from "../components/branding";
 import API_URL from "../config";
 
 const GREETING = "Hi! I'm your CareerPath assistant. Ask me anything about jobs, skills, interviews, or career growth.";
@@ -325,9 +326,7 @@ export default function Chatassistance() {
               }}
             >
               {msg.role === "model" && (
-                <div style={styles.avatar}>
-                  <Bot size={18} style={{ color: '#A855F7' }} />
-                </div>
+                <AIAvatar size={36} />
               )}
               <div
                 style={{
@@ -388,9 +387,7 @@ export default function Chatassistance() {
             animate={{ opacity: 1 }}
             style={{ ...styles.messageRow, justifyContent: "flex-start" }}
           >
-            <div style={styles.avatar}>
-              <Bot size={18} style={{ color: '#A855F7' }} />
-            </div>
+            <AIAvatar size={36} />
             <div style={{ ...styles.messageBubble, ...styles.modelBubble, ...styles.typingIndicator }}>
               <span style={{ ...styles.dot, animationDelay: '0s' }}></span>
               <span style={{ ...styles.dot, animationDelay: '0.2s' }}></span>

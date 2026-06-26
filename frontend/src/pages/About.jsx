@@ -5,6 +5,7 @@
 
 import { motion } from 'framer-motion';
 import { Target, Heart, Zap, Globe } from 'lucide-react';
+import { CompetitionCredits } from '../components/branding';
 
 const About = () => {
   const missions = [
@@ -112,6 +113,17 @@ const About = () => {
             ))}
           </div>
         </div>
+
+        {/* Competition credits — official Mindsparks / CodeFront / AUST IDC attribution */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mt-16"
+        >
+          <CompetitionCredits />
+        </motion.div>
       </div>
     </div>
   );

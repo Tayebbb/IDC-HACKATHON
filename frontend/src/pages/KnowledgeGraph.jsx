@@ -86,6 +86,48 @@ function makeNode(id, label, color, x, y) {
   };
 }
 
+// Mindsparks Intelligence Core — the central node that ties the user's
+// skills to the recommended job and learning path. Uses the Mindsparks
+// brand mark to visually represent the intelligence layer powering the
+// graph (per competition brief).
+function makeCoreNode(id, userLabel, x, y) {
+  const coreColor = '#F59E0B'; // Mindsparks accent
+  return {
+    id,
+    position: { x, y },
+    data: {
+      label: (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 2px' }}>
+          <img
+            src="/code front/Mindsparks 26 Logo.png"
+            alt="Mindsparks Intelligence Core"
+            style={{ height: 22, width: 'auto' }}
+          />
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#FCD34D' }}>
+            Intelligence Core
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#FFFFFF', maxWidth: 160, textAlign: 'center' }}>
+            {userLabel}
+          </div>
+        </div>
+      ),
+    },
+    draggable: false,
+    selectable: false,
+    style: {
+      background: 'linear-gradient(160deg, rgba(31,41,55,0.95) 0%, rgba(17,21,43,0.95) 100%)',
+      border: `2px solid ${coreColor}`,
+      borderRadius: 14,
+      color: '#FFFFFF',
+      padding: '10px 14px',
+      fontFamily: 'Poppins, sans-serif',
+      boxShadow: `0 0 24px ${coreColor}66`,
+      minWidth: 180,
+      textAlign: 'center',
+    },
+  };
+}
+
 function makeEdge(id, source, target, color, dashed = false) {
   return {
     id,
@@ -195,8 +237,9 @@ export default function KnowledgeGraph() {
     const skillTotalHeight = (totalSkills - 1) * skillSpacing;
     const userY = skillTotalHeight / 2;
 
-    // User node
-    nodes.push(makeNode('user', userLabel, COLOR_USER, COL.user, userY));
+    // User node — promoted to the Mindsparks Intelligence Core, the central
+    // node that ties the user's skills to job matches + recommended courses.
+    nodes.push(makeCoreNode('user', userLabel, COL.user, userY));
 
     // Matched skills (top of skills column)
     matchedSkills.forEach((s, i) => {

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Sparkles, Target, Zap, CheckCircle, ArrowRight, Loader } from 'lucide-react';
+import { AILoading } from '../components/branding';
 import toast from 'react-hot-toast';
 import WhatIfSimulator from '../components/WhatIfSimulator';
 import API_URL from '../config';
@@ -309,10 +310,10 @@ export default function CareerRoadmap() {
             style={styles.loadingContainer}
           >
             <div style={styles.loadingContent}>
-              <div style={styles.spinner}>
-                <Sparkles size={48} style={{ color: '#A855F7', animation: 'spin 2s linear infinite' }} />
-              </div>
-              <h3 style={styles.loadingText}>Generating Your Career Roadmap...</h3>
+              <AILoading
+                size={72}
+                label="Mindsparks AI is generating your roadmap…"
+              />
               <p style={styles.loadingSubtext}>Analyzing your profile and creating your personalized plan</p>
             </div>
           </motion.div>
