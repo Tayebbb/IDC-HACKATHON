@@ -81,9 +81,29 @@ export default function Chatassistance() {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Keep the initial greeting and add saved messages (skip the default greeting if it exists)
+        // Drop the default greeting AND any stale error messages that got
+        // persisted before the backend schema fix (otherwise "Sorry, something
+        // went wrong..." keeps haunting the user across reloads).
+        const STALE_ERROR_PATTERNS = [
+          /sorry, something went wrong/i,
+          /please include at least one relevant keyword/i,
+          /couldn'?t find anything in our corpus/i,
+        ];
+        const isStaleErr = (m) =>
+          m.role === "model" &&
+          STALE_ERROR_PATTERNS.some((re) => re.test(m.content || ""));
         if (data.messages && data.messages.length > 0) {
-          const savedMessages = data.messages.filter(m => m.content !== GREETING);
+          const savedMessages = data.messages.filter(
+            (m) => m.content !== GREETING && !isStaleErr(m)
+          );
+          // Also drop trailing user turns whose model response we just stripped,
+          // so the cleaned thread doesn't end on a dangling "user" bubble.
+          while (
+            savedMessages.length > 0 &&
+            savedMessages[savedMessages.length - 1].role === "user"
+          ) {
+            savedMessages.pop();
+          }
           if (savedMessages.length > 0) {
             setMessages([
               { role: "model", content: GREETING },
