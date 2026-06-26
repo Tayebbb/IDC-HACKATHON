@@ -35,9 +35,49 @@ export const MS_ACCENT_SOFT = '#FCD34D';   // softer highlight
 export const MS_ACCENT_DEEP = '#EF4444';   // 26 red
 
 // =====================================================================
-// AIAvatar — small circular badge that sits beside AI-authored content.
-// Uses a custom lightning-bolt SVG so the brand "feel" is preserved at
-// avatar sizes (the wide logo image is unreadable at 32 px).
+// AIMark — the OFFICIAL Mindsparks 26 logo presented as a compact badge.
+// Use this on prominent AI surfaces (floating button, chat avatars,
+// reasoning headers) where judges should recognise the actual asset.
+//
+// Renders the wide logo at proper aspect ratio inside a rounded card.
+// Use `AIAvatar` only inside circular contexts where this won't fit
+// (e.g. the spinning loader).
+// =====================================================================
+export function AIMark({
+  height = 28,
+  className = '',
+  showRing = true,
+  title = 'Mindsparks AI',
+}) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center flex-shrink-0 rounded-xl ${className}`}
+      style={{
+        background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+        padding: `${Math.max(3, Math.round(height * 0.18))}px ${Math.max(6, Math.round(height * 0.32))}px`,
+        boxShadow: showRing
+          ? `0 0 ${Math.round(height * 0.9)}px rgba(245,158,11,0.30), inset 0 0 0 1px rgba(245,158,11,0.40)`
+          : 'inset 0 0 0 1px rgba(245,158,11,0.30)',
+      }}
+      aria-label={title}
+      title={title}
+    >
+      <img
+        src={MINDSPARKS_LOGO}
+        alt={title}
+        loading="lazy"
+        decoding="async"
+        style={{ height: `${height}px`, width: 'auto', display: 'block' }}
+      />
+    </span>
+  );
+}
+
+// =====================================================================
+// AIAvatar — circular SVG bolt badge. KEPT for the spinning loader and
+// any other place where a circle is required by the visual context.
+// For prominent AI surfaces (chat messages, floating button, reasoning
+// header) use AIMark instead, which renders the real Mindsparks logo.
 // =====================================================================
 export function AIAvatar({ size = 36, glow = true, className = '' }) {
   const px = `${size}px`;
@@ -136,7 +176,7 @@ export function AIInsightBadge({ label = 'AI Insight', className = '' }) {
 export function AIReasoningHeader({ title = 'AI Reasoning', className = '' }) {
   return (
     <div className={`flex items-center gap-3 mb-3 ${className}`}>
-      <AIAvatar size={32} />
+      <AIMark height={22} />
       <div className="min-w-0">
         <div
           className="text-[10px] font-semibold uppercase tracking-[0.18em]"
@@ -297,7 +337,7 @@ export function CompetitionCredits({ className = '' }) {
       }}
     >
       <div className="flex items-center gap-3 mb-4">
-        <AIAvatar size={36} />
+        <AIMark height={26} />
         <div>
           <div
             className="text-[10px] font-semibold uppercase tracking-[0.22em]"

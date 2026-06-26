@@ -7,7 +7,7 @@ import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, serverTimestamp
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import ReasoningCard from "../components/ReasoningCard";
-import { AIAvatar } from "../components/branding";
+import { AIMark } from "../components/branding";
 import API_URL from "../config";
 
 const GREETING = "Hi! I'm your CareerPath assistant. Ask me anything about jobs, skills, interviews, or career growth.";
@@ -326,7 +326,7 @@ export default function Chatassistance() {
               }}
             >
               {msg.role === "model" && (
-                <AIAvatar size={36} />
+                <AIMark height={20} />
               )}
               <div
                 style={{
@@ -387,7 +387,7 @@ export default function Chatassistance() {
             animate={{ opacity: 1 }}
             style={{ ...styles.messageRow, justifyContent: "flex-start" }}
           >
-            <AIAvatar size={36} />
+            <AIMark height={20} />
             <div style={{ ...styles.messageBubble, ...styles.modelBubble, ...styles.typingIndicator }}>
               <span style={{ ...styles.dot, animationDelay: '0s' }}></span>
               <span style={{ ...styles.dot, animationDelay: '0.2s' }}></span>
