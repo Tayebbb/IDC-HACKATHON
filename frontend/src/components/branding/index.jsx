@@ -1,0 +1,340 @@
+/**
+ * Branding module — CodeFront × Mindsparks × AUST IDC integration.
+ *
+ * This file is the single source of truth for every visual touchpoint that
+ * carries event branding. Components are intentionally compact and reusable
+ * so we never duplicate logo markup across pages.
+ *
+ * Design rules (per competition brief):
+ *   • CareerPath remains the primary brand. Event logos are accents only.
+ *   • The Mindsparks "spark" represents the AI/intelligence layer of the
+ *     product. It only appears beside AI-generated content, never beside
+ *     user-entered data.
+ *   • CodeFront / AUST IDC logos appear in attribution surfaces only
+ *     (footer, brand strip, about credits).
+ *   • A reserved accent colour (`--ms-accent`) is allowed on AI surfaces
+ *     and nowhere else.
+ */
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+// Public-folder paths. Spaces in folder/file names are tolerated by
+// browsers when used as <img src> — the browser encodes them at request
+// time, so we don't need encodeURI here.
+const BRAND_PATH = '/code front';
+export const MINDSPARKS_LOGO = `${BRAND_PATH}/Mindsparks 26 Logo.png`;
+export const CODEFRONT_LOGO  = `${BRAND_PATH}/Code front.png`;
+export const AUST_IDC_WHITE  = `${BRAND_PATH}/AUST IDC - White.png`;
+export const AUST_IDC_BLACK  = `${BRAND_PATH}/AUST IDC - Black.png`;
+
+// Reserved Mindsparks accent colour (drawn from the lightning-bolt yellow
+// + red in the official 26 logo). Only AI-generated surfaces may use it.
+export const MS_ACCENT = '#F59E0B';        // amber spark
+export const MS_ACCENT_SOFT = '#FCD34D';   // softer highlight
+export const MS_ACCENT_DEEP = '#EF4444';   // 26 red
+
+// =====================================================================
+// AIAvatar — small circular badge that sits beside AI-authored content.
+// Uses a custom lightning-bolt SVG so the brand "feel" is preserved at
+// avatar sizes (the wide logo image is unreadable at 32 px).
+// =====================================================================
+export function AIAvatar({ size = 36, glow = true, className = '' }) {
+  const px = `${size}px`;
+  return (
+    <div
+      className={`relative flex-shrink-0 ${className}`}
+      style={{ width: px, height: px }}
+      aria-label="Mindsparks AI"
+      title="Mindsparks AI"
+    >
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+          boxShadow: glow
+            ? `0 0 ${Math.round(size * 0.45)}px rgba(245,158,11,0.35), inset 0 0 0 1px rgba(245,158,11,0.35)`
+            : 'inset 0 0 0 1px rgba(245,158,11,0.35)',
+        }}
+      />
+      <svg
+        viewBox="0 0 24 24"
+        className="absolute inset-0 m-auto"
+        style={{
+          width: `${Math.round(size * 0.62)}px`,
+          height: `${Math.round(size * 0.62)}px`,
+        }}
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id={`ms-bolt-${size}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={MS_ACCENT_SOFT} />
+            <stop offset="55%"  stopColor={MS_ACCENT} />
+            <stop offset="100%" stopColor={MS_ACCENT_DEEP} />
+          </linearGradient>
+        </defs>
+        <path
+          d="M13.5 2 L4 13.5 H11 L9.5 22 L20 9.5 H13 Z"
+          fill={`url(#ms-bolt-${size})`}
+          stroke="rgba(0,0,0,0.35)"
+          strokeWidth="0.4"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
+// =====================================================================
+// MindsparksMark — the actual Mindsparks logo at controlled aspect ratio,
+// for use in card headers ("AI Insight", "AI Reasoning") and brand strips.
+// =====================================================================
+export function MindsparksMark({ height = 22, className = '' }) {
+  return (
+    <img
+      src={MINDSPARKS_LOGO}
+      alt="Mindsparks 26"
+      loading="lazy"
+      decoding="async"
+      style={{ height: `${height}px`, width: 'auto' }}
+      className={`select-none ${className}`}
+    />
+  );
+}
+
+// =====================================================================
+// AIInsightBadge — header tag for AI-generated cards.
+// Format:  [Mindsparks mark]   AI Insight
+//
+// Use anywhere the system produced something (recommendation, reasoning,
+// summary). Don't use beside user-entered data.
+// =====================================================================
+export function AIInsightBadge({ label = 'AI Insight', className = '' }) {
+  return (
+    <div
+      className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full ${className}`}
+      style={{
+        background: 'rgba(245, 158, 11, 0.10)',
+        border: '1px solid rgba(245, 158, 11, 0.28)',
+      }}
+    >
+      <MindsparksMark height={14} />
+      <span
+        className="text-[11px] font-semibold uppercase tracking-wider"
+        style={{ color: MS_ACCENT_SOFT, letterSpacing: '0.08em' }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// =====================================================================
+// AIReasoningHeader — used at the top of every explainability card.
+// Replaces the previous plain "Why this answer?" header.
+// =====================================================================
+export function AIReasoningHeader({ title = 'AI Reasoning', className = '' }) {
+  return (
+    <div className={`flex items-center gap-3 mb-3 ${className}`}>
+      <AIAvatar size={32} />
+      <div className="min-w-0">
+        <div
+          className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+          style={{ color: MS_ACCENT_SOFT }}
+        >
+          Mindsparks AI
+        </div>
+        <div className="text-sm font-heading font-bold text-white leading-tight">
+          {title}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// AILoading — branded loading indicator. Replaces generic spinners
+// wherever the system is producing AI output (roadmap generation,
+// CV analysis, prediction, page-level Suspense fallback).
+// =====================================================================
+export function AILoading({
+  label = 'Mindsparks AI is thinking…',
+  size = 56,
+  className = '',
+}) {
+  return (
+    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
+      <div
+        className="relative"
+        style={{ width: `${size}px`, height: `${size}px` }}
+      >
+        {/* Pulsing ring */}
+        <span
+          className="absolute inset-0 rounded-full"
+          style={{
+            boxShadow: `0 0 0 2px rgba(245,158,11,0.35), 0 0 ${size * 0.6}px rgba(245,158,11,0.25)`,
+            animation: 'ms-pulse 1.6s ease-in-out infinite',
+          }}
+        />
+        {/* Orbiting dot */}
+        <span
+          className="absolute"
+          style={{
+            top: '0%',
+            left: '50%',
+            width: '8px',
+            height: '8px',
+            marginLeft: '-4px',
+            borderRadius: '50%',
+            background: MS_ACCENT,
+            boxShadow: `0 0 12px ${MS_ACCENT}`,
+            transformOrigin: `0 ${size / 2}px`,
+            animation: 'ms-orbit 2.2s linear infinite',
+          }}
+        />
+        {/* Center mark */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <AIAvatar size={Math.round(size * 0.6)} />
+        </div>
+      </div>
+      {label && (
+        <div
+          className="text-xs font-medium tracking-wide"
+          style={{ color: MS_ACCENT_SOFT }}
+        >
+          {label}
+        </div>
+      )}
+      <style>{`
+        @keyframes ms-pulse {
+          0%, 100% { transform: scale(1);   opacity: 0.8; }
+          50%      { transform: scale(1.08); opacity: 1; }
+        }
+        @keyframes ms-orbit {
+          from { transform: rotate(0deg)   translateY(-${size / 2}px) rotate(0deg); }
+          to   { transform: rotate(360deg) translateY(-${size / 2}px) rotate(-360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// =====================================================================
+// BrandStrip — landing-page strip with "Built for / Powered by / Organized
+// by" attribution. Elegant, NOT giant.
+// =====================================================================
+export function BrandStrip({ className = '' }) {
+  const item = (label, logo, alt, height = 32) => (
+    <div className="flex flex-col items-center gap-2 min-w-0">
+      <span
+        className="text-[10px] font-medium uppercase tracking-[0.22em] text-white/40"
+      >
+        {label}
+      </span>
+      <img
+        src={logo}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        style={{ height: `${height}px`, width: 'auto', maxWidth: '180px' }}
+        className="object-contain opacity-90 hover:opacity-100 transition-opacity"
+      />
+    </div>
+  );
+  return (
+    <div
+      className={`flex flex-wrap items-center justify-center gap-6 sm:gap-12 py-6 px-4 rounded-2xl border ${className}`}
+      style={{
+        background: 'rgba(17, 21, 43, 0.55)',
+        borderColor: 'rgba(168, 85, 247, 0.12)',
+        backdropFilter: 'blur(6px)',
+      }}
+    >
+      {item('Built for',     CODEFRONT_LOGO,  'CodeFront', 24)}
+      {item('Powered by',    MINDSPARKS_LOGO, 'Mindsparks 26', 34)}
+      {item('Organized by',  AUST_IDC_WHITE,  'AUST IDC', 44)}
+    </div>
+  );
+}
+
+// =====================================================================
+// CompetitionFooter — drop-in row that the main Footer wraps to add
+// event attribution. Kept small, screen-bottom appropriate.
+// =====================================================================
+export function CompetitionFooter({ className = '' }) {
+  const logoCls = 'h-7 sm:h-8 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity';
+  return (
+    <div
+      className={`flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t ${className}`}
+      style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+    >
+      <div className="flex items-center gap-2 text-white/70 text-sm">
+        <Link to="/" className="font-heading font-semibold text-white">
+          CareerPath
+        </Link>
+        <span className="text-white/30">·</span>
+        <span className="text-xs">Built for the CodeFront Challenge</span>
+      </div>
+      <div className="flex items-center gap-5 sm:gap-7">
+        <img src={CODEFRONT_LOGO}  alt="CodeFront"     className={logoCls} loading="lazy" />
+        <img src={MINDSPARKS_LOGO} alt="Mindsparks 26" className={logoCls} loading="lazy" />
+        <img src={AUST_IDC_WHITE}  alt="AUST IDC"      className={`${logoCls} h-9 sm:h-10`} loading="lazy" />
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// CompetitionCredits — full credits block for the About page.
+// =====================================================================
+export function CompetitionCredits({ className = '' }) {
+  return (
+    <div
+      className={`card p-8 ${className}`}
+      style={{
+        background: 'rgba(17, 21, 43, 0.7)',
+        border: '1px solid rgba(245, 158, 11, 0.18)',
+      }}
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <AIAvatar size={36} />
+        <div>
+          <div
+            className="text-[10px] font-semibold uppercase tracking-[0.22em]"
+            style={{ color: MS_ACCENT_SOFT }}
+          >
+            Competition
+          </div>
+          <h3 className="font-heading text-xl font-bold text-white">
+            Developed for the CodeFront Challenge
+          </h3>
+        </div>
+      </div>
+      <p className="text-text-muted text-sm leading-relaxed mb-6">
+        This project incorporates the official Mindsparks and CodeFront branding
+        assets provided by the organizers. CareerPath was built end-to-end during
+        the competition window, and the Mindsparks intelligence layer powers every
+        AI-generated recommendation, explanation, and roadmap in the product.
+      </p>
+      <div className="flex flex-wrap items-center gap-8">
+        <div className="flex flex-col items-start gap-1">
+          <span className="text-[10px] uppercase tracking-[0.22em] text-white/40">
+            Challenge
+          </span>
+          <img src={CODEFRONT_LOGO} alt="CodeFront" className="h-7 w-auto" />
+        </div>
+        <div className="flex flex-col items-start gap-1">
+          <span className="text-[10px] uppercase tracking-[0.22em] text-white/40">
+            Identity
+          </span>
+          <img src={MINDSPARKS_LOGO} alt="Mindsparks 26" className="h-10 w-auto" />
+        </div>
+        <div className="flex flex-col items-start gap-1">
+          <span className="text-[10px] uppercase tracking-[0.22em] text-white/40">
+            Organizer
+          </span>
+          <img src={AUST_IDC_WHITE} alt="AUST IDC" className="h-12 w-auto" />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,7 @@
 
 import { Link } from 'react-router-dom';
 import { Github, Linkedin, Twitter, Mail, Heart } from 'lucide-react';
+import { CompetitionFooter } from './branding';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -136,6 +137,9 @@ const Footer = () => {
             Aligned with <span className="font-semibold text-primary">SDG 8</span> - Decent Work & Economic Growth
           </p>
         </div>
+
+        {/* Competition attribution — CodeFront × Mindsparks × AUST IDC */}
+        <CompetitionFooter />
       </div>
     </footer>
   );

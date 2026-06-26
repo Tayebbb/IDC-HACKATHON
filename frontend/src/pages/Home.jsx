@@ -6,6 +6,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Target, BookOpen, Users, Sparkles, TrendingUp, Award } from 'lucide-react';
+import { BrandStrip } from '../components/branding';
 
 const Home = () => {
   const features = [
@@ -174,6 +175,9 @@ const Home = () => {
       {/* Stats Section */}
       <section className="stats-section bg-base py-16">
         <div className="section-container">
+          {/* Competition brand strip — sits between the hero and the impact stats
+              so it reads as event attribution, not sponsorship clutter. */}
+          <BrandStrip className="mb-12 sm:mb-16" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

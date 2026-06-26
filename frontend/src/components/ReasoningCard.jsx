@@ -13,6 +13,7 @@
  */
 import React from 'react';
 import { Check, X, ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
+import { AIReasoningHeader } from './branding';
 
 const CONFIDENCE_STYLES = {
   High: {
@@ -45,6 +46,9 @@ export default function ReasoningCard({
 
   return (
     <div className="neon-card mt-4">
+      {/* Mindsparks AI attribution — marks this card as AI-generated */}
+      <AIReasoningHeader title={title ? `Why: ${title}` : 'AI Reasoning'} />
+
       {/* Header: title + optional score + confidence badge */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
