@@ -18,10 +18,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-// Public-folder paths. Spaces in folder/file names are tolerated by
-// browsers when used as <img src> — the browser encodes them at request
-// time, so we don't need encodeURI here.
-const BRAND_PATH = '/code front';
+// Public-folder paths. The folder on disk is `Code Front` (mixed case, with
+// a space). Windows is case-insensitive, but Linux deploys (HF Spaces /
+// Vercel) are NOT — so we MUST match the on-disk casing exactly. Spaces
+// inside the URL are encoded by the browser at request time.
+const BRAND_PATH = '/Code Front';
 export const MINDSPARKS_LOGO = `${BRAND_PATH}/Mindsparks 26 Logo.png`;
 export const CODEFRONT_LOGO  = `${BRAND_PATH}/Code front.png`;
 export const AUST_IDC_WHITE  = `${BRAND_PATH}/AUST IDC - White.png`;

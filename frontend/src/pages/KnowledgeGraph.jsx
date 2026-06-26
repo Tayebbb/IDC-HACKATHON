@@ -99,7 +99,7 @@ function makeCoreNode(id, userLabel, x, y) {
       label: (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 2px' }}>
           <img
-            src="/code front/Mindsparks 26 Logo.png"
+            src="/Code Front/Mindsparks 26 Logo.png"
             alt="Mindsparks Intelligence Core"
             style={{ height: 22, width: 'auto' }}
           />
