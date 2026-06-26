@@ -29,13 +29,57 @@ import {
   useState,
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle, Eye } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Eye, RotateCcw } from 'lucide-react';
 import API_URL from '../config';
 
 const EXPRESSION_MODEL = 'trpakov/vit-face-expression';
 const SAMPLE_INTERVAL_MS = 3000;
 const TIP_FADE_AFTER_MS = 4000;
 const NEGATIVE_EMOTIONS = new Set(['angry', 'disgust', 'fear', 'sad']);
+const FACE_API_MODEL_URL = '/models';
+
+// =====================================================================
+// face-api.js lazy loader.
+//
+// We dynamic-import the library only when the component first mounts so
+// the ~1.2 MB gzipped bundle never lands on pages that don't use it
+// (chat, profile, jobs, etc.). Once loaded the module is cached on
+// _faceApiModule so subsequent component mounts are free.
+//
+// Models live in /public/models (~520 KB total) so they're co-deployed
+// with the app and never depend on a 3rd-party CDN.
+// =====================================================================
+let _faceApiModule = null;
+let _faceApiLoading = null;
+let _faceApiReady = false;
+async function _loadFaceApi() {
+  if (_faceApiReady) return _faceApiModule;
+  if (_faceApiLoading) return _faceApiLoading;
+  _faceApiLoading = (async () => {
+    try {
+      const mod = await import('@vladmandic/face-api');
+      await Promise.all([
+        mod.nets.tinyFaceDetector.loadFromUri(FACE_API_MODEL_URL),
+        mod.nets.faceExpressionNet.loadFromUri(FACE_API_MODEL_URL),
+      ]);
+      _faceApiModule = mod;
+      _faceApiReady = true;
+      // eslint-disable-next-line no-console
+      console.info('[FaceExpressionOverlay] face-api models loaded (local).');
+      return mod;
+    } catch (e) {
+      // Non-fatal: HF-only fallback path stays active.
+      // eslint-disable-next-line no-console
+      console.warn('[FaceExpressionOverlay] face-api load failed; HF-only mode.', e);
+      _faceApiReady = false;
+      _faceApiModule = null;
+      return null;
+    } finally {
+      _faceApiLoading = null;
+    }
+  })();
+  return _faceApiLoading;
+}
 
 // Smoothing window: 5 frames × 3 s = 15 s of context per decision.
 // Below this many frames we keep showing "warming up" instead of guessing.
@@ -306,7 +350,7 @@ function _hasContentInFrame(canvas) {
 // Cached detector instance — constructed lazily, reused across frames.
 let _faceDetectorInstance = null;
 let _faceDetectorTried = false;
-function _getFaceDetector() {
+function _getShapeDetector() {
   if (_faceDetectorTried) return _faceDetectorInstance;
   _faceDetectorTried = true;
   try {
@@ -323,24 +367,102 @@ function _getFaceDetector() {
   return _faceDetectorInstance;
 }
 
-async function _detectFaceBox(canvas) {
-  const detector = _getFaceDetector();
-  if (!detector || !canvas) return null;
-  try {
-    const faces = await detector.detect(canvas);
-    if (!faces || faces.length === 0) return null;
-    // Pick the largest face (the candidate, not a poster on the wall).
-    let best = faces[0];
-    let bestArea = best.boundingBox.width * best.boundingBox.height;
-    for (const f of faces) {
-      const a = f.boundingBox.width * f.boundingBox.height;
-      if (a > bestArea) { best = f; bestArea = a; }
+// =====================================================================
+// Real face detection + LOCAL emotion classification.
+//
+// Tries face-api.js first (works on every browser, returns both bbox AND
+// a full 7-label emotion distribution). Falls back to the experimental
+// Shape Detection API for bbox-only, and finally to null.
+//
+// Returns: { bbox: {x,y,w,h} | null, scores: {label: float} | null,
+//            detectionScore: number }  where detectionScore is in [0,1].
+// =====================================================================
+async function _detectFaceAndEmotion(canvas) {
+  // Path 1 — face-api.js (preferred: bbox + emotion in a single pass).
+  if (_faceApiReady && _faceApiModule) {
+    try {
+      const fa = _faceApiModule;
+      const opts = new fa.TinyFaceDetectorOptions({
+        inputSize: 224,
+        scoreThreshold: 0.35,
+      });
+      const result = await fa
+        .detectSingleFace(canvas, opts)
+        .withFaceExpressions();
+      if (result && result.detection) {
+        const box = result.detection.box;
+        const scoresRaw = result.expressions || {};
+        // Normalise label aliases (face-api uses 'fearful', 'surprised',
+        // 'disgusted' but our pipeline standardises on the HF names).
+        const scores = {
+          angry:    scoresRaw.angry    || 0,
+          disgust:  scoresRaw.disgusted || scoresRaw.disgust  || 0,
+          fear:     scoresRaw.fearful  || scoresRaw.fear     || 0,
+          happy:    scoresRaw.happy    || 0,
+          neutral:  scoresRaw.neutral  || 0,
+          sad:      scoresRaw.sad      || 0,
+          surprise: scoresRaw.surprised || scoresRaw.surprise || 0,
+        };
+        return {
+          bbox: { x: box.x, y: box.y, w: box.width, h: box.height },
+          scores,
+          detectionScore: result.detection.score || 0,
+        };
+      }
+      return { bbox: null, scores: null, detectionScore: 0 };
+    } catch {
+      // fall through to Shape Detection
     }
-    const bb = best.boundingBox;
-    return { x: bb.x, y: bb.y, w: bb.width, h: bb.height };
-  } catch {
-    return null;
   }
+
+  // Path 2 — browser Shape Detection API (bbox only).
+  const detector = _getShapeDetector();
+  if (detector && canvas) {
+    try {
+      const faces = await detector.detect(canvas);
+      if (faces && faces.length > 0) {
+        let best = faces[0];
+        let bestArea = best.boundingBox.width * best.boundingBox.height;
+        for (const f of faces) {
+          const a = f.boundingBox.width * f.boundingBox.height;
+          if (a > bestArea) { best = f; bestArea = a; }
+        }
+        const bb = best.boundingBox;
+        return {
+          bbox: { x: bb.x, y: bb.y, w: bb.width, h: bb.height },
+          scores: null,
+          detectionScore: 0.6, // Shape Detection doesn't expose a score; assume moderate.
+        };
+      }
+      return { bbox: null, scores: null, detectionScore: 0 };
+    } catch {
+      // fall through
+    }
+  }
+
+  // Path 3 — no detector available.
+  return { bbox: null, scores: null, detectionScore: 0 };
+}
+
+// Ensemble two probability distributions over the same label set.
+// Each distribution is weighted by the model's relative confidence so
+// that whichever model is more decisive on THIS frame counts more.
+function _ensembleScores(hfScores, localScores) {
+  if (!localScores) return hfScores || {};
+  if (!hfScores)    return localScores;
+  const labels = new Set([...Object.keys(hfScores), ...Object.keys(localScores)]);
+  // Confidence = top-1 score for each model.
+  const cHf    = Math.max(0, ...Object.values(hfScores));
+  const cLocal = Math.max(0, ...Object.values(localScores));
+  const totalC = cHf + cLocal;
+  if (totalC === 0) return hfScores;
+  const wHf    = cHf    / totalC;
+  const wLocal = cLocal / totalC;
+  const out = {};
+  for (const label of labels) {
+    out[label] = (hfScores[label] || 0) * wHf + (localScores[label] || 0) * wLocal;
+  }
+  return out;
 }
 
 // =====================================================================
@@ -413,6 +535,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const lastTipKeyRef    = useRef('');     // dedup onCoachingUpdate calls
   const lastTipAtRef     = useRef(0);      // ms timestamp of last emitted tip
   const lastBboxRef      = useRef(null);   // last detected face bbox
+  const detectionScoreRef = useRef(0);     // smoothed face-detection confidence
 
   const [tipQueue,      setTipQueue]      = useState([]); // [{ tip, type, icon, addedAt }]
   const [, _setTick]    = useState(0);                    // ticker for fade re-render
@@ -422,6 +545,20 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const [cameraStarted, setCameraStarted] = useState(false);
   const [faceVisible,   setFaceVisible]   = useState(false);
   const [httpsWarning]                    = useState(isInsecureContext());
+  const [trackingScore, setTrackingScore] = useState(0);   // 0..1 — detector confidence
+  const [calibrated,    setCalibrated]    = useState(false);
+  const [faceApiState,  setFaceApiState]  = useState('loading'); // loading | ready | unavailable
+
+  // Kick off face-api lazy load as soon as the component mounts so the
+  // models are warm by the time the user clicks "Enable Camera".
+  useEffect(() => {
+    let cancelled = false;
+    _loadFaceApi().then((mod) => {
+      if (cancelled) return;
+      setFaceApiState(mod ? 'ready' : 'unavailable');
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Periodic re-render so the "fade after 4s" opacity check stays current.
   useEffect(() => {
@@ -475,19 +612,32 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
 
     // Local presence gate: if the centre of the frame is flat/blank, skip
     // the HF round-trip entirely and tell the user to come back into view.
-    // This is far more reliable than waiting for HF to return uncertain scores.
     if (!_hasContentInFrame(canvas)) {
       setFaceVisible(false);
       lastBboxRef.current = null;
+      detectionScoreRef.current = 0;
+      setTrackingScore(0);
       _drawBoundingBox(overlayCanvasRef.current, videoRef.current, null);
       _pushTip({ tip: 'Move closer to the camera — face not detected', type: 'warning', icon: 'Eye' });
       return;
     }
 
-    // Real face bbox via Shape Detection API where available. Cheap async
-    // call; falls back to a centred reference frame when unsupported.
-    const bbox = await _detectFaceBox(canvas);
+    // Real face detection + LOCAL emotion (face-api > Shape Detection > null).
+    const detection = await _detectFaceAndEmotion(canvas);
+    const bbox = detection.bbox;
     lastBboxRef.current = bbox;
+    // Exponentially-smoothed detector confidence for the UI indicator.
+    detectionScoreRef.current = (detectionScoreRef.current * 0.6) + (detection.detectionScore * 0.4);
+    setTrackingScore(detectionScoreRef.current);
+
+    if (_faceApiReady && !bbox) {
+      // face-api is loaded AND it confidently says there's no face →
+      // user genuinely out of frame; skip the HF round-trip.
+      setFaceVisible(false);
+      _drawBoundingBox(overlayCanvasRef.current, videoRef.current, null);
+      _pushTip({ tip: 'Center your face in the frame', type: 'warning', icon: 'Eye' });
+      return;
+    }
 
     const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.8));
     if (!blob) return;
@@ -504,82 +654,85 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
         method: 'POST',
         body: form,
       });
-      if (!resp.ok) {
-        const detail = await resp.text();
-        const err = new Error(detail || `face-expression ${resp.status}`);
-        err.status = resp.status;
-        throw err;
-      }
-      const data = await resp.json();
-      const list = Array.isArray(data?.labels) ? data.labels : [];
-
-      if (Array.isArray(list) && list.length) {
-        setHfError(null);
-
-        // Confidence gate: skip frames where the model is undecided.
-        const topScore = Math.max(...list.map((x) => x?.score ?? 0));
-        if (topScore < MIN_FRAME_CONFIDENCE) {
-          setFaceVisible(true);
-          _drawBoundingBox(overlayCanvasRef.current, videoRef.current, bbox);
-          return;
-        }
-
-        // Log the FULL score distribution for an accurate score-averaged
-        // end-of-interview summary (powers MockInterview.jsx's ReasoningCard).
-        const expressions = _normalizeScores(list);
-        emotionLogRef.current.push({ scores: expressions, dominant: list[0] });
-
-        // Baseline calibration: average the first BASELINE_FRAMES valid
-        // frames into the user's resting expression. Subsequent coaching
-        // uses deviations from this baseline instead of absolute thresholds.
-        if (!baselineRef.current) {
-          baselineBufRef.current.push(expressions);
-          if (baselineBufRef.current.length >= BASELINE_FRAMES) {
-            baselineRef.current = _averageDistribution(baselineBufRef.current);
-          }
-        }
-
-        // Maintain a rolling smoothing buffer so a single noisy frame can't
-        // flip the live tip.
-        smoothBufferRef.current.push(expressions);
-        if (smoothBufferRef.current.length > SMOOTH_WINDOW) {
-          smoothBufferRef.current.shift();
-        }
-
-        // Draw bounding box (real one if FaceDetector worked, else fallback).
-        setFaceVisible(true);
-        _drawBoundingBox(overlayCanvasRef.current, videoRef.current, bbox);
-
-        if (smoothBufferRef.current.length < SMOOTH_MIN_FRAMES) {
-          _pushTip({ tip: 'Reading your expression… hold steady', type: 'info', icon: 'Eye' });
-        } else if (!baselineRef.current) {
-          _pushTip({ tip: 'Calibrating to your resting face…', type: 'info', icon: 'Eye' });
-        } else {
-          const smoothed = _averageDistribution(smoothBufferRef.current);
-          const tip = _pickRealtimeTip(smoothed, baselineRef.current);
-
-          // Temporal hysteresis: warnings must persist for HYSTERESIS_REPEATS
-          // consecutive smoothed windows before firing. Positive / info tips
-          // bypass hysteresis so good behaviour is reinforced immediately.
-          if (tip.type === 'warning') {
-            warningStreakRef.current += 1;
-            if (warningStreakRef.current < HYSTERESIS_REPEATS) {
-              // Hold the tip back this round; show a neutral holding pattern.
-              _pushTip({ tip: 'Hold your position — looking good', type: 'positive', icon: 'CheckCircle2' });
-              return;
-            }
-          } else {
-            warningStreakRef.current = 0;
-          }
-          _pushTip(tip);
+      let hfScoresFromList = null;
+      if (resp.ok) {
+        const data = await resp.json();
+        const list = Array.isArray(data?.labels) ? data.labels : [];
+        if (list.length) {
+          hfScoresFromList = _normalizeScores(list);
+          setHfError(null);
         }
       } else {
-        _pushTip({ tip: 'Move closer to the camera — face not detected',
-                   type: 'warning', icon: 'Eye' });
+        const detail = await resp.text();
+        setHfError(`Backend ${resp.status}: ${(detail || '').slice(0, 100)}`);
+      }
+
+      // Ensemble: weighted blend of HF + face-api distributions. If only
+      // one model returned scores, that one is used directly.
+      const expressions = _ensembleScores(hfScoresFromList, detection.scores);
+      const hasAnyScores = expressions && Object.keys(expressions).length > 0;
+      if (!hasAnyScores) {
+        // Neither model produced usable scores — hold position but keep sampling.
+        setFaceVisible(true);
+        _drawBoundingBox(overlayCanvasRef.current, videoRef.current, bbox);
+        _pushTip({ tip: 'Reading your expression… hold steady', type: 'info', icon: 'Eye' });
+        return;
+      }
+
+      // Confidence gate on the ENSEMBLED score (more robust than gating
+      // either model individually).
+      const topScore = Math.max(...Object.values(expressions));
+      if (topScore < MIN_FRAME_CONFIDENCE) {
+        setFaceVisible(true);
+        _drawBoundingBox(overlayCanvasRef.current, videoRef.current, bbox);
+        return;
+      }
+
+      // Add face-api aliases so the priority chain reads naturally.
+      if ('fear'     in expressions) expressions.fearful   = expressions.fear;
+      if ('surprise' in expressions) expressions.surprised = expressions.surprise;
+      if ('disgust'  in expressions) expressions.disgusted = expressions.disgust;
+
+      emotionLogRef.current.push({ scores: expressions });
+
+      // Baseline calibration: first BASELINE_FRAMES valid frames define the
+      // user's resting expression.
+      if (!baselineRef.current) {
+        baselineBufRef.current.push(expressions);
+        if (baselineBufRef.current.length >= BASELINE_FRAMES) {
+          baselineRef.current = _averageDistribution(baselineBufRef.current);
+          setCalibrated(true);
+        }
+      }
+
+      // Rolling smoothing buffer.
+      smoothBufferRef.current.push(expressions);
+      if (smoothBufferRef.current.length > SMOOTH_WINDOW) {
+        smoothBufferRef.current.shift();
+      }
+
+      setFaceVisible(true);
+      _drawBoundingBox(overlayCanvasRef.current, videoRef.current, bbox);
+
+      if (smoothBufferRef.current.length < SMOOTH_MIN_FRAMES) {
+        _pushTip({ tip: 'Reading your expression… hold steady', type: 'info', icon: 'Eye' });
+      } else if (!baselineRef.current) {
+        _pushTip({ tip: 'Calibrating to your resting face…', type: 'info', icon: 'Eye' });
+      } else {
+        const smoothed = _averageDistribution(smoothBufferRef.current);
+        const tip = _pickRealtimeTip(smoothed, baselineRef.current);
+        if (tip.type === 'warning') {
+          warningStreakRef.current += 1;
+          if (warningStreakRef.current < HYSTERESIS_REPEATS) {
+            _pushTip({ tip: 'Hold your position — looking good', type: 'positive', icon: 'CheckCircle2' });
+            return;
+          }
+        } else {
+          warningStreakRef.current = 0;
+        }
+        _pushTip(tip);
       }
     } catch (err) {
-      // Surface so the user knows something failed, but keep sampling.
-      // Most are HF cold-starts (502 from our proxy) that resolve in a few seconds.
       const msg = err?.status
         ? `Backend ${err.status}: ${(err.message || '').slice(0, 100)}`
         : `${err?.name || 'Error'}: ${err?.message || err}`;
@@ -599,10 +752,13 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
     baselineBufRef.current = [];
     warningStreakRef.current = 0;
     lastBboxRef.current = null;
+    detectionScoreRef.current = 0;
     lastTipKeyRef.current = '';
     lastTipAtRef.current = 0;
     setTipQueue([]);
     setFaceVisible(false);
+    setCalibrated(false);
+    setTrackingScore(0);
 
     if (!navigator?.mediaDevices?.getUserMedia) {
       setCamError('Webcam not available in this browser.');
@@ -654,6 +810,16 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       stopAll();
       setCameraStarted(false);
       return _computeSummary(emotionLogRef.current);
+    },
+    recalibrate() {
+      baselineRef.current = null;
+      baselineBufRef.current = [];
+      warningStreakRef.current = 0;
+      smoothBufferRef.current = [];
+      lastTipKeyRef.current = '';
+      lastTipAtRef.current = 0;
+      setCalibrated(false);
+      _pushTip({ tip: 'Recalibrating to your resting face…', type: 'info', icon: 'Eye' });
     },
   }));
 
@@ -767,6 +933,46 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
                 updating
               </div>
             )}
+            {/* Top-left: tracking confidence + face-api status */}
+            <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/70 bg-black/30 backdrop-blur-sm rounded-md px-2 py-1">
+              <span
+                className={`inline-block w-2 h-2 rounded-full ${
+                  trackingScore > 0.6
+                    ? 'bg-emerald-400'
+                    : trackingScore > 0.3
+                    ? 'bg-amber-400'
+                    : 'bg-red-400'
+                }`}
+              />
+              <span>
+                {faceApiState === 'ready'
+                  ? `Local + HF · ${Math.round(trackingScore * 100)}%`
+                  : faceApiState === 'loading'
+                  ? 'Loading models…'
+                  : `HF only · ${Math.round(trackingScore * 100)}%`}
+              </span>
+              {calibrated && (
+                <span className="ml-1 text-emerald-300/90 normal-case">· calibrated</span>
+              )}
+            </div>
+            {/* Bottom-right: manual recalibrate button */}
+            <button
+              onClick={() => {
+                baselineRef.current = null;
+                baselineBufRef.current = [];
+                warningStreakRef.current = 0;
+                smoothBufferRef.current = [];
+                lastTipKeyRef.current = '';
+                lastTipAtRef.current = 0;
+                setCalibrated(false);
+                _pushTip({ tip: 'Recalibrating to your resting face…', type: 'info', icon: 'Eye' });
+              }}
+              className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] uppercase tracking-wider text-purple-200/90 bg-black/40 hover:bg-purple-600/40 backdrop-blur-sm rounded-md px-2 py-1 transition-colors"
+              title="Re-baseline against your current resting face"
+            >
+              <RotateCcw size={11} />
+              Recalibrate
+            </button>
             {!active && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl">
                 <span className="text-[#B3B3C7] text-sm">Camera paused</span>
