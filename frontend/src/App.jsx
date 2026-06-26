@@ -79,7 +79,7 @@ function AppContent() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/chatassistance" element={<ProtectedRoute><Chatassistance /></ProtectedRoute>} />
+            <Route path="/chatassistance" element={<Chatassistance />} />
             <Route path="/cv-upload" element={<ProtectedRoute><CvUpload /></ProtectedRoute>} />
             <Route path="/career-roadmap" element={<ProtectedRoute><CareerRoadmap /></ProtectedRoute>} />
             <Route path="/mock-interview" element={<ProtectedRoute><MockInterview /></ProtectedRoute>} />
