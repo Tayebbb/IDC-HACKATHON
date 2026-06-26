@@ -1717,6 +1717,7 @@ async def chat(body: ChatRequest):
             context_window=context_window,
             profile_summary=profile_summary,
             max_new_tokens=400,
+            sources=sources,
         )
         return {
             'response': answer_text,
@@ -1742,8 +1743,16 @@ def _load_generator():
     Loads Phi-3-mini in a background thread.
     Sets _GENERATOR_READY = True when done.
     Falls back gracefully to template generation if unavailable.
+
+    Disabled by default on resource-constrained deploys (HF Spaces Free Tier
+    has only 16 GB RAM and Phi-3 needs ~4-8 GB at inference plus a ~4 GB
+    one-time download). Flip ENABLE_LLM_GENERATOR=true to opt in.
     """
     global _GENERATOR_PIPELINE, _GENERATOR_READY
+    if _os.getenv("ENABLE_LLM_GENERATOR", "false").lower() != "true":
+        print("[GEN] ENABLE_LLM_GENERATOR is not 'true' — using template fallback.")
+        _GENERATOR_READY = False
+        return
     try:
         import torch
         from transformers import pipeline as hf_pipeline
@@ -1767,13 +1776,15 @@ def _generate_rag_answer(
     context_window: str,
     profile_summary: str = "",
     max_new_tokens: int = 400,
+    sources: 'list | None' = None,
 ) -> str:
     """
     Generates a grounded answer using Phi-3-mini.
     Falls back to build_rag_answer() template if generator not ready.
     """
+    fallback_sources = sources or []
     if not _GENERATOR_READY or _GENERATOR_PIPELINE is None:
-        return build_rag_answer(query, context_window) if callable(
+        return build_rag_answer(query, fallback_sources) if callable(
             globals().get("build_rag_answer")
         ) else "I'm still loading. Please try again in a moment."
 
@@ -1799,7 +1810,7 @@ def _generate_rag_answer(
         return result[0]["generated_text"].strip()
     except Exception as e:
         print(f"[GEN] Generation failed: {e}")
-        return build_rag_answer(query, context_window) if callable(
+        return build_rag_answer(query, fallback_sources) if callable(
             globals().get("build_rag_answer")
         ) else "Generation failed. Please try again."
 
@@ -2307,10 +2318,12 @@ async def analyze_expression_alias(file: UploadFile = File(...)):
 @app.on_event("startup")
 async def startup_event():
     _load_hybrid_corpus()
-    _get_reranker()
     import threading as _threading
+    # Warm reranker + generator off the request path so GET / responds
+    # immediately and the HEALTHCHECK passes during cold start.
+    _threading.Thread(target=_get_reranker, daemon=True).start()
     _threading.Thread(target=_load_generator, daemon=True).start()
-    print("[GEN] Phi-3 loading in background — template fallback active until ready.")
+    print("[GEN] Phi-3 + reranker loading in background — template fallback active until ready.")
     _load_corpus()
     _init_chroma()
 

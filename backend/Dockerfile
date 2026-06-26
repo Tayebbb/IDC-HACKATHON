@@ -9,7 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=7860 \
     HF_HOME=/home/appuser/.cache/huggingface \
     TRANSFORMERS_CACHE=/home/appuser/.cache/huggingface \
-    SENTENCE_TRANSFORMERS_HOME=/home/appuser/.cache/huggingface
+    SENTENCE_TRANSFORMERS_HOME=/home/appuser/.cache/huggingface \
+    ENABLE_LLM_GENERATOR=false
 
 WORKDIR /app
 
@@ -18,9 +19,15 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /app/requirements.txt
+# Install CPU-only torch FIRST so the later `pip install -r requirements.txt`
+# treats torch as already-satisfied and does NOT pull the ~5 GB CUDA wheels.
+# This single change cuts the image from ~7 GB to ~2 GB and is mandatory
+# for HF Spaces CPU Basic.
 RUN pip install --upgrade pip \
-    && pip install -r /app/requirements.txt
+    && pip install --index-url https://download.pytorch.org/whl/cpu torch
+
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt
 
 # App source
 COPY data/ /app/data/
@@ -32,9 +39,10 @@ RUN useradd --create-home --shell /bin/bash appuser \
     && chown -R appuser:appuser /app /home/appuser
 USER appuser
 
-# Bake the sentence-transformers model into the image so the first /chat
-# request after cold start does NOT need to hit the HF Hub.
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-mpnet-base-v2')"
+# Bake the sentence-transformers model AND the cross-encoder reranker into
+# the image so neither the first /chat request nor the startup_event need
+# to hit the HF Hub at runtime.
+RUN python -c "from sentence_transformers import SentenceTransformer, CrossEncoder; SentenceTransformer('all-mpnet-base-v2'); CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2', max_length=512)"
 
 EXPOSE 7860
 
