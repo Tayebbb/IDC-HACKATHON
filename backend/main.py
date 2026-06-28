@@ -425,6 +425,11 @@ async def health_dependencies():
         'use_local_embeddings': _USE_LOCAL_EMBEDDINGS,
         'enable_reranker': _ENABLE_RERANKER,
         'sentence_transformers_installed': _check_st_installed(),
+        'hybrid_ready': _HYBRID_READY,
+        'corpus_count': len(_HYBRID_CORPUS),
+        'reranker_ready': _RERANKER_READY,
+        'generator_ready': _GENERATOR_READY,
+        'hf_token_present': bool(_os.getenv('HF_TOKEN', '')),
         'overall': overall
     }
 
@@ -2276,12 +2281,62 @@ async def _generate_reference_answer(
         f'connect it to {skill_line}, describe implementation choices, mention '
         'trade-offs or failure modes, and include a concrete project example.'
     )
+    job_context = context
     prompt = (
-        (f'{context}\n\n---\n\n' if context else '')
-        + f'Write a concise reference answer for this {difficulty} {role} interview question.\n'
-        + f'Question: {question}\n'
-        + f'Skills to test: {skill_line}\n'
-        + 'Return 4-6 sentences covering core concepts, technical depth, trade-offs, and an example.'
+        f"You are a senior {role} interviewer.\n\n"
+        f"INTERVIEW QUESTION: {question}\n"
+        f"ROLE: {role}\n"
+        f"DIFFICULTY: {difficulty}\n"
+        + (
+            f"JOB CONTEXT (background reference only - "
+            f"do NOT use job skills as must_mention):\n"
+            f"{job_context[:300]}\n\n"
+            if job_context else "\n"
+        )
+        + "TASK: Generate the ideal answer and scoring rubric "
+        "for the interview question above.\n\n"
+        "CRITICAL RULE FOR must_mention:\n"
+        "must_mention items MUST be answer concepts - the theoretical "
+        "or practical ideas that a correct answer to THIS SPECIFIC "
+        "QUESTION needs to explain or demonstrate.\n"
+        "must_mention items MUST NOT be job skills, tools, or "
+        "technologies from the job description.\n\n"
+        "CORRECT must_mention examples for a REST API question:\n"
+        "  statelessness, HTTP verbs, resource-based URLs, "
+        "status codes, client-server separation\n"
+        "WRONG must_mention examples (never use these patterns):\n"
+        "  Python, SQL, Git, Docker, FastAPI, JavaScript, "
+        "Node.js, any tool or language name\n\n"
+        "CORRECT must_mention examples for a database question:\n"
+        "  ACID properties, normalization, indexing, "
+        "query optimization, transactions\n"
+        "WRONG must_mention examples for a database question:\n"
+        "  PostgreSQL, MySQL, MongoDB, Redis\n\n"
+        "Return ONLY valid JSON with no markdown fences, "
+        "no explanation, no preamble:\n"
+        "{\n"
+        '  "ideal_answer": "<150-200 word model answer that directly '
+        'answers the question>",\n'
+        '  "must_mention": [\n'
+        '    "<core concept 1 specific to answering this question>",\n'
+        '    "<core concept 2 specific to answering this question>",\n'
+        '    "<core concept 3 specific to answering this question>"\n'
+        "  ],\n"
+        '  "bonus_points": [\n'
+        '    "<advanced concept that earns extra credit>",\n'
+        '    "<second advanced concept>"\n'
+        "  ],\n"
+        '  "red_flags": [\n'
+        '    "<common mistake or misconception to penalize>",\n'
+        '    "<second common mistake>"\n'
+        "  ],\n"
+        '  "scoring_weights": {\n'
+        '    "core_concepts": 40,\n'
+        '    "technical_accuracy": 30,\n'
+        '    "practical_example": 20,\n'
+        '    "communication": 10\n'
+        "  }\n"
+        "}"
     )
     try:
         return (await _hf_chat(prompt, max_tokens=320, temperature=0.2)).strip() or fallback
@@ -2319,20 +2374,72 @@ def _has_practical_example(answer: str) -> bool:
     return any(m in text for m in markers)
 
 
+def _answer_concepts_for_question(
+    question: str,
+    reference: str,
+    fallback_items: List[str],
+) -> List[str]:
+    parsed = _safe_json_parse(reference or '')
+    if isinstance(parsed, dict) and isinstance(parsed.get('must_mention'), list):
+        concepts = [
+            str(item).strip()
+            for item in parsed.get('must_mention') or []
+            if str(item).strip()
+        ]
+        if concepts:
+            return concepts[:6]
+
+    haystack = ' '.join(
+        [question or '', reference or ''] + [str(item) for item in fallback_items or []]
+    ).lower()
+    if any(term in haystack for term in ('rest', 'api', 'http')):
+        return [
+            'statelessness',
+            'HTTP verbs',
+            'resource-based URLs',
+            'status codes',
+            'client-server separation',
+        ]
+    if any(term in haystack for term in ('database', 'sql', 'query')):
+        return [
+            'ACID properties',
+            'normalization',
+            'indexing',
+            'query optimization',
+            'transactions',
+        ]
+    return [str(item).strip() for item in fallback_items or [] if str(item).strip()][:6]
+
+
+def _concept_is_covered(answer_l: str, concept: str) -> bool:
+    token = re.sub(r'[^a-z0-9]+', ' ', concept.lower()).strip()
+    if token and token in answer_l:
+        return True
+    aliases = {
+        'statelessness': ['stateless', 'no client session state', 'no session state'],
+        'http verbs': ['http verbs', 'get', 'post', 'put', 'delete'],
+        'resource-based urls': ['resources are identified by urls', 'resource urls', 'urls'],
+        'status codes': ['status codes', '200 ok', '201 created', '404 not found'],
+        'client-server separation': ['client server', 'client-server', 'server stores no client'],
+        'acid properties': ['acid'],
+        'query optimization': ['query optimization', 'optimize queries'],
+    }
+    return any(alias in answer_l for alias in aliases.get(concept.lower(), []))
+
+
 def _semantic_gap_analysis(
     answer: str,
     reference: str,
     skills_tested: List[str],
 ) -> Dict[str, Any]:
     answer_l = (answer or '').lower()
+    concepts = _answer_concepts_for_question(reference, reference, skills_tested)
     covered: List[str] = []
-    for skill in skills_tested or []:
-        name = str(skill).strip()
+    for concept in concepts or []:
+        name = str(concept).strip()
         if not name:
             continue
-        token = re.sub(r'[^a-z0-9]+', ' ', name.lower()).strip()
-        aliases = {token, token.replace('apis', 'api'), token.replace('api', 'apis')}
-        if any(alias and alias in answer_l for alias in aliases):
+        if _concept_is_covered(answer_l, name):
             covered.append(name)
     if not covered:
         ref_words = [
@@ -2341,8 +2448,8 @@ def _semantic_gap_analysis(
         ][:8]
         covered = [w for w in ref_words if w.lower() in answer_l]
     covered = list(dict.fromkeys(covered))
-    missing = [s for s in (skills_tested or []) if s not in covered][:6]
-    denominator = max(len(skills_tested or []), 1)
+    missing = [s for s in (concepts or []) if s not in covered][:6]
+    denominator = max(len(concepts or []), 1)
     coverage_pct = int(round((len(covered) / denominator) * 100))
     return {
         'concepts_covered': covered,
@@ -2364,12 +2471,12 @@ def _compute_rubric_score(
     clarity = 10 if 20 <= len(words) <= 220 else 6
     total = max(0, min(100, core + technical + example + clarity))
     return {
-        'score': max(1, min(10, round(total / 10))),
+        'score': max(1, min(100, total)),
         'score_breakdown': {
             'core_concepts': core,
-            'technical_depth': technical,
+            'technical_accuracy': technical,
             'practical_example': example,
-            'clarity': clarity,
+            'communication': clarity,
         },
     }
 
@@ -2391,7 +2498,7 @@ def _build_evaluation_prompt(
         f'Candidate answer: """{answer}"""\n'
         f'Covered concepts: {", ".join(gap.get("concepts_covered") or []) or "none"}\n'
         f'Missing concepts: {", ".join(gap.get("concepts_missing") or []) or "none"}\n'
-        f'Rubric score anchor: {rubric.get("score")}/10\n'
+        f'Rubric score anchor: {rubric.get("score")}/100\n'
         + emotion_context
         + '\nReturn ONLY minified JSON: {"feedback":"...", "strengths":["..."], "improvements":["..."]}'
     )
@@ -2457,7 +2564,10 @@ async def interview_question(req: Dict[str, Any]):
         raw = await _hf_chat(user_prompt, max_tokens=256, temperature=0.8)
     except Exception as e:
         log.warning('[interview-question] HF fallback: %s', e)
-        primary_skill = skills_tested[0] if skills_tested else _infer_track_from_role(role)
+        primary_skill = next(
+            (s for s in skills_tested if 'rest' in str(s).lower() or 'api' in str(s).lower()),
+            skills_tested[0] if skills_tested else _infer_track_from_role(role),
+        )
         raw = (
             f'Tell me about a time you used {primary_skill} in a {role} project. '
             'What design choices did you make, what trade-offs did you consider, '
