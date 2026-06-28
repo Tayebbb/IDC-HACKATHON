@@ -8,6 +8,7 @@ import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationsProvider } from './contexts/NotificationsContext';
 
 // Components (loaded immediately as they're needed on every page)
 import Navbar from "./components/Navbar";
@@ -153,7 +154,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <NotificationsProvider>
+          <AppContent />
+        </NotificationsProvider>
       </AuthProvider>
     </ThemeProvider>
   );
