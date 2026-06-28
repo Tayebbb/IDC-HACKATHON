@@ -66,32 +66,36 @@ function AppContent() {
   const [navRevealed, setNavRevealed] = useState(false);
   useEffect(() => {
     if (!isImmersive) {
-      document.body.classList.remove('immersive-chat', 'nav-revealed');
       setNavRevealed(false);
       return;
     }
-    document.body.classList.add('immersive-chat');
-    const onMove = (e) => setNavRevealed(e.clientY <= 56);
+    // 96px keeps the navbar revealed while the cursor is actually on it
+    // (Navbar's compact height ~64px). When cursor drops below, it hides.
+    const REVEAL_THRESHOLD = 96;
+    const onMove = (e) => setNavRevealed(e.clientY <= REVEAL_THRESHOLD);
     const onLeave = () => setNavRevealed(false);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseleave', onLeave);
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseleave', onLeave);
-      document.body.classList.remove('immersive-chat', 'nav-revealed');
     };
   }, [isImmersive]);
 
-  useEffect(() => {
-    if (!isImmersive) return;
-    document.body.classList.toggle('nav-revealed', navRevealed);
-  }, [isImmersive, navRevealed]);
-
   return (
     <div className="App">
-      {/* Always render the Navbar on immersive routes too; visibility is
-          controlled by global CSS keyed off body.immersive-chat. */}
-      {(!shouldHideNavbar || isImmersive) && <Navbar />}
+      {/* On immersive routes the Navbar only mounts while the cursor is
+          near the top edge; on other routes it's always shown (unless
+          a route is in the always-hidden list). */}
+      {!shouldHideNavbar && <Navbar />}
+      {isImmersive && navRevealed && (
+        <div
+          onMouseEnter={() => setNavRevealed(true)}
+          onMouseLeave={() => setNavRevealed(false)}
+        >
+          <Navbar />
+        </div>
+      )}
 
       {/* Add padding-top to account for fixed navbar only for non-admin / non-immersive routes */}
       <div className={!shouldHideNavbar ? 'pt-20' : ''}>

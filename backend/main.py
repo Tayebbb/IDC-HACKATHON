@@ -1993,24 +1993,61 @@ _LLM_SYSTEM_PROMPT = (
     'Always ground your answers in the candidate context when provided.'
 )
 
+# Pooled HTTP client — created lazily, reused for the process lifetime.
+# Saves the TCP + TLS handshake on every HF chat call (~50–200ms each)
+# and lets us run truly async without an extra worker thread per request.
+_HF_HTTP_CLIENT = None        # type: ignore[assignment]
+_HF_CLIENT_LOCK = _asyncio.Lock()
 
-def _hf_chat_sync(
+
+async def _get_hf_client():
+    """Return a process-wide pooled httpx.AsyncClient for HF chat calls."""
+    global _HF_HTTP_CLIENT
+    if _HF_HTTP_CLIENT is not None and not _HF_HTTP_CLIENT.is_closed:
+        return _HF_HTTP_CLIENT
+    async with _HF_CLIENT_LOCK:
+        if _HF_HTTP_CLIENT is None or _HF_HTTP_CLIENT.is_closed:
+            import httpx
+            _HF_HTTP_CLIENT = httpx.AsyncClient(
+                timeout=httpx.Timeout(_HF_CHAT_TIMEOUT, connect=5.0),
+                limits=httpx.Limits(
+                    max_keepalive_connections=10,
+                    max_connections=20,
+                    keepalive_expiry=60.0,
+                ),
+                headers={
+                    'Authorization': f'Bearer {_HF_TOKEN}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Wait-For-Model': 'true',
+                },
+            )
+    return _HF_HTTP_CLIENT
+
+
+async def _close_hf_client():
+    global _HF_HTTP_CLIENT
+    if _HF_HTTP_CLIENT is not None and not _HF_HTTP_CLIENT.is_closed:
+        try:
+            await _HF_HTTP_CLIENT.aclose()
+        except Exception:
+            pass
+    _HF_HTTP_CLIENT = None
+
+
+async def _hf_chat(
     user_content: str,
     max_tokens: int = 512,
     temperature: float = 0.7,
 ) -> str:
-    """Blocking POST to HF chat-completions router. Returns assistant text.
-
-    Raises RuntimeError on token-missing or all-retries-exhausted.
-    """
+    """Async POST to HF chat-completions router with retries + keep-alive."""
     if not _HF_TOKEN:
         raise RuntimeError('HF_TOKEN is not set on the backend.')
 
-    import urllib.request
-    import urllib.error
-    import time
+    import httpx
+    import time as _time
 
-    body = _json.dumps({
+    body = {
         'model': _HF_CHAT_MODEL,
         'messages': [
             {'role': 'system', 'content': _LLM_SYSTEM_PROMPT},
@@ -2019,50 +2056,33 @@ def _hf_chat_sync(
         'max_tokens': max_tokens,
         'temperature': temperature,
         'stream': False,
-    }).encode('utf-8')
-
-    headers = {
-        'Authorization': f'Bearer {_HF_TOKEN}',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Wait-For-Model': 'true',
     }
 
+    client = await _get_hf_client()
     last_err = None
+    started = _time.perf_counter()
     for attempt in range(_HF_CHAT_MAX_RETRIES):
         try:
-            req = urllib.request.Request(_HF_CHAT_URL, data=body, headers=headers)
-            with urllib.request.urlopen(req, timeout=_HF_CHAT_TIMEOUT) as r:
-                payload = _json.loads(r.read())
+            r = await client.post(_HF_CHAT_URL, json=body)
+            if r.status_code in (429, 503):
+                last_err = RuntimeError(f'HF rate-limited (HTTP {r.status_code})')
+                await _asyncio.sleep(min(5 * (2 ** attempt), 20))
+                continue
+            if r.status_code >= 400:
+                detail = (r.text or '')[:300]
+                raise RuntimeError(f'HF chat HTTP {r.status_code}: {detail}')
+            payload = r.json()
             try:
-                return (payload['choices'][0]['message']['content'] or '').strip()
+                text = (payload['choices'][0]['message']['content'] or '').strip()
             except (KeyError, IndexError, TypeError):
                 raise RuntimeError(f'Unexpected HF chat payload: {payload}')
-        except urllib.error.HTTPError as e:  # type: ignore[attr-defined]
+            elapsed = (_time.perf_counter() - started) * 1000
+            log.info('[HF] chat ok in %.0fms (attempt=%d, max_tokens=%d)', elapsed, attempt + 1, max_tokens)
+            return text
+        except (httpx.TimeoutException, httpx.TransportError) as e:
             last_err = e
-            if e.code in (429, 503):
-                time.sleep(min(5 * (2 ** attempt), 20))
-                continue
-            try:
-                detail = e.read().decode('utf-8', errors='ignore')[:300]
-            except Exception:
-                detail = ''
-            raise RuntimeError(f'HF chat HTTP {e.code}: {detail}')
-        except Exception as e:
-            last_err = e
-            time.sleep(1.0 * (2 ** attempt))
+            await _asyncio.sleep(1.0 * (2 ** attempt))
     raise RuntimeError(f'HF chat exhausted retries: {last_err}')
-
-
-async def _hf_chat(
-    user_content: str,
-    max_tokens: int = 512,
-    temperature: float = 0.7,
-) -> str:
-    """Async wrapper — runs blocking HF call in a worker thread."""
-    return await _asyncio.to_thread(
-        _hf_chat_sync, user_content, max_tokens, temperature
-    )
 
 
 def _profile_summary(profile: 'Dict[str, Any] | None') -> str:
@@ -2271,6 +2291,21 @@ async def roadmap(req: Dict[str, Any]):
 # ---------------------------------------------------------------------------
 _REFERENCE_STORE: Dict[str, Dict[str, Any]] = {}
 
+# Session-scoped RAG context cache. RAG result is determined by
+# (role, difficulty, track, top_k, sorted profile skills). Caching this
+# across questions in the same session saves a full BM25+dense pass per
+# question (~150–400ms). TTL keeps stale data from lingering across
+# unrelated sessions.
+_INTERVIEW_RAG_CACHE: Dict[str, tuple] = {}
+_INTERVIEW_RAG_CACHE_TTL = 600          # seconds (10 min)
+_INTERVIEW_RAG_CACHE_MAX = 128
+
+# In-flight reference-answer generation tasks. /interview/question now fires
+# the reference LLM call as a background asyncio.Task so the endpoint can
+# return immediately after the first LLM call (≈2× faster TTFB). The
+# subsequent /interview/evaluate awaits the task if it isn't done yet.
+_REFERENCE_TASKS: Dict[str, "_asyncio.Task"] = {}
+
 
 def _load_reference_store() -> None:
     global _REFERENCE_STORE
@@ -2353,10 +2388,28 @@ async def _get_interview_rag_context(
     profile: Dict[str, Any] | None = None,
     top_k: int = 4,
 ) -> Dict[str, Any]:
-    """Retrieve interview-relevant context, sources, and skills."""
+    """Retrieve interview-relevant context, sources, and skills.
+
+    Cached per (role, difficulty, track, skills_signature) for 10 min so the
+    same hybrid search isn't recomputed for every question in a session.
+    """
+    import time as _time
+    track = _infer_track_from_role(role)
+
+    # Cache key: role + difficulty + inferred track + sorted skills snippet
+    skills_sig = ''
+    if isinstance(profile, dict):
+        sk = profile.get('skills') or []
+        if isinstance(sk, list):
+            skills_sig = ','.join(sorted(str(s).lower().strip() for s in sk if s))[:160]
+    cache_key = f'{role.lower()}|{difficulty.lower()}|{track.lower()}|{top_k}|{skills_sig}'
+    now = _time.time()
+    cached = _INTERVIEW_RAG_CACHE.get(cache_key)
+    if cached and (now - cached[0]) < _INTERVIEW_RAG_CACHE_TTL:
+        return cached[1]
+
     if not _HYBRID_CORPUS:
         _load_hybrid_corpus()
-    track = _infer_track_from_role(role)
     query = f'{difficulty} {role} interview skills project APIs databases examples'
     expanded_query = _expand_query(query, track)
     filtered = _filter_corpus(
@@ -2391,13 +2444,20 @@ async def _get_interview_rag_context(
             'AI/ML': ['Python', 'ML', 'Data analysis', 'Model evaluation'],
             'Communication': ['Communication', 'Product thinking', 'User research'],
         }.get(track, ['Problem solving'])
-    return {
+    result = {
         'track': track,
         'context': _build_context_window(top) if top else '',
         'sources': _with_source_reasons([_source_summary(i) for i in top], query),
         'skills_tested': skills[:6],
         'rag_grounded': bool(top),
     }
+
+    # Cache + size cap (evict oldest if over capacity)
+    if len(_INTERVIEW_RAG_CACHE) >= _INTERVIEW_RAG_CACHE_MAX:
+        for k in sorted(_INTERVIEW_RAG_CACHE.keys(), key=lambda x: _INTERVIEW_RAG_CACHE[x][0])[:8]:
+            _INTERVIEW_RAG_CACHE.pop(k, None)
+    _INTERVIEW_RAG_CACHE[cache_key] = (now, result)
+    return result
 
 
 async def _generate_reference_answer(
@@ -2502,6 +2562,40 @@ def _get_reference(session_id: str | None, question_number: int) -> Dict[str, An
         return None
     _load_reference_store()
     return _REFERENCE_STORE.get(_reference_key(str(session_id), question_number))
+
+
+async def _background_reference_fill(
+    session_id: str,
+    question_number: int,
+    question: str,
+    role: str,
+    difficulty: str,
+    skills_tested: List[str],
+    context: str,
+    base_payload: Dict[str, Any],
+) -> None:
+    """Generate the LLM reference answer off the request hot path.
+
+    The /interview/question endpoint stores a partial payload (no reference
+    text yet) and returns. This task fills in `reference_answer` and re-saves.
+    /interview/evaluate awaits this task if it isn't done by then.
+    """
+    import time as _time
+    started = _time.perf_counter()
+    try:
+        reference = await _generate_reference_answer(
+            question, role, difficulty, skills_tested, context,
+        )
+        base_payload['reference_answer'] = reference
+        _store_reference(session_id, question_number, base_payload)
+        log.info(
+            '[interview] background reference filled in %.0fms (session=%s q=%d)',
+            (_time.perf_counter() - started) * 1000,
+            session_id,
+            question_number,
+        )
+    except Exception as e:
+        log.warning('[interview] background reference fill failed: %s', e)
 
 
 def _has_practical_example(answer: str) -> bool:
@@ -2721,20 +2815,42 @@ async def interview_question(req: Dict[str, Any]):
     if not cleaned:
         cleaned = raw.strip()  # never return empty string
 
-    reference = await _generate_reference_answer(
-        cleaned,
-        role,
-        difficulty,
-        skills_tested,
-        context,
-    )
-    _store_reference(session_id, question_number, {
+    reference_payload = {
         'question': cleaned,
-        'reference_answer': reference,
+        'reference_answer': '',  # filled in by background task or below
         'skills_tested': skills_tested,
         'sources': rag.get('sources') or [],
         'rag_grounded': bool(rag.get('rag_grounded')),
-    })
+    }
+
+    if session_id:
+        # Store partial payload immediately so /evaluate can find sources/skills.
+        _store_reference(session_id, question_number, reference_payload)
+        # Kick reference-answer LLM call into background; evaluate awaits it.
+        ref_key = _reference_key(str(session_id), question_number)
+        prev = _REFERENCE_TASKS.pop(ref_key, None)
+        if prev and not prev.done():
+            prev.cancel()
+        _REFERENCE_TASKS[ref_key] = _asyncio.create_task(
+            _background_reference_fill(
+                str(session_id),
+                question_number,
+                cleaned,
+                role,
+                difficulty,
+                skills_tested,
+                context,
+                reference_payload,
+            )
+        )
+    else:
+        # No session id — compute inline so /evaluate still has a reference.
+        reference = await _generate_reference_answer(
+            cleaned, role, difficulty, skills_tested, context,
+        )
+        reference_payload['reference_answer'] = reference
+        _store_reference(None, question_number, reference_payload)
+
     _store_role_question(role, difficulty, cleaned)
     return {
         'question': cleaned,
@@ -2815,8 +2931,21 @@ async def interview_evaluate(req: Dict[str, Any]):
     question_number = max(1, min(question_number, 50))
 
     reference_payload = _get_reference(session_id, question_number)
+    # If the reference is still being generated in the background, wait briefly.
+    if reference_payload and not reference_payload.get('reference_answer') and session_id:
+        ref_key = _reference_key(str(session_id), question_number)
+        task = _REFERENCE_TASKS.get(ref_key)
+        if task and not task.done():
+            try:
+                await _asyncio.wait_for(_asyncio.shield(task), timeout=12.0)
+            except _asyncio.TimeoutError:
+                log.warning('[interview-evaluate] reference task timed out')
+            except Exception as e:
+                log.warning('[interview-evaluate] reference task error: %s', e)
+            reference_payload = _get_reference(session_id, question_number) or reference_payload
+
     rag_grounded = bool(reference_payload)
-    if reference_payload:
+    if reference_payload and reference_payload.get('reference_answer'):
         reference_answer = str(reference_payload.get('reference_answer') or '')
         skills_tested = list(reference_payload.get('skills_tested') or [])
         sources = list(reference_payload.get('sources') or [])
@@ -3215,6 +3344,11 @@ async def startup_event():
     log.info("[GEN] Optional reranker/local embeddings load lazily on first use.")
     _load_corpus()
     _init_chroma()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await _close_hf_client()
 
 
 if __name__ == "__main__":
