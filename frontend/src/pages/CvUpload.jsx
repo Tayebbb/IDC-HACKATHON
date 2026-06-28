@@ -337,7 +337,7 @@ export default function CvUpload() {
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
                   <Lightbulb size={24} style={{ color: "#A855F7", marginTop: "2px", flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: "1.125rem", fontWeight: "600", color: "#FFFFFF", margin: "0 0 0.75rem 0" }}>
+                    <h3 style={{ fontSize: "1.125rem", fontWeight: "600", color: 'rgb(var(--c-on-card))', margin: "0 0 0.75rem 0" }}>
                        Hot Skills to Learn Now
                     </h3>
                     <div style={{ color: "#CBD5E1", fontSize: "0.95rem", lineHeight: "1.6", whiteSpace: "pre-line" }}>
@@ -424,10 +424,10 @@ const styles = {
     alignItems: "center",
     gap: "16px",
     padding: "20px 24px",
-    background: "rgba(17,21,43,0.6)",
+    background: "rgb(var(--c-card) / 0.6)",
     borderRadius: "16px",
     border: "1px solid rgba(168,85,247,0.12)",
-    boxShadow: "0 4px 20px rgba(10,8,30,0.4)",
+    boxShadow: "0 4px 20px rgb(var(--c-shadow) / 0.4)",
   },
   headerIcon: {
     width: "48px",
@@ -440,7 +440,7 @@ const styles = {
     boxShadow: "0 0 20px rgba(16,185,129,0.3)",
   },
   title: {
-    color: "#FFFFFF",
+    color: 'rgb(var(--c-on-card))',
     margin: 0,
     fontSize: "24px",
     fontWeight: "700",
@@ -450,16 +450,16 @@ const styles = {
     backgroundClip: "text",
   },
   subtitle: {
-    color: "#94A3B8",
+    color: 'rgb(var(--c-text-muted))',
     margin: 0,
     fontSize: "14px",
   },
   uploadCard: {
-    background: "rgba(17,21,43,0.6)",
+    background: "rgb(var(--c-card) / 0.6)",
     padding: "2.5rem",
     borderRadius: "16px",
     border: "1px solid rgba(168,85,247,0.12)",
-    boxShadow: "0 4px 20px rgba(10,8,30,0.4)",
+    boxShadow: "0 4px 20px rgb(var(--c-shadow) / 0.4)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -478,12 +478,12 @@ const styles = {
   uploadTitle: {
     fontSize: "1.5rem",
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: 'rgb(var(--c-on-card))',
     marginBottom: "0.5rem",
   },
   uploadDescription: {
     fontSize: "1rem",
-    color: "#94A3B8",
+    color: 'rgb(var(--c-text-muted))',
     textAlign: "center",
     marginBottom: "2rem",
     maxWidth: "500px",
@@ -503,10 +503,10 @@ const styles = {
     justifyContent: "center",
     gap: "0.75rem",
     padding: "1rem 1.5rem",
-    background: "rgba(30,41,59,0.5)",
+    background: "rgb(var(--c-card-2) / 0.5)",
     border: "2px dashed rgba(148,163,184,0.3)",
     borderRadius: "0.5rem",
-    color: "#94A3B8",
+    color: 'rgb(var(--c-text-muted))',
     fontSize: "1rem",
     fontWeight: "500",
     transition: "all 0.3s ease",
@@ -558,10 +558,10 @@ const styles = {
     boxShadow: "0 2px 8px rgba(239,68,68,0.1)",
   },
   resultsCard: {
-    background: "rgba(17,21,43,0.6)",
+    background: "rgb(var(--c-card) / 0.6)",
     borderRadius: "16px",
     border: "1px solid rgba(168,85,247,0.12)",
-    boxShadow: "0 4px 20px rgba(10,8,30,0.4)",
+    boxShadow: "0 4px 20px rgb(var(--c-shadow) / 0.4)",
     overflow: "hidden",
   },
   resultsHeader: {
@@ -577,7 +577,7 @@ const styles = {
   resultsTitle: {
     fontSize: "1.75rem",
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: 'rgb(var(--c-on-card))',
     margin: 0,
     background: "linear-gradient(90deg, #10B981, #A855F7)",
     WebkitBackgroundClip: "text",
@@ -591,7 +591,7 @@ const styles = {
     gap: "2rem",
   },
   analysisSection: {
-    background: "rgba(30,41,59,0.3)",
+    background: "rgb(var(--c-card-2) / 0.3)",
     borderRadius: "12px",
     padding: "1.5rem",
     border: "1px solid rgba(148,163,184,0.08)",
@@ -609,12 +609,12 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+    boxShadow: "0 4px 12px rgb(var(--c-shadow) / 0.2)",
   },
   sectionTitle: {
     fontSize: "1.25rem",
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: 'rgb(var(--c-on-card))',
     margin: 0,
     flex: 1,
   },
@@ -642,7 +642,7 @@ const styles = {
     textAlign: "center",
     transition: "all 0.2s ease",
     cursor: "default",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    boxShadow: "0 2px 4px rgb(var(--c-shadow) / 0.1)",
   },
   techTag: {
     padding: "0.75rem 1rem",
@@ -655,7 +655,7 @@ const styles = {
     textAlign: "center",
     transition: "all 0.2s ease",
     cursor: "default",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    boxShadow: "0 2px 4px rgb(var(--c-shadow) / 0.1)",
   },
   roleTag: {
     padding: "0.75rem 1rem",
@@ -668,7 +668,7 @@ const styles = {
     textAlign: "center",
     transition: "all 0.2s ease",
     cursor: "default",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    boxShadow: "0 2px 4px rgb(var(--c-shadow) / 0.1)",
   },
   saveButton: {
     margin: "0 2rem 2rem 2rem",
@@ -699,11 +699,11 @@ const styles = {
     transform: "none !important",
   },
   summaryCard: {
-    background: "rgba(17,21,43,0.6)",
+    background: "rgb(var(--c-card) / 0.6)",
     padding: "2rem",
     borderRadius: "16px",
     border: "1px solid rgba(168,85,247,0.12)",
-    boxShadow: "0 4px 20px rgba(10,8,30,0.4)",
+    boxShadow: "0 4px 20px rgb(var(--c-shadow) / 0.4)",
   },
   summaryHeader: {
     display: "flex",
@@ -716,25 +716,25 @@ const styles = {
   summaryTitle: {
     fontSize: "1.5rem",
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: 'rgb(var(--c-on-card))',
     margin: 0,
   },
   rawTextCard: {
-    background: "rgba(17,21,43,0.6)",
+    background: "rgb(var(--c-card) / 0.6)",
     padding: "1.5rem",
     borderRadius: "16px",
     border: "1px solid rgba(168,85,247,0.12)",
-    boxShadow: "0 4px 20px rgba(10,8,30,0.4)",
+    boxShadow: "0 4px 20px rgb(var(--c-shadow) / 0.4)",
   },
   rawTextToggle: {
     display: "flex",
     alignItems: "center",
     gap: "0.5rem",
     padding: "0.75rem 1rem",
-    background: "rgba(30,41,59,0.5)",
+    background: "rgb(var(--c-card-2) / 0.5)",
     border: "1px solid rgba(148,163,184,0.1)",
     borderRadius: "0.5rem",
-    color: "#94A3B8",
+    color: 'rgb(var(--c-text-muted))',
     fontSize: "0.875rem",
     fontWeight: "500",
     cursor: "pointer",

@@ -53,10 +53,10 @@ const LearningSuggestionCard = ({ suggestions }) => {
           <GraduationCap className="w-5 h-5 text-purple-400" />
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-bold text-white mb-1">
+          <h3 className="text-lg font-bold text-text-main mb-1">
             Recommended Learning Resources
           </h3>
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-text-muted">
             Curated courses and tutorials to help you master these skills
           </p>
         </div>
@@ -117,7 +117,7 @@ const LearningSuggestionCard = ({ suggestions }) => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             {getPlatformIcon(resource.platform)}
-                            <h4 className="text-sm font-medium text-white truncate">
+                            <h4 className="text-sm font-medium text-text-main truncate">
                               {resource.title}
                             </h4>
                           </div>

@@ -618,7 +618,7 @@ const Profile = () => {
           {applications.length > 0 ? (
             <div className="space-y-4">
               {applications.map((app) => (
-                <div key={app.id} className="border border-[rgba(255,255,255,0.1)] rounded-lg p-4">
+                <div key={app.id} className="border border-[rgb(var(--c-on-card)/0.1)] rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-semibold text-main">Job ID: {app.jobId}</p>

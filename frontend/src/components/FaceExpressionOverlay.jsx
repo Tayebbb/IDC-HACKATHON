@@ -993,7 +993,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
 
         {camError ? (
           <div className="flex flex-col items-center justify-center h-48 px-4 text-center gap-3">
-            <p className="text-sm text-[#FCA5A5]">{camError}</p>
+            <p className="text-sm text-error">{camError}</p>
             <button
               onClick={startCamera}
               className="text-xs px-3 py-1.5 rounded-md border border-purple-500/40 text-purple-300 hover:bg-purple-500/10"
@@ -1003,7 +1003,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
           </div>
         ) : !cameraStarted ? (
           <div className="flex flex-col items-center justify-center h-48 px-4 text-center gap-3">
-            <p className="text-sm text-[#B3B3C7]">Enable your webcam for live expression coaching.</p>
+            <p className="text-sm text-text-muted">Enable your webcam for live expression coaching.</p>
             <button
               onClick={startCamera}
               disabled={!active}
@@ -1077,7 +1077,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
             </button>
             {!active && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl">
-                <span className="text-[#B3B3C7] text-sm">Camera paused</span>
+                <span className="text-text-muted text-sm">Camera paused</span>
               </div>
             )}
           </>

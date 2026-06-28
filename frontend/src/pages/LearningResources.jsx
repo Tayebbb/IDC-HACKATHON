@@ -213,7 +213,7 @@ const LearningResources = () => {
               placeholder="Search by title, platform, or skill..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-lg text-main placeholder-muted focus:outline-none focus:border-primary transition-colors"
+              className="w-full pl-12 pr-4 py-3 bg-[rgb(var(--c-on-card)/0.05)] border border-[rgb(var(--c-on-card)/0.1)] rounded-lg text-main placeholder-muted focus:outline-none focus:border-primary transition-colors"
             />
           </div>
 
@@ -224,7 +224,7 @@ const LearningResources = () => {
               className={`px-4 py-3 rounded-lg font-medium transition-all ${
                 filterType === 'all'
                   ? 'bg-primary text-white'
-                  : 'bg-[rgba(255,255,255,0.05)] text-muted hover:bg-[rgba(255,255,255,0.1)]'
+                  : 'bg-[rgb(var(--c-on-card)/0.05)] text-muted hover:bg-[rgb(var(--c-on-card)/0.1)]'
               }`}
             >
               All
@@ -234,7 +234,7 @@ const LearningResources = () => {
               className={`px-4 py-3 rounded-lg font-medium transition-all ${
                 filterType === 'free'
                   ? 'bg-green-500 text-white'
-                  : 'bg-[rgba(255,255,255,0.05)] text-muted hover:bg-[rgba(255,255,255,0.1)]'
+                  : 'bg-[rgb(var(--c-on-card)/0.05)] text-muted hover:bg-[rgb(var(--c-on-card)/0.1)]'
               }`}
             >
               Free
@@ -244,7 +244,7 @@ const LearningResources = () => {
               className={`px-4 py-3 rounded-lg font-medium transition-all ${
                 filterType === 'paid'
                   ? 'bg-pink-500 text-white'
-                  : 'bg-[rgba(255,255,255,0.05)] text-muted hover:bg-[rgba(255,255,255,0.1)]'
+                  : 'bg-[rgb(var(--c-on-card)/0.05)] text-muted hover:bg-[rgb(var(--c-on-card)/0.1)]'
               }`}
             >
               Paid

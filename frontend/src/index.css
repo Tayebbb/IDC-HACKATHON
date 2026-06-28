@@ -30,6 +30,13 @@
     --c-glass-border: 255 255 255;
     --c-glass-strong: 255 255 255;
 
+    /* Semantic surface tokens for inline-style cards
+       (auto-flip in light mode below — pages should use
+       `rgb(var(--c-card) / 0.X)` instead of hardcoded rgba()) */
+    --c-card: 17 21 43;             /* card body for translucent panels */
+    --c-card-2: 11 14 28;           /* deeper card variant */
+    --c-on-card: 255 255 255;       /* foreground on cards */
+
     /* Brand — softened violet/indigo */
     --c-primary: 139 127 246;       /* #8B7FF6 */
     --c-primary-light: 179 168 255; /* #B3A8FF */
@@ -56,13 +63,21 @@
   }
 
   [data-theme='light'] {
-    --c-bg-base: 244 246 252;       /* #F4F6FC */
+    --c-bg-base: 238 241 249;       /* #EEF1F9 — soft cool gray page */
     --c-bg-section: 255 255 255;
-    --c-bg-elevated: 250 251 255;
+    --c-bg-elevated: 252 253 255;
 
     --c-glass-surface: 255 255 255;
     --c-glass-border: 15 23 42;
     --c-glass-strong: 15 23 42;
+
+    /* Semantic surface tokens — light variants
+       Cards are white panels on the cooler page bg → clear elevation.
+       Foreground flips to dark slate so dark-mode-locked inline
+       styles auto-adapt via `rgb(var(--c-on-card) / α)`. */
+    --c-card: 255 255 255;          /* solid white card */
+    --c-card-2: 248 250 254;        /* slightly tinted variant */
+    --c-on-card: 15 23 42;          /* dark slate text on light cards */
 
     --c-primary: 99 86 232;         /* #6356E8 */
     --c-primary-light: 139 127 246;
@@ -124,9 +139,9 @@
 
   [data-theme='light'] body::before {
     background-image:
-      radial-gradient(55% 45% at 20% 12%, rgb(var(--c-primary) / 0.13) 0%, transparent 60%),
-      radial-gradient(50% 40% at 82% 8%, rgb(var(--c-accent-blue) / 0.12) 0%, transparent 60%),
-      radial-gradient(60% 50% at 50% 110%, rgb(var(--c-accent-pink) / 0.10) 0%, transparent 60%);
+      radial-gradient(55% 45% at 20% 12%, rgb(var(--c-primary) / 0.18) 0%, transparent 60%),
+      radial-gradient(50% 40% at 82% 8%, rgb(var(--c-accent-blue) / 0.16) 0%, transparent 60%),
+      radial-gradient(60% 50% at 50% 110%, rgb(var(--c-accent-pink) / 0.14) 0%, transparent 60%);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -208,11 +223,22 @@
   }
 
   [data-theme='light'] .glass-surface {
-    background: rgb(var(--c-glass-surface) / 0.70);
-    border-color: rgb(var(--c-glass-border) / 0.08);
+    background: rgb(var(--c-glass-surface) / 0.86);
+    border-color: rgb(var(--c-glass-border) / 0.10);
     box-shadow:
-      0 10px 30px rgb(var(--c-shadow) / 0.10),
-      inset 0 1px 0 rgb(255 255 255 / 0.6);
+      0 8px 24px rgb(var(--c-shadow) / 0.10),
+      0 2px 6px rgb(var(--c-shadow) / 0.06),
+      inset 0 1px 0 rgb(255 255 255 / 0.7);
+  }
+
+  /* Popovers/menus need stronger separation from the page in light mode */
+  [data-theme='light'] .glass-panel {
+    background: rgb(var(--c-glass-surface) / 0.96);
+    border-color: rgb(var(--c-glass-border) / 0.12);
+    box-shadow:
+      0 18px 44px rgb(var(--c-shadow) / 0.16),
+      0 4px 12px rgb(var(--c-shadow) / 0.08),
+      inset 0 1px 0 rgb(255 255 255 / 0.9);
   }
 
   .glass-card {
@@ -448,6 +474,14 @@
   .badge-error   { background: rgb(var(--c-error) / 0.14);   border-color: rgb(var(--c-error) / 0.30);   color: rgb(var(--c-error)); }
   .badge-info    { background: rgb(var(--c-info) / 0.14);    border-color: rgb(var(--c-info) / 0.30);    color: rgb(var(--c-info)); }
 
+  /* Light-mode badge contrast: dark theme uses light tinted text on dark
+     glass; in light mode swap to saturated foreground colors on tinted bg. */
+  [data-theme='light'] .badge-primary { background: rgb(var(--c-primary) / 0.12); border-color: rgb(var(--c-primary) / 0.30); color: rgb(var(--c-primary-dark)); }
+  [data-theme='light'] .badge-success { background: rgb(var(--c-success) / 0.12); color: rgb(var(--c-success)); }
+  [data-theme='light'] .badge-warning { background: rgb(var(--c-warning) / 0.16); color: rgb(var(--c-warning)); }
+  [data-theme='light'] .badge-error   { background: rgb(var(--c-error) / 0.12);   color: rgb(var(--c-error)); }
+  [data-theme='light'] .badge-info    { background: rgb(var(--c-info) / 0.12);    color: rgb(var(--c-info)); }
+
   /* ---------- Section helpers ---------- */
   .section-container { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
   .page-padding { @apply py-10 sm:py-14 lg:py-16; }
@@ -464,6 +498,11 @@
     @apply uppercase text-xs font-semibold tracking-[0.18em];
     color: rgb(var(--c-primary-light));
   }
+  [data-theme='light'] .eyebrow { color: rgb(var(--c-primary-dark)); }
+
+  /* Light-mode polish: dark-mode-locked gradient text often becomes
+     washed against a light card. Re-saturate `.gradient-text` and
+     give `.glow-text` a clean dark fallback in light mode. */
 
   /* ---------- Skeleton / loading ---------- */
   .skeleton {
@@ -508,6 +547,13 @@
     -webkit-background-clip: text;
     color: transparent;
   }
+  [data-theme='light'] .gradient-text {
+    background-image: linear-gradient(
+      90deg,
+      rgb(var(--c-primary-dark)),
+      rgb(var(--c-accent-pink))
+    );
+  }
 
   /* ---------- Status dot ---------- */
   .status-dot { @apply inline-block w-2 h-2 rounded-full; }
@@ -537,6 +583,78 @@
     background: rgb(var(--c-primary) / 0.14);
     box-shadow: inset 0 0 0 1px rgb(var(--c-primary) / 0.32);
   }
+
+  /* ────────────────────────────────────────────────────────────────
+     Light-mode overrides for legacy hardcoded Tailwind arbitrary
+     color classes (`from-[#1A1B2E]`, `to-[#13141F]`, `via-[#2D1B69]`,
+     `bg-[#1A1B2E]`). These were authored for dark-only mode; we
+     remap them to theme tokens so cards/heroes flip cleanly without
+     touching every page. Descendant `text-white` is reflowed to
+     `--c-text-main` inside flipped surfaces so legacy markup stays
+     readable.
+     ──────────────────────────────────────────────────────────────── */
+  [data-theme='light'] .from-\[\#1A1B2E\] {
+    --tw-gradient-from: rgb(var(--c-bg-section)) var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(var(--c-bg-section) / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+  [data-theme='light'] .to-\[\#1A1B2E\] {
+    --tw-gradient-to: rgb(var(--c-bg-section)) var(--tw-gradient-to-position);
+  }
+  [data-theme='light'] .from-\[\#13141F\] {
+    --tw-gradient-from: rgb(var(--c-bg-elevated)) var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(var(--c-bg-elevated) / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+  [data-theme='light'] .to-\[\#13141F\] {
+    --tw-gradient-to: rgb(var(--c-bg-elevated)) var(--tw-gradient-to-position);
+  }
+  [data-theme='light'] .via-\[\#2D1B69\] {
+    --tw-gradient-via: rgb(var(--c-primary) / 0.18) var(--tw-gradient-via-position);
+    --tw-gradient-stops:
+      var(--tw-gradient-from),
+      var(--tw-gradient-via),
+      var(--tw-gradient-to);
+  }
+  [data-theme='light'] .bg-\[\#1A1B2E\] {
+    background-color: rgb(var(--c-bg-section));
+  }
+  [data-theme='light'] .bg-\[\#13141F\] {
+    background-color: rgb(var(--c-bg-elevated));
+  }
+  /* lowercase variant — AnalyticsModal uses bg-[#1a1a2e] */
+  [data-theme='light'] .bg-\[\#1a1a2e\] {
+    background-color: rgb(var(--c-bg-section));
+  }
+
+  /* Reflow legacy `text-white` headings inside surfaces that we just
+     flipped to light. Includes `div.text-white` since several pages
+     set text-white at the container level so children inherit it. */
+  [data-theme='light'] .from-\[\#1A1B2E\] :is(div, section, header, h1, h2, h3, h4, h5, h6, p, span).text-white,
+  [data-theme='light'] .from-\[\#13141F\] :is(div, section, header, h1, h2, h3, h4, h5, h6, p, span).text-white,
+  [data-theme='light'] .bg-\[\#1A1B2E\] :is(div, section, header, h1, h2, h3, h4, h5, h6, p, span).text-white,
+  [data-theme='light'] .bg-\[\#13141F\] :is(div, section, header, h1, h2, h3, h4, h5, h6, p, span).text-white,
+  [data-theme='light'] .from-\[\#1A1B2E\].text-white,
+  [data-theme='light'] .from-\[\#13141F\].text-white {
+    color: rgb(var(--c-text-main));
+  }
+  /* Restore white for button/anchor descendants that legitimately
+     keep a colored background (red/purple/green gradient CTAs). */
+  [data-theme='light'] .from-\[\#1A1B2E\] :is(a, button, .bg-gradient-to-r, .bg-gradient-to-br, [class*="bg-red-"], [class*="bg-purple-"], [class*="bg-green-"], [class*="bg-blue-"]).text-white,
+  [data-theme='light'] .from-\[\#1A1B2E\] :is(a, button) .text-white,
+  [data-theme='light'] .from-\[\#1A1B2E\] :is(a, button) :is(span, div).text-white {
+    color: #FFFFFF;
+  }
+  [data-theme='light'] .from-\[\#1A1B2E\] .placeholder-gray-500::placeholder {
+    color: rgb(var(--c-text-subtle));
+  }
+
+  /* Tailwind `text-gray-400` reads poorly on white cards (gray on
+     white). Slightly darken to slate-500 in light mode for legible
+     secondary text. Scoped via attribute selector so we don't
+     hijack the class globally. */
+  [data-theme='light'] .text-gray-400 { color: rgb(100 116 139); }
+  [data-theme='light'] .text-gray-500 { color: rgb(71 85 105); }
 }
 
 /* ============================================================

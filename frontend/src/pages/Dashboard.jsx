@@ -668,7 +668,7 @@ const RecommendedCourseCard = ({ course, index }) => (
       </p>
 
       {/* Course Stats */}
-      <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[rgba(255,255,255,0.1)]">
+      <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[rgb(var(--c-on-card)/0.1)]">
         <div className="flex items-center gap-2">
           <User size={16} />
           <span>{course.enrollmentCount} students</span>
@@ -727,7 +727,7 @@ const CourseCard = ({ course, index }) => (
       </p>
 
       {/* Course Stats */}
-      <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[rgba(255,255,255,0.1)]">
+      <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[rgb(var(--c-on-card)/0.1)]">
         <div className="flex items-center gap-2">
           <User size={16} />
           <span>{course.enrollmentCount} students</span>

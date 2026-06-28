@@ -369,7 +369,7 @@ export default function CareerRoadmap() {
                 if (line.startsWith('*') || line.startsWith('-') || line.startsWith('•')) {
                   return (
                     <div key={idx} style={styles.bulletPoint}>
-                      <ArrowRight size={18} style={{ color: '#FFFFFF', marginRight: '8px', flexShrink: 0, marginTop: '2px' }} />
+                      <ArrowRight size={18} style={{ color: 'rgb(var(--c-on-card))', marginRight: '8px', flexShrink: 0, marginTop: '2px' }} />
                       <span>{cleanLine.replace(/^[*\-•]\s*/, '')}</span>
                     </div>
                   );
@@ -441,7 +441,7 @@ const styles = {
     gap: '16px',
     marginBottom: '40px',
     padding: '24px',
-    background: 'rgba(17,21,43,0.6)',
+    background: 'rgb(var(--c-card) / 0.6)',
     borderRadius: '16px',
     border: '1px solid rgba(168,85,247,0.12)',
   },
@@ -456,7 +456,7 @@ const styles = {
     flexShrink: 0,
   },
   title: {
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     margin: 0,
     fontSize: '28px',
     fontWeight: '700',
@@ -466,7 +466,7 @@ const styles = {
     backgroundClip: 'text',
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgb(var(--c-on-card) / 0.6)',
     margin: '4px 0 0 0',
     fontSize: '14px',
   },
@@ -477,12 +477,12 @@ const styles = {
   },
   profileCard: {
     padding: '24px',
-    background: 'rgba(17,21,43,0.4)',
+    background: 'rgb(var(--c-card) / 0.4)',
     borderRadius: '16px',
     border: '1px solid rgba(168,85,247,0.08)',
   },
   sectionTitle: {
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     fontSize: '18px',
     fontWeight: '600',
     margin: '0 0 16px 0',
@@ -498,13 +498,13 @@ const styles = {
     gap: '12px',
   },
   label: {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgb(var(--c-on-card) / 0.6)',
     fontSize: '14px',
     fontWeight: '500',
     minWidth: '120px',
   },
   value: {
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     fontSize: '14px',
     fontWeight: '500',
   },
@@ -524,18 +524,18 @@ const styles = {
     border: '1px solid rgba(168,85,247,0.3)',
   },
   noSkills: {
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgb(var(--c-on-card) / 0.4)',
     fontSize: '13px',
     fontStyle: 'italic',
   },
   inputCard: {
     padding: '24px',
-    background: 'rgba(17,21,43,0.4)',
+    background: 'rgb(var(--c-card) / 0.4)',
     borderRadius: '16px',
     border: '1px solid rgba(168,85,247,0.08)',
   },
   inputDescription: {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgb(var(--c-on-card) / 0.6)',
     fontSize: '14px',
     margin: '0 0 16px 0',
   },
@@ -544,7 +544,7 @@ const styles = {
     alignItems: 'center',
     gap: '12px',
     padding: '12px 16px',
-    background: 'rgba(255,255,255,0.04)',
+    background: 'rgb(var(--c-on-card) / 0.04)',
     borderRadius: '12px',
     border: '1px solid rgba(168,85,247,0.15)',
     marginBottom: '16px',
@@ -553,7 +553,7 @@ const styles = {
     flex: 1,
     background: 'transparent',
     border: 'none',
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     fontSize: '15px',
     outline: 'none',
     fontFamily: 'Poppins, Inter, system-ui, sans-serif',
@@ -561,7 +561,7 @@ const styles = {
   generateButton: {
     padding: '12px 24px',
     background: 'linear-gradient(135deg, #A855F7, #7C3AED)',
-    color: '#FFFFFF',
+    color: 'white',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',
@@ -580,7 +580,7 @@ const styles = {
     borderRadius: '12px',
   },
   errorText: {
-    color: '#FCA5A5',
+    color: 'rgb(var(--c-error))',
     margin: 0,
     fontSize: '14px',
   },
@@ -597,13 +597,13 @@ const styles = {
     marginBottom: '20px',
   },
   loadingText: {
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     fontSize: '20px',
     fontWeight: '600',
     margin: '0 0 8px 0',
   },
   loadingSubtext: {
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgb(var(--c-on-card) / 0.5)',
     fontSize: '14px',
     margin: 0,
   },
@@ -618,7 +618,7 @@ const styles = {
     boxShadow: '0 8px 24px rgba(168,85,247,0.15)',
   },
   roadmapTitle: {
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     fontSize: '32px',
     fontWeight: '800',
     margin: '0 0 12px 0',
@@ -630,23 +630,23 @@ const styles = {
     letterSpacing: '-0.5px',
   },
   roadmapSubtitle: {
-    color: '#D1D5DB',
+    color: 'rgb(var(--c-text-muted))',
     fontSize: '16px',
     margin: 0,
     fontWeight: '500',
   },
   roadmapContent: {
     padding: '32px',
-    background: 'linear-gradient(135deg, rgba(17,21,43,0.8), rgba(11,14,28,0.9))',
+    background: 'linear-gradient(135deg, rgb(var(--c-card) / 0.8), rgb(var(--c-card-2) / 0.9))',
     borderRadius: '16px',
     border: '1px solid rgba(168,85,247,0.2)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    boxShadow: '0 8px 32px rgb(var(--c-shadow) / 0.4)',
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
   },
   roadmapSectionTitle: {
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     fontSize: '20px',
     fontWeight: '800',
     margin: '24px 0 16px 0',
@@ -664,7 +664,7 @@ const styles = {
     display: 'flex',
     alignItems: 'flex-start',
     gap: '12px',
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     fontSize: '15px',
     lineHeight: '1.8',
     padding: '14px 20px',
@@ -675,7 +675,7 @@ const styles = {
     fontWeight: '500',
   },
   roadmapText: {
-    color: '#FFFFFF',
+    color: 'rgb(var(--c-on-card))',
     fontSize: '15px',
     lineHeight: '1.8',
     margin: '12px 0',
@@ -691,7 +691,7 @@ const styles = {
   primaryButton: {
     padding: '14px 32px',
     background: 'linear-gradient(135deg, #A855F7, #7C3AED)',
-    color: '#FFFFFF',
+    color: 'white',
     border: 'none',
     borderRadius: '12px',
     fontSize: '15px',

@@ -32,13 +32,13 @@ const SkillGapCard = ({ missingSkills, matchScore, matchedSkills = [], breakdown
           <Target className="w-5 h-5 text-pink-400" />
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-text-main mb-1 flex items-center gap-2">
             Skill Gap Analysis
             <span className="text-xs font-normal text-pink-400 bg-pink-500/20 px-2 py-1 rounded-full">
               {missingSkills.length} skill{missingSkills.length !== 1 ? 's' : ''} needed
             </span>
           </h3>
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-text-muted">
             {getEncouragementText(matchScore)}
           </p>
         </div>

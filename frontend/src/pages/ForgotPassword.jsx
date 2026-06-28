@@ -97,7 +97,7 @@ const ForgotPassword = () => {
                   required
                   autoComplete="email"
                   placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-section border border-[rgba(255,255,255,0.06)] text-main placeholder:text-muted/60 focus:outline-none focus:border-primary"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-section border border-[rgb(var(--c-on-card)/0.06)] text-main placeholder:text-muted/60 focus:outline-none focus:border-primary"
                 />
               </div>
             </div>

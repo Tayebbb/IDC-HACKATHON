@@ -283,7 +283,7 @@ const CourseResources = () => {
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-text-main transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -361,7 +361,7 @@ const CourseResources = () => {
                     <div className="flex gap-3">
                       <button
                         onClick={() => setSelectedCourse(course)}
-                        className="flex-1 bg-[rgba(0,0,0,0.3)] border-2 border-purple-500/30 text-white py-3 px-4 rounded-xl hover:bg-purple-500/20 hover:border-purple-500/50 transition-all font-semibold shadow-lg"
+                        className="flex-1 bg-[rgb(var(--c-shadow) / 0.3)] border-2 border-purple-500/30 text-white py-3 px-4 rounded-xl hover:bg-purple-500/20 hover:border-purple-500/50 transition-all font-semibold shadow-lg"
                       >
                         View Details
                       </button>
@@ -411,7 +411,7 @@ const CourseResources = () => {
       {/* Course Detail Modal */}
       {selectedCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40 animate-fade-in backdrop-blur-sm" style={{paddingTop: '80px', paddingBottom: '20px'}}>
-          <div className="bg-section border-2 border-primary/40 rounded-2xl max-w-2xl w-full max-h-full overflow-y-auto animate-scale-in shadow-2xl" style={{boxShadow: '0 0 60px rgba(168,85,247,0.4), 0 20px 80px rgba(0,0,0,0.6)'}}>
+          <div className="bg-section border-2 border-primary/40 rounded-2xl max-w-2xl w-full max-h-full overflow-y-auto animate-scale-in shadow-2xl" style={{boxShadow: '0 0 60px rgba(168,85,247,0.4), 0 20px 80px rgb(var(--c-shadow) / 0.6)'}}>
             {/* Modal Header */}
             <div className="relative h-52 overflow-hidden rounded-t-2xl">
               <img
@@ -431,7 +431,7 @@ const CourseResources = () => {
                 <X size={20} className="text-white" />
               </button>
               <div className="absolute bottom-3 left-3 right-3">
-                <h2 className="text-xl sm:text-2xl font-bold text-white" style={{textShadow: '0 4px 20px rgba(0,0,0,0.8)'}}>
+                <h2 className="text-xl sm:text-2xl font-bold text-white" style={{textShadow: '0 4px 20px rgb(var(--c-shadow) / 0.8)'}}>
                   {selectedCourse.name}
                 </h2>
               </div>
@@ -481,7 +481,7 @@ const CourseResources = () => {
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-primary/20">
                 <button
                   onClick={() => setSelectedCourse(null)}
-                  className="flex-1 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] border border-primary/30 text-main py-2 px-4 rounded-lg transition-all font-semibold text-sm"
+                  className="flex-1 bg-[rgb(var(--c-on-card)/0.05)] hover:bg-[rgb(var(--c-on-card)/0.1)] border border-primary/30 text-main py-2 px-4 rounded-lg transition-all font-semibold text-sm"
                 >
                   Close
                 </button>

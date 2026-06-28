@@ -456,8 +456,8 @@ const Register = () => {
                         isSelected
                           ? 'bg-primary/10 border-[rgba(168,85,247,0.18)]'
                           : isDisabled
-                          ? 'bg-section border-[rgba(255,255,255,0.02)] opacity-50 cursor-not-allowed'
-                          : 'bg-section border-[rgba(255,255,255,0.04)] hover:border-[rgba(168,85,247,0.12)]'
+                          ? 'bg-section border-[rgb(var(--c-on-card)/0.02)] opacity-50 cursor-not-allowed'
+                          : 'bg-section border-[rgb(var(--c-on-card)/0.04)] hover:border-[rgba(168,85,247,0.12)]'
                       }`}
                     >
                       <input

@@ -71,10 +71,10 @@ function makeNode(id, label, color, x, y) {
     draggable: false,
     selectable: false,
     style: {
-      background: 'rgba(17, 21, 43, 0.85)',
+      background: 'rgb(var(--c-card) / 0.85)',
       border: `2px solid ${color}`,
       borderRadius: 12,
-      color: '#FFFFFF',
+      color: 'rgb(var(--c-on-card))',
       padding: '8px 12px',
       fontFamily: 'Poppins, sans-serif',
       fontSize: 13,
@@ -106,7 +106,7 @@ function makeCoreNode(id, userLabel, x, y) {
           <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#FCD34D' }}>
             Intelligence Core
           </div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#FFFFFF', maxWidth: 160, textAlign: 'center' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'rgb(var(--c-on-card))', maxWidth: 160, textAlign: 'center' }}>
             {userLabel}
           </div>
         </div>
@@ -115,10 +115,10 @@ function makeCoreNode(id, userLabel, x, y) {
     draggable: false,
     selectable: false,
     style: {
-      background: 'linear-gradient(160deg, rgba(31,41,55,0.95) 0%, rgba(17,21,43,0.95) 100%)',
+      background: 'linear-gradient(160deg, rgb(var(--c-card-2) / 0.95) 0%, rgb(var(--c-card) / 0.95) 100%)',
       border: `2px solid ${coreColor}`,
       borderRadius: 14,
-      color: '#FFFFFF',
+      color: 'rgb(var(--c-on-card))',
       padding: '10px 14px',
       fontFamily: 'Poppins, sans-serif',
       boxShadow: `0 0 24px ${coreColor}66`,

@@ -116,7 +116,7 @@ export function AIAvatar({ size = 36, glow = true, className = '' }) {
         <path
           d="M13.5 2 L4 13.5 H11 L9.5 22 L20 9.5 H13 Z"
           fill={`url(#ms-bolt-${size})`}
-          stroke="rgba(0,0,0,0.35)"
+          stroke="rgb(var(--c-shadow) / 0.35)"
           strokeWidth="0.4"
           strokeLinejoin="round"
         />
@@ -268,9 +268,9 @@ export function BrandStrip({ className = '' }) {
     <div 
       className="group relative flex flex-col items-center gap-3 py-4 px-6 sm:px-8 rounded-2xl transition-all duration-300 select-none overflow-hidden"
       style={{
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
-        border: '1px solid rgba(255,255,255,0.04)',
-        boxShadow: '0 4px 20px rgba(10,8,30,0.3)',
+        background: 'linear-gradient(180deg, rgb(var(--c-on-card) / 0.02) 0%, rgb(var(--c-on-card) / 0.005) 100%)',
+        border: '1px solid rgb(var(--c-on-card) / 0.04)',
+        boxShadow: '0 4px 20px rgb(var(--c-shadow) / 0.3)',
         backdropFilter: 'blur(10px)',
       }}
     >
@@ -302,7 +302,7 @@ export function BrandStrip({ className = '' }) {
           loading="lazy"
           decoding="async"
           style={{ height: `${height}px`, width: 'auto' }}
-          className="object-contain opacity-75 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+          className="object-contain opacity-75 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 filter drop-shadow-[0_2px_8px_rgb(var(--c-shadow) / 0.3)]"
         />
       </div>
     </div>
@@ -312,10 +312,10 @@ export function BrandStrip({ className = '' }) {
     <div
       className={`flex flex-wrap items-center justify-center gap-4 sm:gap-6 py-6 px-6 rounded-3xl border relative ${className}`}
       style={{
-        background: 'linear-gradient(135deg, rgba(17, 21, 43, 0.45) 0%, rgba(8, 10, 24, 0.65) 100%)',
+        background: 'linear-gradient(135deg, rgb(var(--c-card) / 0.45) 0%, rgba(8, 10, 24, 0.65) 100%)',
         borderColor: 'rgba(168, 85, 247, 0.08)',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
+        boxShadow: '0 8px 32px 0 rgb(var(--c-shadow) / 0.4)',
       }}
     >
       {/* Top subtle decorative gradient border line */}
@@ -328,7 +328,7 @@ export function BrandStrip({ className = '' }) {
       
       {item('Built for',     CODEFRONT_LOGO,  'CodeFront', 24, 'rgba(168, 85, 247, 0.2)')}
       {item('Powered by',    MINDSPARKS_LOGO, 'Mindsparks 26', 32, 'rgba(245, 158, 11, 0.2)')}
-      {item('Organized by',  AUST_IDC_WHITE,  'AUST IDC', 42, 'rgba(255, 255, 255, 0.15)')}
+      {item('Organized by',  AUST_IDC_WHITE,  'AUST IDC', 42, 'rgb(var(--c-on-card) / 0.15)')}
     </div>
   );
 }
@@ -342,7 +342,7 @@ export function CompetitionFooter({ className = '' }) {
   return (
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t ${className}`}
-      style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+      style={{ borderColor: 'rgb(var(--c-on-card) / 0.06)' }}
     >
       <div className="flex items-center gap-2 text-white/70 text-sm">
         <Link to="/" className="font-heading font-semibold text-white">
@@ -368,7 +368,7 @@ export function CompetitionCredits({ className = '' }) {
     <div
       className={`card p-8 ${className}`}
       style={{
-        background: 'rgba(17, 21, 43, 0.7)',
+        background: 'rgb(var(--c-card) / 0.7)',
         border: '1px solid rgba(245, 158, 11, 0.18)',
       }}
     >

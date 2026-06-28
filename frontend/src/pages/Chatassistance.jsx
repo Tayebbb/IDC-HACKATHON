@@ -343,7 +343,7 @@ export default function Chatassistance() {
                       li: ({node, ...props}) => <li style={{ margin: "4px 0" }} {...props} />,
                       strong: ({node, ...props}) => <strong style={{ fontWeight: "600", color: msg.role === "user" ? "#FFFFFF" : "#FCD34D" }} {...props} />,
                       em: ({node, ...props}) => <em style={{ fontStyle: "italic" }} {...props} />,
-                      code: ({node, inline, ...props}) => inline ? <code style={{ backgroundColor: "rgba(0,0,0,0.2)", padding: "2px 6px", borderRadius: "4px", fontSize: "0.9em" }} {...props} /> : <code {...props} />,
+                      code: ({node, inline, ...props}) => inline ? <code style={{ backgroundColor: "rgb(var(--c-shadow) / 0.2)", padding: "2px 6px", borderRadius: "4px", fontSize: "0.9em" }} {...props} /> : <code {...props} />,
                     }}
                   >
                     {msg.content}
@@ -352,12 +352,12 @@ export default function Chatassistance() {
 
                 {msg.sources && msg.sources.length > 0 && (
                   <div className="mt-2 space-y-1 mb-3">
-                    <p className="text-xs text-[#B3B3C7] font-semibold">Sources</p>
+                    <p className="text-xs text-text-muted font-semibold">Sources</p>
                     {msg.sources.map((src) => (
                       <div key={src.id} className="text-xs text-purple-400 bg-white/5 rounded px-2 py-1">
                         <span className="capitalize">{src.type}</span>
                         {" Â· "}
-                        <span className="text-[#B3B3C7]">{src.title}</span>
+                        <span className="text-text-muted">{src.title}</span>
                       </div>
                     ))}
                   </div>
@@ -448,7 +448,7 @@ const styles = {
     alignItems: "center",
     gap: "12px",
     padding: "16px",
-    background: "linear-gradient(135deg, rgba(26,27,46,0.8) 0%, rgba(19,20,31,0.9) 100%)",
+    background: "linear-gradient(135deg, rgb(var(--c-card) / 0.8) 0%, rgb(var(--c-card-2) / 0.9) 100%)",
     borderRadius: "16px",
     border: "1px solid rgb(var(--c-primary) / 0.25)",
     boxShadow: "0 4px 20px rgb(var(--c-primary) / 0.12)",
@@ -465,7 +465,7 @@ const styles = {
     boxShadow: "0 0 20px rgb(var(--c-primary) / 0.4)",
   },
   title: {
-    color: "#FFFFFF",
+    color: 'rgb(var(--c-on-card))',
     margin: 0,
     fontSize: "clamp(18px, 4vw, 24px)",
     fontWeight: "700",
@@ -476,7 +476,7 @@ const styles = {
     wordBreak: "break-word",
   },
   subtitle: {
-    color: "rgba(255,255,255,0.65)",
+    color: "rgb(var(--c-on-card) / 0.65)",
     fontSize: "clamp(12px, 2.5vw, 14px)",
     wordBreak: "break-word",
     margin: 0,
@@ -486,7 +486,7 @@ const styles = {
     flex: 1,
     overflowY: "auto",
     padding: "24px",
-    background: "rgba(17,21,43,0.5)",
+    background: "rgb(var(--c-card) / 0.5)",
     borderRadius: "16px",
     border: "1px solid rgb(var(--c-primary) / 0.15)",
     minHeight: "400px",
@@ -532,13 +532,13 @@ const styles = {
   },
   userBubble: {
     background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
-    color: "#FFFFFF",
+    color: 'white',
     borderBottomRightRadius: "4px",
     boxShadow: "0 4px 12px rgb(var(--c-primary) / 0.25)",
   },
   modelBubble: {
-    background: "rgba(255,255,255,0.05)",
-    color: "rgba(255,255,255,0.95)",
+    background: "rgb(var(--c-on-card) / 0.05)",
+    color: "rgb(var(--c-on-card) / 0.95)",
     border: "1px solid rgb(var(--c-primary) / 0.15)",
     borderBottomLeftRadius: "4px",
   },
@@ -564,10 +564,10 @@ const styles = {
     gap: "12px",
     alignItems: "flex-end",
     padding: "16px 20px",
-    background: "rgba(17,21,43,0.7)",
+    background: "rgb(var(--c-card) / 0.7)",
     borderRadius: "16px",
     border: "1px solid rgb(var(--c-primary) / 0.2)",
-    boxShadow: "0 4px 20px rgba(10,8,30,0.3)",
+    boxShadow: "0 4px 20px rgb(var(--c-shadow) / 0.3)",
   },
   textarea: {
     flex: 1,
@@ -577,8 +577,8 @@ const styles = {
     fontSize: "14px",
     fontFamily: "Poppins, Inter, system-ui, sans-serif",
     resize: "none",
-    background: "rgba(255,255,255,0.05)",
-    color: "#FFFFFF",
+    background: "rgb(var(--c-on-card) / 0.05)",
+    color: 'rgb(var(--c-on-card))',
     outline: "none",
     transition: "border-color 0.2s, box-shadow 0.2s",
     maxHeight: "120px",
@@ -590,7 +590,7 @@ const styles = {
   button: {
     padding: "12px 16px",
     background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
-    color: "#FFFFFF",
+    color: 'white',
     border: "none",
     borderRadius: "12px",
     cursor: "pointer",

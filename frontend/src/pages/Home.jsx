@@ -19,9 +19,9 @@ const MilestoneCard = ({ milestone }) => {
     <div
       className="group relative p-6 rounded-2xl transition-all duration-300 cursor-default"
       style={{
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+        background: 'linear-gradient(180deg, rgb(var(--c-on-card) / 0.03) 0%, rgb(var(--c-on-card) / 0.01) 100%)',
         border: '1px solid rgba(168,85,247,0.15)',
-        boxShadow: '0 4px 24px rgba(10,8,30,0.45)',
+        boxShadow: '0 4px 24px rgb(var(--c-shadow) / 0.45)',
         backdropFilter: 'blur(8px)',
       }}
     >
@@ -57,7 +57,7 @@ const MilestoneCard = ({ milestone }) => {
             {milestone.number}
           </div>
           {/* Label */}
-          <div className="text-sm font-semibold text-white mb-2">{milestone.label}</div>
+          <div className="text-sm font-semibold text-text-main mb-2">{milestone.label}</div>
           {/* Description */}
           <p className="text-xs text-muted leading-relaxed">{milestone.description}</p>
         </div>
@@ -121,7 +121,7 @@ const TimelineCard = ({ milestone, isLeft }) => {
               borderRadius: '50%',
               background: 'linear-gradient(135deg, #A855F7, #D500F9)',
               boxShadow: `0 0 18px ${milestone.glow}, 0 0 6px ${milestone.color}`,
-              border: '2px solid rgba(255,255,255,0.18)',
+              border: '2px solid rgb(var(--c-on-card) / 0.18)',
               flexShrink: 0,
               zIndex: 2,
             }}
@@ -159,7 +159,7 @@ const TimelineCard = ({ milestone, isLeft }) => {
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #A855F7, #D500F9)',
             boxShadow: `0 0 14px ${milestone.glow}`,
-            border: '2px solid rgba(255,255,255,0.15)',
+            border: '2px solid rgb(var(--c-on-card) / 0.15)',
             zIndex: 2,
           }}
         />
@@ -323,7 +323,7 @@ const Home = () => {
                     animate={{ y: [0, -10, 0] }}
                     transition={{ duration: 3, repeat: Infinity }}
                     className="absolute top-10 -left-6 bg-section border-2 border-primary/30 rounded-xl p-4 shadow-2xl backdrop-blur-sm"
-                    style={{ boxShadow: '0 0 30px rgba(168,85,247,0.3), 0 10px 40px rgba(0,0,0,0.5)' }}
+                    style={{ boxShadow: '0 0 30px rgba(168,85,247,0.3), 0 10px 40px rgb(var(--c-shadow) / 0.5)' }}
                   >
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-primary to-accent-pink">
@@ -341,7 +341,7 @@ const Home = () => {
                     animate={{ y: [0, 10, 0] }}
                     transition={{ duration: 3, repeat: Infinity, delay: 1 }}
                     className="absolute bottom-10 -right-6 bg-section border-2 border-primary/30 rounded-xl p-4 shadow-2xl backdrop-blur-sm"
-                    style={{ boxShadow: '0 0 30px rgba(168,85,247,0.3), 0 10px 40px rgba(0,0,0,0.5)' }}
+                    style={{ boxShadow: '0 0 30px rgba(168,85,247,0.3), 0 10px 40px rgb(var(--c-shadow) / 0.5)' }}
                   >
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-primary to-accent-pink">

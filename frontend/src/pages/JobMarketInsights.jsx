@@ -112,7 +112,7 @@ const JobMarketInsights = () => {
             className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 ${
               activeTab === 'employment'
                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50 scale-105'
-                : 'bg-[rgba(255,255,255,0.05)] text-gray-400 hover:bg-[rgba(255,255,255,0.1)] hover:text-white border border-[rgba(255,255,255,0.1)]'
+                : 'bg-[rgb(var(--c-on-card)/0.05)] text-gray-400 hover:bg-[rgb(var(--c-on-card)/0.1)] hover:text-text-main border border-[rgb(var(--c-on-card)/0.1)]'
             }`}
           >
             Employment Rates
@@ -122,7 +122,7 @@ const JobMarketInsights = () => {
             className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 ${
               activeTab === 'industry'
                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50 scale-105'
-                : 'bg-[rgba(255,255,255,0.05)] text-gray-400 hover:bg-[rgba(255,255,255,0.1)] hover:text-white border border-[rgba(255,255,255,0.1)]'
+                : 'bg-[rgb(var(--c-on-card)/0.05)] text-gray-400 hover:bg-[rgb(var(--c-on-card)/0.1)] hover:text-text-main border border-[rgb(var(--c-on-card)/0.1)]'
             }`}
           >
             Industry Growth
@@ -132,7 +132,7 @@ const JobMarketInsights = () => {
             className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 ${
               activeTab === 'topjobs'
                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50 scale-105'
-                : 'bg-[rgba(255,255,255,0.05)] text-gray-400 hover:bg-[rgba(255,255,255,0.1)] hover:text-white border border-[rgba(255,255,255,0.1)]'
+                : 'bg-[rgb(var(--c-on-card)/0.05)] text-gray-400 hover:bg-[rgb(var(--c-on-card)/0.1)] hover:text-text-main border border-[rgb(var(--c-on-card)/0.1)]'
             }`}
           >
             Top Jobs 2025
@@ -142,7 +142,7 @@ const JobMarketInsights = () => {
             className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 ${
               activeTab === 'opportunities'
                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50 scale-105'
-                : 'bg-[rgba(255,255,255,0.05)] text-gray-400 hover:bg-[rgba(255,255,255,0.1)] hover:text-white border border-[rgba(255,255,255,0.1)]'
+                : 'bg-[rgb(var(--c-on-card)/0.05)] text-gray-400 hover:bg-[rgb(var(--c-on-card)/0.1)] hover:text-text-main border border-[rgb(var(--c-on-card)/0.1)]'
             }`}
           >
             Sector Opportunities
@@ -258,7 +258,7 @@ const JobMarketInsights = () => {
                     <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent break-words">৳{job.avgSalaryBDT.toLocaleString()}</p>
                   </div>
                 </div>
-                <div className="bg-[rgba(0,0,0,0.2)] rounded-xl p-4">
+                <div className="bg-[rgb(var(--c-shadow) / 0.2)] rounded-xl p-4">
                   <p className="text-xs text-gray-400 mb-3 font-medium">Required Skills:</p>
                   <div className="flex flex-wrap gap-2">
                     {job.requiredSkills.map((skill, idx) => (
@@ -299,13 +299,13 @@ const JobMarketInsights = () => {
                     </div>
                     <h3 className="text-xl font-bold text-white">{item.sector}</h3>
                   </div>
-                  <div className="bg-[rgba(0,0,0,0.2)] rounded-xl p-5">
+                  <div className="bg-[rgb(var(--c-shadow) / 0.2)] rounded-xl p-5">
                     <p className="text-xs text-gray-400 mb-3">Opportunity Score</p>
                     <div className="flex items-end gap-2 mb-4">
                       <p className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">{item.opportunityScore}</p>
                       <p className="text-gray-400 text-xl mb-2">/100</p>
                     </div>
-                    <div className="w-full bg-[rgba(255,255,255,0.1)] rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-[rgb(var(--c-on-card)/0.1)] rounded-full h-3 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${item.opportunityScore}%` }}
