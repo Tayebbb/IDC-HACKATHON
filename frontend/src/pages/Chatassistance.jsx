@@ -511,7 +511,7 @@ export default function Chatassistance() {
   /* ----------- Render ----------- */
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-base text-text-main">
+    <div className="flex h-screen bg-base text-text-main">
       {/* ───── Sidebar ───── */}
       <Sidebar
         threads={threads}

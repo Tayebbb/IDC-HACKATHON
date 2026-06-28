@@ -2,7 +2,7 @@
  * App Component
  * Main application with routing and layout
  */
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
@@ -54,13 +54,50 @@ function AppContent() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const hideNavbarRoutes = ['/job-market-insights'];
-  const shouldHideNavbar = isAdminRoute || hideNavbarRoutes.includes(location.pathname);
+  // Immersive routes hide the global Navbar + Footer and reveal the navbar
+  // only when the cursor approaches the top edge of the viewport.
+  const immersiveRoutes = ['/chatassistance'];
+  const isImmersive = immersiveRoutes.includes(location.pathname);
+  const shouldHideNavbar =
+    isAdminRoute || hideNavbarRoutes.includes(location.pathname) || isImmersive;
+
+  // Track cursor proximity to the top edge for immersive nav reveal
+  const [navRevealed, setNavRevealed] = useState(false);
+  useEffect(() => {
+    if (!isImmersive) {
+      setNavRevealed(false);
+      return;
+    }
+    const onMove = (e) => setNavRevealed(e.clientY <= 56);
+    const onLeave = () => setNavRevealed(false);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseleave', onLeave);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseleave', onLeave);
+    };
+  }, [isImmersive]);
 
   return (
     <div className="App">
-      {/* Show navbar only for non-admin routes and non-navbar-hidden routes */}
+      {/* Show navbar only for non-admin / non-immersive / non-hidden routes */}
       {!shouldHideNavbar && <Navbar />}
-      {/* Add padding-top to account for fixed navbar only for non-admin routes */}
+
+      {/* Immersive nav: hidden by default, slides in when cursor hits the top edge */}
+      {isImmersive && (
+        <div
+          className={[
+            'fixed top-0 left-0 right-0 z-50 transition-transform duration-200 ease-out',
+            navRevealed ? 'translate-y-0' : '-translate-y-full',
+          ].join(' ')}
+          onMouseEnter={() => setNavRevealed(true)}
+          onMouseLeave={() => setNavRevealed(false)}
+        >
+          <Navbar />
+        </div>
+      )}
+
+      {/* Add padding-top to account for fixed navbar only for non-admin / non-immersive routes */}
       <div className={!shouldHideNavbar ? 'pt-20' : ''}>
         <Suspense fallback={<PageLoader />}>
           <AnimatePresence mode="wait">
@@ -98,10 +135,10 @@ function AppContent() {
           </AnimatePresence>
         </Suspense>
       </div>
-      {/* Show footer only for non-admin routes */}
-      {!isAdminRoute && <Footer />}
-      {/* Floating AI Assistant Button - Show on all pages */}
-      <FloatingAIButton />
+      {/* Show footer only for non-admin and non-immersive routes */}
+      {!isAdminRoute && !isImmersive && <Footer />}
+      {/* Floating AI Assistant Button — hide on the chat page itself */}
+      {!isImmersive && <FloatingAIButton />}
       <Toaster
         position="top-right"
         toastOptions={{
