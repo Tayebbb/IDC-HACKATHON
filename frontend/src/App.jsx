@@ -65,9 +65,11 @@ function AppContent() {
   const [navRevealed, setNavRevealed] = useState(false);
   useEffect(() => {
     if (!isImmersive) {
+      document.body.classList.remove('immersive-chat', 'nav-revealed');
       setNavRevealed(false);
       return;
     }
+    document.body.classList.add('immersive-chat');
     const onMove = (e) => setNavRevealed(e.clientY <= 56);
     const onLeave = () => setNavRevealed(false);
     window.addEventListener('mousemove', onMove);
@@ -75,27 +77,20 @@ function AppContent() {
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseleave', onLeave);
+      document.body.classList.remove('immersive-chat', 'nav-revealed');
     };
   }, [isImmersive]);
 
+  useEffect(() => {
+    if (!isImmersive) return;
+    document.body.classList.toggle('nav-revealed', navRevealed);
+  }, [isImmersive, navRevealed]);
+
   return (
     <div className="App">
-      {/* Show navbar only for non-admin / non-immersive / non-hidden routes */}
-      {!shouldHideNavbar && <Navbar />}
-
-      {/* Immersive nav: hidden by default, slides in when cursor hits the top edge */}
-      {isImmersive && (
-        <div
-          className={[
-            'fixed top-0 left-0 right-0 z-50 transition-transform duration-200 ease-out',
-            navRevealed ? 'translate-y-0' : '-translate-y-full',
-          ].join(' ')}
-          onMouseEnter={() => setNavRevealed(true)}
-          onMouseLeave={() => setNavRevealed(false)}
-        >
-          <Navbar />
-        </div>
-      )}
+      {/* Always render the Navbar on immersive routes too; visibility is
+          controlled by global CSS keyed off body.immersive-chat. */}
+      {(!shouldHideNavbar || isImmersive) && <Navbar />}
 
       {/* Add padding-top to account for fixed navbar only for non-admin / non-immersive routes */}
       <div className={!shouldHideNavbar ? 'pt-20' : ''}>

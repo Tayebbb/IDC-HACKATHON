@@ -13,7 +13,6 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
-import ReasoningCard from "../components/ReasoningCard";
 import { AIMark } from "../components/branding";
 import API_URL from "../config";
 
@@ -803,18 +802,6 @@ function MessageRow({ msg, idx, onCopy, copied }) {
                   <span className="flex-1 truncate">{src.title}</span>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* RAG explainability */}
-          {!isUser && Array.isArray(msg.factors) && msg.factors.length > 0 && (
-            <div className="mt-3">
-              <ReasoningCard
-                title="Why this answer?"
-                factors={msg.factors}
-                basis={msg.basis}
-                confidence={msg.confidence}
-              />
             </div>
           )}
         </div>
