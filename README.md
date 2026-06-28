@@ -1,132 +1,196 @@
-# 🚀 CareerPath: AI-Powered Career Intelligence Platform
+# CareerPath
 
-![React](https://img.shields.io/badge/React-18-blue.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)
-![Firebase](https://img.shields.io/badge/Firebase-12.6-yellow.svg)
-![AI-Native](https://img.shields.io/badge/AI-Native-purple.svg)
+CareerPath is a full-stack AI career guidance platform for students and early-career candidates. It combines a React 18 frontend, a FastAPI backend, Firebase-backed user flows, and retrieval-augmented AI features for career advice, CV analysis, mock interviews, readiness scoring, and explainable recommendations.
 
-**CareerPath** is a state-of-the-art, full-stack career platform designed to empower students and fresh graduates. By leveraging advanced **Retrieval-Augmented Generation (RAG)**, large language models, and deterministic scoring algorithms, CareerPath delivers personalized career roadmaps, real-time interview coaching, and deep skills analysis—all wrapped in a transparent, human-readable **Explainability Layer**.
+## What It Does
 
----
+- RAG career chat with hybrid retrieval over a curated career corpus.
+- CV/resume upload, PDF parsing, skill extraction, and improvement suggestions.
+- Career DNA and readiness scoring with transparent factor breakdowns.
+- RAG-grounded mock interview question generation and rubric-based evaluation.
+- Concept coverage, missing concept feedback, and score breakdowns for interview answers.
+- Career roadmaps, learning resources, job insights, and application generation.
+- Optional facial-expression analysis for interview delivery feedback.
+- Admin dashboard for managing platform content.
 
-## 🧠 Core AI Capabilities
+## Architecture
 
-- **Hybrid RAG Chat Assistant**: Combines dense vector embeddings with BM25 sparse retrieval over our curated job/course corpus to provide highly relevant, hallucination-free career advice.
-- **In-Browser Facial Analysis**: Client-side inference using `vit-face-expression` for real-time visual sentiment feedback during mock interviews, protecting user privacy.
-- **Dynamic NLP Skill Extraction**: Intelligent parsing of uploaded CVs/Resumes to identify and map technical proficiencies directly to industry tracks.
-- **Explainable AI (XAI) Envelope**: Every AI-driven recommendation (from job matching to readiness scores) is deterministic, transparent, and auditable via our proprietary `ReasoningCard` UI.
-
----
-
-## 🏗️ System Architecture
-
-```mermaid
-graph TD
-    A[React 18 Frontend] --> B[Vite + TailwindCSS]
-    B -->|XAI Envelope UI| C(ReasoningCard)
-    
-    A -->|Authentication & DB| D[(Firebase Firestore)]
-    
-    A -->|REST API| E[FastAPI Backend]
-    E --> F[Hybrid RAG Engine]
-    F -->|BM25 Sparse| G[(Seed Corpus JSON)]
-    F -->|Dense Vector| H[(mpnet Embeddings)]
-    E --> I[LLM Router]
-    I -->|Meta-Llama-3.1| J(Hugging Face Inference API)
-    
-    A -->|Client-side Inference| K[HF Transformers.js]
+```text
+frontend/  React 18 + Vite app
+backend/   FastAPI API used for local development and main backend source
+careerpath-backend/  Hugging Face Space backend mirror/submodule
 ```
 
----
+Core runtime flow:
 
-## 💻 Tech Stack & Tooling
+```text
+React frontend
+  -> FastAPI backend
+      -> Hybrid retrieval corpus
+      -> Hugging Face inference APIs when configured
+      -> Deterministic scoring and explainability helpers
+  -> Firebase services for auth/data features
+```
 
-**Frontend**
-- **Framework**: React 18, Vite
-- **Styling**: TailwindCSS (Custom neon tokens: `#0B0E1C`, `#A855F7`), Framer Motion, GSAP
-- **Visualization**: Chart.js, React Flow (`@xyflow/react`)
-- **State & Auth**: React Context, Firebase Auth
+## Tech Stack
 
-**Backend**
-- **Framework**: FastAPI (Python 3.12)
-- **AI/NLP Pipelines**: `sentence-transformers`, `google-genai`, pure-Python Cosine Similarity
-- **Data Parsing**: PyPDF2, python-multipart
+Frontend:
 
-**AI Models Used**
-- Text Generation: `meta-llama/Llama-3.1-8B-Instruct`
-- Embeddings: `sentence-transformers/all-mpnet-base-v2`
-- Computer Vision: `trpakov/vit-face-expression`
+- React 18
+- Vite 6
+- React Router
+- Firebase
+- Tailwind CSS
+- Chart.js
+- React Flow
+- Framer Motion
+- lucide-react
 
----
+Backend:
 
-## ✨ Platform Features
+- Python 3.12
+- FastAPI
+- Uvicorn
+- PyPDF2
+- sentence-transformers
+- chromadb-client
+- Hugging Face inference integrations
 
-1. **Career DNA & Readiness Score**: Multi-dimensional radar charts plotting user skills against industry standards.
-2. **What-If Career Simulator**: Real-time client-side physics-based simulations to predict readiness shifts based on hypothetical skill acquisitions.
-3. **Voice AI Mock Interview**: Tracks Words-Per-Minute (WPM), filler words, and pause latency to evaluate communication skills dynamically.
-4. **Knowledge Graph**: Interactive 2D visualization mapping the relationships between user skills, learning resources, and target roles.
-5. **Verifiable Credentials**: On-the-fly PDF generation of "Mindsparks Badges" upon reaching high readiness thresholds.
+## Key Backend Endpoints
 
----
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/` | GET | API health check |
+| `/health/dependencies` | GET | Dependency and optional service status |
+| `/docs` | GET | Swagger API docs |
+| `/chat` | POST | RAG career chatbot |
+| `/summarize-cv` | POST | Parse and analyze a PDF CV |
+| `/roadmap` | POST | Generate a career roadmap |
+| `/interview/question` | POST | Generate a RAG-grounded mock interview question |
+| `/interview/evaluate` | POST | Evaluate a mock interview answer |
+| `/career-dna` | POST | Calculate Career DNA category scores |
+| `/readiness-score` | POST | Calculate weighted career readiness |
+| `/explain-match` | POST | Explain a job/profile match |
+| `/face-expression` | POST | Analyze an uploaded expression frame |
 
-## 🚀 Getting Started
+Compatibility aliases are also kept for older frontend calls, including `/generate-interview-question`, `/evaluate-interview-answer`, and `/analyze-expression`.
 
-### Prerequisites
-- Node.js 18+
-- Python 3.12+
-- Firebase Account
-- Hugging Face API Token
+## Mock Interview RAG
 
-### 1. Backend Setup
+The mock interview flow supports optional `sessionId` and `questionNumber` fields. When a question is generated with those fields, the backend stores a reference answer in memory for that session/question pair. Evaluation then uses that reference to calculate:
+
+- `concepts_covered`
+- `concepts_missing`
+- `coverage_pct`
+- `score_breakdown`
+- `rag_grounded`
+- `skills_tested`
+
+The deterministic rubric reports these score breakdown keys:
+
+- `core_concepts`
+- `technical_accuracy`
+- `practical_example`
+- `communication`
+
+Calls without `sessionId` remain backward compatible.
+
+## Local Setup
+
+### Backend
 
 ```bash
 cd backend
 python -m venv .venv
 
-# Activate virtual environment
-# Windows: .\.venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# macOS/Linux
 source .venv/bin/activate
 
 pip install -r requirements.txt
+```
 
-# Create .env and set your Hugging Face token
-echo "HF_TOKEN=your_token_here" > .env
+Create a `.env` file:
 
-# Optional: Pre-compute embeddings for dense retrieval
-python scripts/build_embeddings.py
+```text
+HF_TOKEN=your_hugging_face_token
+USE_LOCAL_EMBEDDINGS=false
+ENABLE_RERANKER=false
+ENABLE_LLM_GENERATOR=false
+```
 
-# Run the server
+Run the backend:
+
+```bash
 uvicorn main:app --reload --port 8000
 ```
 
-### 2. Frontend Setup
+Open API docs:
+
+```text
+http://localhost:8000/docs
+```
+
+### Frontend
 
 ```bash
 cd frontend
 npm install
-
-# Run the dev server
 npm run dev
 ```
-*Your application will be available at `http://localhost:5173`. Backend docs available at `http://localhost:8000/docs`.*
 
----
+The Vite dev server usually runs at:
 
-## ⚖️ The Explainability Contract
-
-We believe AI in career development should not be a black box. CareerPath enforces a strict, immutable **Explainability Envelope** for all inference routes. 
-
-```typescript
-type ExplainabilityEnvelope = {
-  output: any; // The score/recommendation/text
-  factors: Factor[]; // Human-readable evidence (e.g., 'skill_match', 'rag_source')
-  confidence: "High" | "Medium" | "Low"; 
-  basis: string; // TL;DR derivation summary
-};
+```text
+http://localhost:5173
 ```
-Every UI component gracefully degrades if confidence is low or signals are incomplete, ensuring users never see hallucinated or unverified data.
 
----
+## Build Checks
 
-*Built for the future of transparent career intelligence.* 🌌
+Backend import check:
+
+```bash
+cd backend
+python -c "import main; print('OK')"
+```
+
+Frontend production build:
+
+```bash
+cd frontend
+npm run build
+```
+
+On Windows PowerShell, if `npm.ps1` is blocked by execution policy, use:
+
+```powershell
+npm.cmd run build
+```
+
+## Deployment Notes
+
+The `careerpath-backend/` directory is configured for Hugging Face Spaces Docker deployment. Required Space secret:
+
+```text
+HF_TOKEN=<your Hugging Face token>
+```
+
+Recommended Space variables for CPU-friendly deployment:
+
+```text
+USE_LOCAL_EMBEDDINGS=false
+ENABLE_RERANKER=false
+ENABLE_LLM_GENERATOR=false
+```
+
+The backend exposes `/health/dependencies` so deployment checks can verify corpus loading, optional generator/reranker state, and token availability.
+
+## Git Notes
+
+`careerpath-backend/` is tracked as a gitlink-style nested repository. When switching branches, the root repo may expect a different nested backend commit. If Git blocks a branch switch because of `careerpath-backend`, align the nested checkout to the commit expected by the target branch, then retry the root branch switch.
+
+## License
+
+This project was built for the IDC Hackathon as a CareerPath AI prototype.
