@@ -262,6 +262,18 @@
     @apply glass-surface rounded-3xl;
   }
 
+  /* Popovers / dropdowns need a far more opaque surface than ambient
+     glass cards so list content remains legible even when the menu
+     overlays images or busy hero artwork. */
+  [data-theme='dark'] .glass-panel {
+    background: rgb(var(--c-bg-elevated) / 0.96);
+    border-color: rgb(var(--c-glass-border) / 0.16);
+    box-shadow:
+      0 20px 50px rgb(var(--c-shadow) / 0.55),
+      0 6px 16px rgb(var(--c-shadow) / 0.35),
+      inset 0 1px 0 rgb(var(--c-glass-strong) / 0.10);
+  }
+
   .glass-divider {
     height: 1px;
     background: linear-gradient(
@@ -655,6 +667,45 @@
      hijack the class globally. */
   [data-theme='light'] .text-gray-400 { color: rgb(100 116 139); }
   [data-theme='light'] .text-gray-500 { color: rgb(71 85 105); }
+
+  /* Same problem for the Tailwind 400-shades used widely as accent
+     text (match scores, stat numbers, skill chips). On dark cards
+     the lighter shade pops; on white cards it's washed out. Bump
+     to the 600/700 shade in light mode for proper legibility. */
+  [data-theme='light'] .text-green-400    { color: rgb(22 163 74); }
+  [data-theme='light'] .text-emerald-400  { color: rgb(5 150 105); }
+  [data-theme='light'] .text-blue-400     { color: rgb(37 99 235); }
+  [data-theme='light'] .text-cyan-400     { color: rgb(14 116 144); }
+  [data-theme='light'] .text-sky-400      { color: rgb(2 132 199); }
+  [data-theme='light'] .text-yellow-400   { color: rgb(202 138 4); }
+  [data-theme='light'] .text-amber-400    { color: rgb(180 83 9); }
+  [data-theme='light'] .text-orange-400   { color: rgb(194 65 12); }
+  [data-theme='light'] .text-red-400      { color: rgb(220 38 38); }
+  [data-theme='light'] .text-pink-400     { color: rgb(219 39 119); }
+  [data-theme='light'] .text-fuchsia-400  { color: rgb(192 38 211); }
+  [data-theme='light'] .text-purple-400   { color: rgb(126 34 206); }
+  [data-theme='light'] .text-violet-400   { color: rgb(109 40 217); }
+  [data-theme='light'] .text-indigo-400   { color: rgb(67 56 202); }
+  [data-theme='light'] .text-rose-400     { color: rgb(225 29 72); }
+  [data-theme='light'] .text-teal-400     { color: rgb(15 118 110); }
+  [data-theme='light'] .text-lime-400     { color: rgb(101 163 13); }
+
+  /* 300-shades are even lighter — used for very subtle body text;
+     darken to 600 so they remain legible. */
+  [data-theme='light'] .text-green-300   { color: rgb(22 163 74); }
+  [data-theme='light'] .text-blue-300    { color: rgb(37 99 235); }
+  [data-theme='light'] .text-purple-300  { color: rgb(126 34 206); }
+  [data-theme='light'] .text-pink-300    { color: rgb(219 39 119); }
+  [data-theme='light'] .text-red-300     { color: rgb(220 38 38); }
+  [data-theme='light'] .text-gray-300    { color: rgb(71 85 105); }
+
+  /* Chip/badge backgrounds use `bg-{color}-500/20` (20% opacity).
+     On dark mode this reads as a softly tinted pill; on white it
+     becomes a pale wash that loses identity. Slightly increase the
+     contrast in light mode by darkening the tint baseline. The
+     class itself isn't easy to override (Tailwind generates inline
+     opacity), so we boost the border instead — already used on
+     these chips — and ensure the text uses the darker shade above. */
 }
 
 /* ============================================================

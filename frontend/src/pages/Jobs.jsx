@@ -406,7 +406,7 @@ const JobCard = ({ job, index, learningResources, currentUser }) => {
         <div className="lg:w-32 flex lg:flex-col items-center lg:items-start gap-4">
           <div className={`relative w-24 h-24 rounded-full bg-gradient-to-br ${matchLevel.color} p-1 ${matchLevel.glow}`}>
             <div className="w-full h-full rounded-full bg-section flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold text-white">{job.matchScore}%</span>
+              <span className="text-3xl font-bold text-text-main">{job.matchScore}%</span>
             </div>
           </div>
           <div className="lg:mt-2 text-center lg:text-left">

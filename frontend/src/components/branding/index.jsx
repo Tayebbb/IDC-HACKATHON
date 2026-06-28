@@ -17,6 +17,7 @@
  */
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Public-folder paths. The folder on disk is `Code Front` (mixed case, with
 // a space). Windows is case-insensitive, but Linux deploys (HF Spaces /
@@ -264,13 +265,17 @@ export function AILoading({
 // by" attribution. Elegant, premium, modern, and beautifully glassmorphic.
 // =====================================================================
 export function BrandStrip({ className = '' }) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const austLogo = isLight ? AUST_IDC_BLACK : AUST_IDC_WHITE;
+
   const item = (label, logo, alt, height = 32, glowColor = 'rgba(168,85,247,0.2)') => (
     <div 
       className="group relative flex flex-col items-center gap-3 py-4 px-6 sm:px-8 rounded-2xl transition-all duration-300 select-none overflow-hidden"
       style={{
-        background: 'linear-gradient(180deg, rgb(var(--c-on-card) / 0.02) 0%, rgb(var(--c-on-card) / 0.005) 100%)',
-        border: '1px solid rgb(var(--c-on-card) / 0.04)',
-        boxShadow: '0 4px 20px rgb(var(--c-shadow) / 0.3)',
+        background: 'linear-gradient(180deg, rgb(var(--c-on-card) / 0.04) 0%, rgb(var(--c-on-card) / 0.015) 100%)',
+        border: '1px solid rgb(var(--c-on-card) / 0.08)',
+        boxShadow: '0 4px 20px rgb(var(--c-shadow) / 0.18)',
         backdropFilter: 'blur(10px)',
       }}
     >
@@ -291,18 +296,19 @@ export function BrandStrip({ className = '' }) {
       />
 
       <span
-        className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/35 group-hover:text-white/60 transition-colors duration-300"
+        className="text-[9px] font-bold uppercase tracking-[0.25em] transition-colors duration-300"
+        style={{ color: 'rgb(var(--c-text-muted))' }}
       >
         {label}
       </span>
-      <div className="relative flex items-center justify-center h-[46px] w-[180px]">
+      <div className="relative flex items-center justify-center h-[60px] w-[180px]">
         <img
           src={logo}
           alt={alt}
           loading="lazy"
           decoding="async"
           style={{ height: `${height}px`, width: 'auto' }}
-          className="object-contain opacity-75 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 filter drop-shadow-[0_2px_8px_rgb(var(--c-shadow) / 0.3)]"
+          className="object-contain opacity-100 group-hover:scale-105 transition-transform duration-300 filter drop-shadow-[0_2px_8px_rgb(var(--c-shadow)/0.35)]"
         />
       </div>
     </div>
@@ -312,10 +318,11 @@ export function BrandStrip({ className = '' }) {
     <div
       className={`flex flex-wrap items-center justify-center gap-4 sm:gap-6 py-6 px-6 rounded-3xl border relative ${className}`}
       style={{
-        background: 'linear-gradient(135deg, rgb(var(--c-card) / 0.45) 0%, rgba(8, 10, 24, 0.65) 100%)',
-        borderColor: 'rgba(168, 85, 247, 0.08)',
+        background:
+          'linear-gradient(135deg, rgb(var(--c-card) / 0.55) 0%, rgb(var(--c-card-2) / 0.85) 100%)',
+        borderColor: 'rgb(var(--c-primary) / 0.18)',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 8px 32px 0 rgb(var(--c-shadow) / 0.4)',
+        boxShadow: '0 8px 32px 0 rgb(var(--c-shadow) / 0.22)',
       }}
     >
       {/* Top subtle decorative gradient border line */}
@@ -326,9 +333,9 @@ export function BrandStrip({ className = '' }) {
         }}
       />
       
-      {item('Built for',     CODEFRONT_LOGO,  'CodeFront', 24, 'rgba(168, 85, 247, 0.2)')}
-      {item('Powered by',    MINDSPARKS_LOGO, 'Mindsparks 26', 32, 'rgba(245, 158, 11, 0.2)')}
-      {item('Organized by',  AUST_IDC_WHITE,  'AUST IDC', 42, 'rgb(var(--c-on-card) / 0.15)')}
+      {item('Built for',     CODEFRONT_LOGO,  'CodeFront', 44, 'rgba(168, 85, 247, 0.2)')}
+      {item('Powered by',    MINDSPARKS_LOGO, 'Mindsparks 26', 52, 'rgba(245, 158, 11, 0.2)')}
+      {item('Organized by',  austLogo,        'AUST IDC', 56, 'rgb(var(--c-on-card) / 0.15)')}
     </div>
   );
 }
@@ -338,23 +345,26 @@ export function BrandStrip({ className = '' }) {
 // event attribution. Kept small, screen-bottom appropriate.
 // =====================================================================
 export function CompetitionFooter({ className = '' }) {
-  const logoCls = 'h-7 sm:h-8 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity';
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const austLogo = isLight ? AUST_IDC_BLACK : AUST_IDC_WHITE;
+  const logoCls = 'h-9 sm:h-11 w-auto object-contain opacity-100 transition-transform hover:scale-105';
   return (
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t ${className}`}
-      style={{ borderColor: 'rgb(var(--c-on-card) / 0.06)' }}
+      style={{ borderColor: 'rgb(var(--c-on-card) / 0.10)' }}
     >
-      <div className="flex items-center gap-2 text-white/70 text-sm">
-        <Link to="/" className="font-heading font-semibold text-white">
+      <div className="flex items-center gap-2 text-text-muted text-sm">
+        <Link to="/" className="font-heading font-semibold text-text-main">
           CareerPath
         </Link>
-        <span className="text-white/30">·</span>
+        <span className="text-text-subtle">·</span>
         <span className="text-xs">Built for the CodeFront Challenge</span>
       </div>
       <div className="flex items-center gap-5 sm:gap-7">
         <img src={CODEFRONT_LOGO}  alt="CodeFront"     className={logoCls} loading="lazy" />
         <img src={MINDSPARKS_LOGO} alt="Mindsparks 26" className={logoCls} loading="lazy" />
-        <img src={AUST_IDC_WHITE}  alt="AUST IDC"      className={`${logoCls} h-9 sm:h-10`} loading="lazy" />
+        <img src={austLogo}        alt="AUST IDC"      className={`${logoCls} h-9 sm:h-10`} loading="lazy" />
       </div>
     </div>
   );
