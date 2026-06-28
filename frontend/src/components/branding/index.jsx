@@ -19,11 +19,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 
-// Public-folder paths. The folder on disk is `Code Front` (mixed case, with
+// Public-folder paths. The folder on disk is `code-front` (lowercase, with
 // a space). Windows is case-insensitive, but Linux deploys (HF Spaces /
 // Vercel) are NOT — so we MUST match the on-disk casing exactly. Spaces
 // inside the URL are encoded by the browser at request time.
-const BRAND_PATH = '/Code Front';
+const BRAND_PATH = '/code-front';
 export const MINDSPARKS_LOGO = `${BRAND_PATH}/Mindsparks 26 Logo.png`;
 export const CODEFRONT_LOGO  = `${BRAND_PATH}/Code front.png`;
 export const AUST_IDC_WHITE  = `${BRAND_PATH}/AUST IDC - White.png`;
