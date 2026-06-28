@@ -17,6 +17,7 @@ frontend/.env
 
 # Production builds
 /frontend/dist
+/frontend/dist-build
 /frontend/build
 /backend/dist
 

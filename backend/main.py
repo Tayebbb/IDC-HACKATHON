@@ -892,8 +892,6 @@ _LOCAL_EMBED_MODEL = None
 _USE_LOCAL_EMBEDDINGS = _os.getenv('USE_LOCAL_EMBEDDINGS', 'true').lower() == 'true'
 _ENABLE_RERANKER = _os.getenv('ENABLE_RERANKER', 'false').lower() == 'true'
 _HF_TOKEN = _os.getenv('HF_TOKEN', '')
-_QUERY_CACHE = {}                # query -> (sources, retrieval_path)
-_LAST_EMBED_PATH = 'none'
 
 
 def _clamped_env_float(name: str, default: float, lo: float, hi: float) -> float:
@@ -1085,77 +1083,6 @@ def _rerank(query: str, candidates: list[dict], top_n: int = 5) -> list[dict]:
         return candidates[:top_n]
 
 
-# LEGACY: replaced by _dense_score_all
-def _hf_embed(text: str):
-    """HF Inference API embedding. Returns None on failure."""
-    global _LAST_EMBED_PATH
-    if not _HF_TOKEN:
-        return None
-    try:
-        import urllib.request
-        url = (
-            'https://api-inference.huggingface.co/pipeline/'
-            'feature-extraction/sentence-transformers/all-mpnet-base-v2'
-        )
-        body = _json.dumps({
-            'inputs': text,
-            'options': {'wait_for_model': True}
-        }).encode()
-        req = urllib.request.Request(url, data=body, headers={
-            'Authorization': f'Bearer {_HF_TOKEN}',
-            'Content-Type': 'application/json',
-            'X-Wait-For-Model': 'true',
-        })
-        with urllib.request.urlopen(req, timeout=5) as r:
-            result = _json.loads(r.read())
-        _LAST_EMBED_PATH = 'hf'
-        return result[0] if isinstance(result[0], list) else result
-    except Exception as e:
-        log.warning('HF API embed failed: %s', e)
-        return None
-
-
-def _embed(text: str):
-    """Get embedding vector for text. Returns None on failure."""
-    global _LAST_EMBED_PATH
-    _LAST_EMBED_PATH = 'none'
-
-    # Try local model first
-    if _USE_LOCAL_EMBEDDINGS or not _HF_TOKEN:
-        try:
-            m = _get_local_model()
-            if m:
-                _LAST_EMBED_PATH = 'local'
-                return m.encode(text, normalize_embeddings=True).tolist()
-        except Exception as e:
-            log.warning('Local embed failed: %s', e)
-
-    # Try HF API fallback
-    if _HF_TOKEN:
-        try:
-            import urllib.request
-            url = (
-                'https://api-inference.huggingface.co/pipeline/'
-                'feature-extraction/sentence-transformers/all-mpnet-base-v2'
-            )
-            body = _json.dumps({
-                'inputs': text,
-                'options': {'wait_for_model': True}
-            }).encode()
-            req = urllib.request.Request(url, data=body, headers={
-                'Authorization': f'Bearer {_HF_TOKEN}',
-                'Content-Type': 'application/json'
-            })
-            with urllib.request.urlopen(req, timeout=5) as r:
-                result = _json.loads(r.read())
-            _LAST_EMBED_PATH = 'hf'
-            return result[0] if isinstance(result[0], list) else result
-        except Exception as e:
-            log.warning('HF API embed failed: %s', e)
-
-    return None
-
-
 # ── Warm the dense embedding cache (background thread at startup) ─
 def _warm_embed_cache():
     """Embed all corpus items once and cache by item id. Non-blocking."""
@@ -1195,7 +1122,7 @@ def _cosine(a, b):
     return dot / (mag_a * mag_b)
 
 
-# LEGACY: _keyword_search — used by old retrieve_sources only
+# LEGACY: _keyword_search — still used as a last-resort fallback in /chat
 def _keyword_search(query: str, top_k: int = 3):
     query_words = set(query.lower().split())
     scored = []
@@ -1625,84 +1552,6 @@ def grade_sources(query: str, sources: list) -> bool:
         if query_words & combined:
             return True
     return False
-
-
-# LEGACY: retrieve_sources — replaced by _hybrid_retrieve in /chat
-# Kept here for any external references; /chat no longer calls this.
-def retrieve_sources(query: str, top_k: int = 3):
-    """
-    LEGACY retrieval chain: cache -> chroma -> flat file cosine -> keyword.
-    /chat now uses _hybrid_retrieve instead.
-    Returns (sources_list, retrieval_path_string)
-    """
-    cache_key = query.lower().strip()
-    if cache_key in _QUERY_CACHE:
-        return _QUERY_CACHE[cache_key]
-
-    # LEGACY ChromaDB semantic search
-    if _CHROMA_COLLECTION is not None:
-        try:
-            q_emb = _embed(query)
-            if q_emb:
-                results = _CHROMA_COLLECTION.query(
-                    query_embeddings=[q_emb],
-                    n_results=top_k,
-                    include=['documents', 'metadatas', 'distances']
-                )
-                sources = []
-                seen = set()
-                for i, doc in enumerate(results['documents'][0]):
-                    meta = results['metadatas'][0][i]
-                    pid = meta.get('parent_id', '')
-                    if pid not in seen:
-                        seen.add(pid)
-                        sources.append({
-                            'chunk_id': results['ids'][0][i],
-                            'parent_id': pid,
-                            'type': meta.get('type', ''),
-                            'title': meta.get('title', ''),
-                            'text': doc,
-                            'score': round(1 - results['distances'][0][i], 3)
-                        })
-                if sources:
-                    _QUERY_CACHE[cache_key] = (sources, 'chroma')
-                    return sources, 'chroma'
-        except Exception as e:
-            log.warning('ChromaDB query failed: %s', e)
-
-    # LEGACY flat file cosine search
-    if _CORPUS_EMBEDDINGS:
-        try:
-            q_emb = _embed(query)
-            if q_emb:
-                scored = []
-                for chunk in _CORPUS_EMBEDDINGS:
-                    emb = chunk.get('embedding')
-                    if emb:
-                        scored.append((_cosine(q_emb, emb), chunk))
-                scored.sort(key=lambda x: x[0], reverse=True)
-                seen, sources = set(), []
-                for score, chunk in scored:
-                    pid = chunk.get('parent_id', '')
-                    if pid not in seen:
-                        seen.add(pid)
-                        sources.append({**chunk, 'score': round(score, 3)})
-                    if len(sources) == top_k:
-                        break
-                if sources:
-                    path = _LAST_EMBED_PATH if _LAST_EMBED_PATH in ('local', 'hf') else 'local'
-                    _QUERY_CACHE[cache_key] = (sources, path)
-                    return sources, path
-        except Exception as e:
-            log.warning('Flat cosine search failed: %s', e)
-
-    # LEGACY keyword fallback
-    sources = _keyword_search(query, top_k)
-    if sources:
-        _QUERY_CACHE[cache_key] = (sources, 'keyword')
-        return sources, 'keyword'
-
-    return [], 'none'
 
 
 # Chat answer builder
