@@ -269,12 +269,16 @@ export function BrandStrip({ className = '' }) {
   const isLight = theme === 'light';
   const austLogo = isLight ? AUST_IDC_BLACK : AUST_IDC_WHITE;
 
-  const item = (label, logo, alt, height = 32, glowColor = 'rgba(168,85,247,0.2)') => (
+  const item = (label, logo, alt, height = 32, glowColor = 'rgba(168,85,247,0.2)', darkBg = false) => (
     <div 
       className="group relative flex flex-col items-center gap-3 py-4 px-6 sm:px-8 rounded-2xl transition-all duration-300 select-none overflow-hidden"
       style={{
-        background: 'linear-gradient(180deg, rgb(var(--c-on-card) / 0.04) 0%, rgb(var(--c-on-card) / 0.015) 100%)',
-        border: '1px solid rgb(var(--c-on-card) / 0.08)',
+        background: darkBg
+          ? 'linear-gradient(180deg, #1F2937 0%, #0F172A 100%)'
+          : 'linear-gradient(180deg, rgb(var(--c-on-card) / 0.04) 0%, rgb(var(--c-on-card) / 0.015) 100%)',
+        border: darkBg
+          ? '1px solid rgba(168, 85, 247, 0.35)'
+          : '1px solid rgb(var(--c-on-card) / 0.08)',
         boxShadow: '0 4px 20px rgb(var(--c-shadow) / 0.18)',
         backdropFilter: 'blur(10px)',
       }}
@@ -297,7 +301,7 @@ export function BrandStrip({ className = '' }) {
 
       <span
         className="text-[9px] font-bold uppercase tracking-[0.25em] transition-colors duration-300"
-        style={{ color: 'rgb(var(--c-text-muted))' }}
+        style={{ color: darkBg ? 'rgba(255,255,255,0.75)' : 'rgb(var(--c-text-muted))' }}
       >
         {label}
       </span>
@@ -333,7 +337,7 @@ export function BrandStrip({ className = '' }) {
         }}
       />
       
-      {item('Built for',     CODEFRONT_LOGO,  'CodeFront', 44, 'rgba(168, 85, 247, 0.2)')}
+      {item('Built for',     CODEFRONT_LOGO,  'CodeFront', 44, 'rgba(168, 85, 247, 0.2)', isLight)}
       {item('Powered by',    MINDSPARKS_LOGO, 'Mindsparks 26', 52, 'rgba(245, 158, 11, 0.2)')}
       {item('Organized by',  austLogo,        'AUST IDC', 56, 'rgb(var(--c-on-card) / 0.15)')}
     </div>

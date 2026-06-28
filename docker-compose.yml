@@ -5,7 +5,7 @@ services:
     image: careerpath-backend:latest
     container_name: careerpath-backend
     ports:
-      - "8000:8000"
+      - "8010:8000"
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       USE_LOCAL_EMBEDDINGS: "true"
@@ -32,7 +32,7 @@ services:
         # Frontend is built statically; this URL is baked into the bundle.
         # Point it at the backend service name when both run in this stack,
         # or override to a public URL for production builds.
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8010}
     image: careerpath-frontend:latest
     container_name: careerpath-frontend
     # Host port 18080 -> container nginx :80. Avoid 5173/8080 clashes.
@@ -46,7 +46,7 @@ services:
   chroma:
     image: chromadb/chroma:latest
     ports:
-      - "8001:8000"
+      - "8002:8000"
     volumes:
       - chroma_data:/chroma/chroma
     restart: unless-stopped

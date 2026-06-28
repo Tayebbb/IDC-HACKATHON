@@ -113,13 +113,20 @@ class ChatResponse(BaseModel):
     generation_model: str
 
 # Configure CORS middleware FIRST (before routes)
-# allow_origins=["*"] is safe here because allow_credentials=False (no cookies
-# cross-origin; the only auth header we send is the HF token, which lives
-# entirely server-side). This is what lets the deployed frontend (Vercel,
-# Netlify, etc.) reach the deployed backend without per-domain whitelisting.
+# Defaults to wildcard for local dev / hackathon demos. In production set
+# `CORS_ORIGINS` to a comma-separated allowlist (e.g.
+#   CORS_ORIGINS="https://careerpath.vercel.app,https://www.careerpath.app").
+# allow_credentials stays False because we do not send cookies cross-origin;
+# the only auth header used is HF_TOKEN, which lives entirely server-side.
+_cors_origins_env = _os.getenv("CORS_ORIGINS", "*").strip()
+_cors_origins = (
+    ["*"]
+    if _cors_origins_env in ("", "*")
+    else [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
