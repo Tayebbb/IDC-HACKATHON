@@ -6,7 +6,6 @@ import logging
 import math
 import os as _os
 import re
-import threading
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -36,9 +35,9 @@ _STARTUP_TIME: datetime = datetime.now(timezone.utc)
 
 def _check_st_installed() -> bool:
     try:
-        import sentence_transformers
-        return True
-    except ImportError:
+        import importlib.util
+        return importlib.util.find_spec('sentence_transformers') is not None
+    except Exception:
         return False
 
 # ---------------------------------------------------------------------------
@@ -407,6 +406,14 @@ async def health_dependencies():
     else:
         overall = 'critical'
 
+    chroma_chunks = 0
+    if chroma_ok:
+        try:
+            chroma_chunks = _CHROMA_COLLECTION.count()
+        except Exception as e:
+            log.warning('Chroma count unavailable: %s', e)
+            chroma_ok = False
+
     return {
         'seed_corpus_loaded': corpus_ok,
         'embeddings_loaded': embeddings_loaded,
@@ -414,8 +421,9 @@ async def health_dependencies():
         'hf_inference_reachable': hf_reachable,
         'ai_routes_ready': ai_ready,
         'chroma_connected': chroma_ok,
-        'chroma_chunks': _CHROMA_COLLECTION.count() if chroma_ok else 0,
+        'chroma_chunks': chroma_chunks,
         'use_local_embeddings': _USE_LOCAL_EMBEDDINGS,
+        'enable_reranker': _ENABLE_RERANKER,
         'sentence_transformers_installed': _check_st_installed(),
         'overall': overall
     }
@@ -856,7 +864,7 @@ async def skill_roadmap_post(req: Dict[str, Any]):
 # ---------------------------------------------------------------------------
 
 # ── RAG GLOBALS ──────────────────────────────────────────────
-# (stdlib imports: asyncio, math, os, re, threading are all hoisted to top of file)
+# (stdlib imports: asyncio, math, os, re are all hoisted to top of file)
 
 _CORPUS_EMBEDDINGS = []          # flat file fallback (kept for /health/dependencies)
 _CORPUS_CHUNKS = []
@@ -864,6 +872,7 @@ _CHROMA_CLIENT = None
 _CHROMA_COLLECTION = None
 _LOCAL_EMBED_MODEL = None
 _USE_LOCAL_EMBEDDINGS = _os.getenv('USE_LOCAL_EMBEDDINGS', 'true').lower() == 'true'
+_ENABLE_RERANKER = _os.getenv('ENABLE_RERANKER', 'false').lower() == 'true'
 _HF_TOKEN = _os.getenv('HF_TOKEN', '')
 _QUERY_CACHE = {}                # query -> (sources, retrieval_path)
 _LAST_EMBED_PATH = 'none'
@@ -973,10 +982,6 @@ def _load_hybrid_corpus():
         log.info('[RAG] Hybrid corpus loaded: %d items', len(_HYBRID_CORPUS))
         log.info('[RAG] BM25 index: %d unique tokens, avg_doc_len=%.1f', len(_DF_CACHE), _AVG_DOC_LEN)
 
-        # Eagerly warm the dense embedding cache in a background thread
-        t = threading.Thread(target=_warm_embed_cache, daemon=True)
-        t.start()
-
     except Exception as e:
         log.error('[RAG] Hybrid corpus load error: %s', e)
         _HYBRID_READY = False
@@ -997,6 +1002,9 @@ def _get_local_model():
 
 def _get_reranker():
     global _RERANKER_MODEL, _RERANKER_READY
+    if not _ENABLE_RERANKER:
+        _RERANKER_READY = False
+        return None
     if _RERANKER_MODEL is None:
         try:
             from sentence_transformers import CrossEncoder
@@ -1297,7 +1305,7 @@ async def _dense_score_all(
     except Exception:
         pass
 
-    if not q_emb:
+    if not q_emb and _USE_LOCAL_EMBEDDINGS:
         try:
             model = _get_local_model()
             if model is not None:
@@ -1317,7 +1325,7 @@ async def _dense_score_all(
             scores.append(_cosine(q_emb, item_emb))
         else:
             try:
-                model = _get_local_model()
+                model = _get_local_model() if _USE_LOCAL_EMBEDDINGS else None
                 if model is not None:
                     text = (
                         item.get("title", "") + " " +
@@ -2173,6 +2181,222 @@ async def roadmap(req: Dict[str, Any]):
 # ---------------------------------------------------------------------------
 # POST /interview/question — replaces frontend generateInterviewQuestion()
 # ---------------------------------------------------------------------------
+_REFERENCE_STORE: Dict[str, Dict[str, Any]] = {}
+
+
+def _infer_track_from_role(role: str) -> str:
+    """Map a free-form interview role to a corpus track."""
+    text = (role or '').lower()
+    if any(k in text for k in ('frontend', 'front-end', 'react', 'ui', 'ux', 'mobile')):
+        return 'Frontend'
+    if any(k in text for k in ('backend', 'back-end', 'api', 'server', 'full stack', 'fullstack')):
+        return 'Backend'
+    if any(k in text for k in ('devops', 'cloud', 'sre', 'site reliability', 'platform')):
+        return 'DevOps'
+    if any(k in text for k in ('data', 'machine learning', 'ml', 'ai', 'scientist')):
+        return 'AI/ML'
+    if any(k in text for k in ('product', 'manager', 'writer', 'success')):
+        return 'Communication'
+    return 'Backend'
+
+
+def _source_summary(item: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        'id': str(item.get('id') or item.get('parent_id') or item.get('title') or '')[:80],
+        'type': str(item.get('type') or '')[:40],
+        'title': str(item.get('title') or 'Career source')[:120],
+        'snippet': _source_text(item)[:180],
+        'score': float(item.get('_hybrid_score', item.get('score', 0.0)) or 0.0),
+    }
+
+
+async def _get_interview_rag_context(
+    role: str,
+    difficulty: str,
+    profile: Dict[str, Any] | None = None,
+    top_k: int = 4,
+) -> Dict[str, Any]:
+    """Retrieve interview-relevant context, sources, and skills."""
+    if not _HYBRID_CORPUS:
+        _load_hybrid_corpus()
+    track = _infer_track_from_role(role)
+    query = f'{difficulty} {role} interview skills project APIs databases examples'
+    filtered = _filter_corpus(
+        _HYBRID_CORPUS,
+        preferred_track=track,
+        experience_level=(difficulty or '').lower(),
+    ) if _HYBRID_READY and _HYBRID_CORPUS else []
+    top: List[Dict[str, Any]] = []
+    if filtered:
+        try:
+            top = await _hybrid_retrieve(query, filtered, top_k=top_k, alpha=0.5)
+        except Exception as e:
+            log.warning('[interview-rag] retrieve failed: %s', e)
+            top = []
+    if not top:
+        top = [
+            i for i in (_HYBRID_CORPUS or [])
+            if str(i.get('track', '')).lower() == track.lower()
+        ][:top_k]
+    skills: List[str] = []
+    for item in top:
+        raw_skills = item.get('skills') or item.get('skillsRequired') or item.get('relatedSkills') or []
+        for skill in raw_skills:
+            s = str(skill).strip()
+            if s and s not in skills:
+                skills.append(s)
+    if not skills:
+        skills = {
+            'Frontend': ['React', 'JavaScript', 'HTML', 'CSS'],
+            'Backend': ['REST APIs', 'SQL', 'FastAPI', 'Docker'],
+            'DevOps': ['Docker', 'CI/CD', 'Linux', 'Cloud'],
+            'AI/ML': ['Python', 'ML', 'Data analysis', 'Model evaluation'],
+            'Communication': ['Communication', 'Product thinking', 'User research'],
+        }.get(track, ['Problem solving'])
+    return {
+        'track': track,
+        'context': _build_context_window(top) if top else '',
+        'sources': [_source_summary(i) for i in top],
+        'skills_tested': skills[:6],
+        'rag_grounded': bool(top),
+    }
+
+
+async def _generate_reference_answer(
+    question: str,
+    role: str,
+    difficulty: str,
+    skills_tested: List[str],
+    context: str = '',
+) -> str:
+    """Generate or synthesize a reference answer for rubric anchoring."""
+    skill_line = ', '.join(skills_tested[:5]) or 'role fundamentals'
+    fallback = (
+        f'A strong {role or "candidate"} answer should define the core concept, '
+        f'connect it to {skill_line}, describe implementation choices, mention '
+        'trade-offs or failure modes, and include a concrete project example.'
+    )
+    prompt = (
+        (f'{context}\n\n---\n\n' if context else '')
+        + f'Write a concise reference answer for this {difficulty} {role} interview question.\n'
+        + f'Question: {question}\n'
+        + f'Skills to test: {skill_line}\n'
+        + 'Return 4-6 sentences covering core concepts, technical depth, trade-offs, and an example.'
+    )
+    try:
+        return (await _hf_chat(prompt, max_tokens=320, temperature=0.2)).strip() or fallback
+    except Exception as e:
+        log.warning('[interview-rag] reference generation fallback: %s', e)
+        return fallback
+
+
+def _reference_key(session_id: str, question_number: int) -> str:
+    return f'{session_id}:{question_number}'
+
+
+def _store_reference(
+    session_id: str | None,
+    question_number: int,
+    payload: Dict[str, Any],
+) -> None:
+    if not session_id:
+        return
+    _REFERENCE_STORE[_reference_key(str(session_id), question_number)] = payload
+    if len(_REFERENCE_STORE) > 500:
+        for key in list(_REFERENCE_STORE.keys())[:100]:
+            _REFERENCE_STORE.pop(key, None)
+
+
+def _get_reference(session_id: str | None, question_number: int) -> Dict[str, Any] | None:
+    if not session_id:
+        return None
+    return _REFERENCE_STORE.get(_reference_key(str(session_id), question_number))
+
+
+def _has_practical_example(answer: str) -> bool:
+    text = (answer or '').lower()
+    markers = ('for example', 'in my project', 'i built', 'i used', 'we used', 'implemented', 'created')
+    return any(m in text for m in markers)
+
+
+def _semantic_gap_analysis(
+    answer: str,
+    reference: str,
+    skills_tested: List[str],
+) -> Dict[str, Any]:
+    answer_l = (answer or '').lower()
+    covered: List[str] = []
+    for skill in skills_tested or []:
+        name = str(skill).strip()
+        if not name:
+            continue
+        token = re.sub(r'[^a-z0-9]+', ' ', name.lower()).strip()
+        aliases = {token, token.replace('apis', 'api'), token.replace('api', 'apis')}
+        if any(alias and alias in answer_l for alias in aliases):
+            covered.append(name)
+    if not covered:
+        ref_words = [
+            w for w in re.findall(r'[a-zA-Z][a-zA-Z0-9+#.-]{2,}', reference or '')
+            if w.lower() not in {'the', 'and', 'for', 'with', 'should', 'answer'}
+        ][:8]
+        covered = [w for w in ref_words if w.lower() in answer_l]
+    covered = list(dict.fromkeys(covered))
+    missing = [s for s in (skills_tested or []) if s not in covered][:6]
+    denominator = max(len(skills_tested or []), 1)
+    coverage_pct = int(round((len(covered) / denominator) * 100))
+    return {
+        'concepts_covered': covered,
+        'concepts_missing': missing,
+        'coverage_pct': max(0, min(100, coverage_pct)),
+    }
+
+
+def _compute_rubric_score(
+    answer: str,
+    gap: Dict[str, Any],
+    has_example: bool,
+) -> Dict[str, Any]:
+    words = re.findall(r'\w+', answer or '')
+    coverage = int(gap.get('coverage_pct') or 0)
+    core = round(40 * coverage / 100)
+    technical = min(30, 8 + len(set(w.lower() for w in words if len(w) > 5)) * 2)
+    example = 20 if has_example else 6
+    clarity = 10 if 20 <= len(words) <= 220 else 6
+    total = max(0, min(100, core + technical + example + clarity))
+    return {
+        'score': max(1, min(10, round(total / 10))),
+        'score_breakdown': {
+            'core_concepts': core,
+            'technical_depth': technical,
+            'practical_example': example,
+            'clarity': clarity,
+        },
+    }
+
+
+def _build_evaluation_prompt(
+    question: str,
+    answer: str,
+    reference: str,
+    role: str,
+    difficulty: str,
+    gap: Dict[str, Any],
+    rubric: Dict[str, Any],
+    emotion_context: str = '',
+) -> str:
+    return (
+        f'Role: {role or "Candidate"} ({difficulty or "intermediate"})\n'
+        f'Question: {question}\n'
+        f'Reference answer: {reference}\n'
+        f'Candidate answer: """{answer}"""\n'
+        f'Covered concepts: {", ".join(gap.get("concepts_covered") or []) or "none"}\n'
+        f'Missing concepts: {", ".join(gap.get("concepts_missing") or []) or "none"}\n'
+        f'Rubric score anchor: {rubric.get("score")}/10\n'
+        + emotion_context
+        + '\nReturn ONLY minified JSON: {"feedback":"...", "strengths":["..."], "improvements":["..."]}'
+    )
+
+
 @app.options('/interview/question')
 async def options_interview_question():
     return {'message': 'OK'}
@@ -2208,8 +2432,13 @@ async def interview_question(req: Dict[str, Any]):
 
     profile = req.get('profile') or {}
     profile_line = _profile_summary(profile)
-    context = await _rag_context(
-        f'{difficulty} {role} interview question', profile, top_k=4,
+    session_id = req.get('sessionId') or req.get('session_id')
+    rag = await _get_interview_rag_context(role, difficulty, profile, top_k=4)
+    context = rag.get('context') or ''
+    skills_tested = rag.get('skills_tested') or []
+    skill_block = (
+        '\nSkills this question should test: ' + ', '.join(skills_tested[:5]) + '\n'
+        if skills_tested else ''
     )
 
     user_prompt = (
@@ -2218,6 +2447,7 @@ async def interview_question(req: Dict[str, Any]):
         + f'Generate exactly ONE {difficulty}-level interview question '
         + f'(number {question_number}) for a {role} candidate.\n'
         + 'Personalize the question to the candidate background when possible.'
+        + skill_block
         + previous_block + '\n\n'
         + 'Respond with the question text ONLY — no preamble, no numbering, '
         + 'no markdown.'
@@ -2226,7 +2456,13 @@ async def interview_question(req: Dict[str, Any]):
     try:
         raw = await _hf_chat(user_prompt, max_tokens=256, temperature=0.8)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f'Question generation failed: {e}')
+        log.warning('[interview-question] HF fallback: %s', e)
+        primary_skill = skills_tested[0] if skills_tested else _infer_track_from_role(role)
+        raw = (
+            f'Tell me about a time you used {primary_skill} in a {role} project. '
+            'What design choices did you make, what trade-offs did you consider, '
+            'and how did you validate the result?'
+        )
 
     # Conservative cleanup: only strip 'Question:'/'Q:' style prefixes when
     # followed by an actual separator, and only strip leading bullets/numbers,
@@ -2237,7 +2473,27 @@ async def interview_question(req: Dict[str, Any]):
     cleaned = cleaned.strip().strip('"').strip("'")
     if not cleaned:
         cleaned = raw.strip()  # never return empty string
-    return {'question': cleaned}
+
+    reference = await _generate_reference_answer(
+        cleaned,
+        role,
+        difficulty,
+        skills_tested,
+        context,
+    )
+    _store_reference(session_id, question_number, {
+        'question': cleaned,
+        'reference_answer': reference,
+        'skills_tested': skills_tested,
+        'sources': rag.get('sources') or [],
+        'rag_grounded': bool(rag.get('rag_grounded')),
+    })
+    return {
+        'question': cleaned,
+        'rag_grounded': bool(rag.get('rag_grounded')),
+        'skills_tested': skills_tested,
+        'sources': rag.get('sources') or [],
+    }
 
 
 @app.post("/generate-interview-question")
@@ -2303,52 +2559,77 @@ async def interview_evaluate(req: Dict[str, Any]):
             f'- Interpretation: {interpretation}\n'
         )
 
-    context = await _rag_context(f'{question}\n\n{answer}', profile, top_k=4)
+    session_id = req.get('sessionId') or req.get('session_id')
+    try:
+        question_number = int(req.get('questionNumber') or 1)
+    except (TypeError, ValueError):
+        question_number = 1
+    question_number = max(1, min(question_number, 50))
 
-    base_prompt = (
-        (f'{context}\n\n---\n\n' if context else '')
-        + 'Evaluate the following interview answer on a 1-10 scale '
-        + '(clarity, relevance, technical depth).\n'
-        + (f'Role: {role} ({difficulty})\n' if role else f'Difficulty: {difficulty}\n')
-        + f'Question: {question}\n'
-        + f'Candidate answer: """{answer}"""\n\n'
-        + 'Return ONLY valid minified JSON in this exact schema, nothing else:\n'
-        + '{"score": <number 1-10>, "feedback": "<2-3 sentences>", '
-        + '"strengths": ["...","..."], "improvements": ["...","..."]}'
+    reference_payload = _get_reference(session_id, question_number)
+    rag_grounded = bool(reference_payload)
+    if reference_payload:
+        reference_answer = str(reference_payload.get('reference_answer') or '')
+        skills_tested = list(reference_payload.get('skills_tested') or [])
+        sources = list(reference_payload.get('sources') or [])
+    else:
+        rag = await _get_interview_rag_context(role, difficulty, profile, top_k=4)
+        reference_answer = await _generate_reference_answer(
+            question,
+            role,
+            difficulty,
+            rag.get('skills_tested') or [],
+            rag.get('context') or '',
+        )
+        skills_tested = list(rag.get('skills_tested') or [])
+        sources = list(rag.get('sources') or [])
+
+    gap = _semantic_gap_analysis(answer, reference_answer, skills_tested)
+    has_example = _has_practical_example(answer)
+    rubric = _compute_rubric_score(answer, gap, has_example)
+    user_prompt = _build_evaluation_prompt(
+        question,
+        answer,
+        reference_answer,
+        role,
+        difficulty,
+        gap,
+        rubric,
+        emotion_context,
     )
-
-    multimodal_directive = (
-        '\nBased on both the answer content AND the expression analysis '
-        'above, the feedback field MUST address: (1) content quality of '
-        'the answer; (2) whether the delivery confidence matched the '
-        'content quality, and specific advice to improve composure. '
-        'Keep feedback concise and actionable (3-4 sentences max).\n'
-        if has_emotion else ''
-    )
-
-    user_prompt = base_prompt + emotion_context + multimodal_directive
 
     try:
         raw = await _hf_chat(user_prompt, max_tokens=400, temperature=0.3)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f'Answer evaluation failed: {e}')
+        log.warning('[interview-evaluate] HF fallback: %s', e)
+        raw = ''
 
     parsed = _safe_json_parse(raw)
-    if isinstance(parsed, dict) and isinstance(parsed.get('score'), (int, float)):
-        try:
-            score = int(round(float(parsed.get('score') or 0)))
-        except (TypeError, ValueError):
-            score = 5
-        score = max(1, min(10, score))
+    if isinstance(parsed, dict):
+        score = int(rubric['score'])
         raw_strengths = parsed.get('strengths')
         raw_improvements = parsed.get('improvements')
         strengths = raw_strengths if isinstance(raw_strengths, list) else []
         improvements = raw_improvements if isinstance(raw_improvements, list) else []
+        missing = gap.get('concepts_missing') or []
         out: Dict[str, Any] = {
             'score': score,
-            'feedback': str(parsed.get('feedback') or '')[:1000],
-            'strengths': [str(s)[:200] for s in strengths][:5],
-            'improvements': [str(s)[:200] for s in improvements][:5],
+            'feedback': str(parsed.get('feedback') or 'Rubric-based evaluation completed.')[:1000],
+            'strengths': [str(s)[:200] for s in strengths][:5] or ['Answer was evaluated against the stored rubric.'],
+            'improvements': [str(s)[:200] for s in improvements][:5] or [
+                f'Add more detail on {missing[0]}.' if missing else 'Keep tying answers to concrete implementation details.'
+            ],
+            'concepts_covered': gap.get('concepts_covered') or [],
+            'concepts_missing': missing,
+            'coverage_pct': gap.get('coverage_pct') or 0,
+            'score_breakdown': rubric.get('score_breakdown') or {},
+            'rag_grounded': rag_grounded,
+            'skills_tested': skills_tested,
+            'sources': sources,
+            'missingConceptsFeedback': (
+                'Review: ' + ', '.join(missing[:3])
+                if missing else 'No major rubric concepts missing.'
+            ),
         }
         if has_emotion:
             out['expression_feedback'] = _build_expression_feedback(
@@ -2357,11 +2638,28 @@ async def interview_evaluate(req: Dict[str, Any]):
         return out
 
     # Model failed to return parseable JSON — degrade gracefully.
+    missing = gap.get('concepts_missing') or []
     out = {
-        'score': 5,
-        'feedback': (raw or '')[:400] or 'Unable to parse model response.',
-        'strengths': [],
-        'improvements': ['Provide more specific examples in your answer.'],
+        'score': int(rubric['score']),
+        'feedback': (
+            'Your answer was scored with the deterministic interview rubric. '
+            f'Concept coverage is {gap.get("coverage_pct", 0)}%.'
+        ),
+        'strengths': ['Includes a practical example.' if has_example else 'Answer submitted clearly.'],
+        'improvements': [
+            f'Add more detail on {missing[0]}.' if missing else 'Add more trade-offs and validation details.'
+        ],
+        'concepts_covered': gap.get('concepts_covered') or [],
+        'concepts_missing': missing,
+        'coverage_pct': gap.get('coverage_pct') or 0,
+        'score_breakdown': rubric.get('score_breakdown') or {},
+        'rag_grounded': rag_grounded,
+        'skills_tested': skills_tested,
+        'sources': sources,
+        'missingConceptsFeedback': (
+            'Review: ' + ', '.join(missing[:3])
+            if missing else 'No major rubric concepts missing.'
+        ),
     }
     if has_emotion:
         out['expression_feedback'] = _build_expression_feedback(
@@ -2663,12 +2961,8 @@ async def generate_application(req: Dict[str, Any]):
 @app.on_event("startup")
 async def startup_event():
     _load_hybrid_corpus()
-    import threading as _threading
-    # Warm reranker + generator off the request path so GET / responds
-    # immediately and the HEALTHCHECK passes during cold start.
-    _threading.Thread(target=_get_reranker, daemon=True).start()
-    _threading.Thread(target=_load_generator, daemon=True).start()
-    log.info("[GEN] Phi-3 + reranker loading in background - template fallback active until ready.")
+    _load_generator()
+    log.info("[GEN] Optional reranker/local embeddings load lazily on first use.")
     _load_corpus()
     _init_chroma()
 

@@ -64,12 +64,12 @@ async function _loadFaceApi() {
       ]);
       _faceApiModule = mod;
       _faceApiReady = true;
-      // eslint-disable-next-line no-console
+
       console.info('[FaceExpressionOverlay] face-api models loaded (local).');
       return mod;
     } catch (e) {
       // Non-fatal: HF-only fallback path stays active.
-      // eslint-disable-next-line no-console
+
       console.warn('[FaceExpressionOverlay] face-api load failed; HF-only mode.', e);
       _faceApiReady = false;
       _faceApiModule = null;
@@ -355,7 +355,7 @@ function _getShapeDetector() {
   _faceDetectorTried = true;
   try {
     if (typeof window !== 'undefined' && 'FaceDetector' in window) {
-      // eslint-disable-next-line no-undef
+
       _faceDetectorInstance = new window.FaceDetector({
         fastMode: true,
         maxDetectedFaces: 1,
@@ -877,7 +877,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       setCamError(msg);
       setCameraStarted(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // Parent flagged inactive → stop the camera.

@@ -145,7 +145,7 @@ export default function MindsparksCredential({ score, userName, confidence }) {
       doc.text('CareerPath \u2014 AI-Powered Career Development Platform', 60, pageH - 60);
       doc.text(`Issued: ${today}`, pageW - 60, pageH - 60, { align: 'right' });
 
-      const fileSafe = safeName.replace(/[^a-z0-9_\-]+/gi, '_');
+      const fileSafe = safeName.replace(/[^a-z0-9_-]+/gi, '_');
       doc.save(`CareerPath_Certificate_${fileSafe}.pdf`);
     } finally {
       setDownloading(false);

@@ -28,6 +28,7 @@
     "react-router-dom": "^6.8.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
@@ -36,9 +37,10 @@
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
+    "globals": "^17.7.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
     "terser": "^5.44.1",
-    "vite": "^5.4.11"
+    "vite": "^6.4.3"
   }
 }

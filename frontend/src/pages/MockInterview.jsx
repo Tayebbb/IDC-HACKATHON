@@ -6,13 +6,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Mic, 
-  StopCircle, 
-  Play, 
-  RotateCw, 
-  Send, 
-  Lightbulb, 
+import {
+  Mic,
+  StopCircle,
+  Play,
+  RotateCw,
+  Send,
+  Lightbulb,
   TrendingUp,
   Clock,
   CheckCircle,
@@ -30,16 +30,16 @@ import {
   Quote
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
   getDocs,
   doc,
   getDoc,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import ReasoningCard from '../components/ReasoningCard';
@@ -458,6 +458,10 @@ function getOverallCoachingSummary(wpm, fillerCount, pauseSeconds, emotions) {
   return { score, grade, gradeColor, issues, strengths };
 }
 
+function generateSessionId() {
+  return `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 const MockInterview = () => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -476,6 +480,14 @@ const MockInterview = () => {
   const [sessionAnswers, setSessionAnswers] = useState([]); // Store Q&A pairs
   const [sessionFeedbacks, setSessionFeedbacks] = useState([]); // Store all feedbacks
   const [interviewProfile, setInterviewProfile] = useState(null); // candidate profile snapshot for backend RAG
+  const [sessionId, setSessionId] = useState(() => generateSessionId());
+  const sessionIdRef = useRef(sessionId);
+  const [skillsTested, setSkillsTested] = useState([]);
+  const [conceptsCovered, setConceptsCovered] = useState([]);
+  const [conceptsMissing, setConceptsMissing] = useState([]);
+  const [scoreBreakdown, setScoreBreakdown] = useState(null);
+  const [coveragePct, setCoveragePct] = useState(null);
+  const [missingConceptsFeedback, setMissingConceptsFeedback] = useState('');
 
   // Feature 6 — Voice Interview Coach state
   // FALLBACK TEST (verified at implementation time):
@@ -531,7 +543,7 @@ const MockInterview = () => {
     const pauseSecs = pauseFactor?.value  ?? 0;
     const emotions  = liveEmotionsRef.current;
     setCoachingSummary(getOverallCoachingSummary(wpm, fillers, pauseSecs, emotions));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [interviewEnded]);
 
   const jobRoles = [
@@ -590,6 +602,7 @@ const MockInterview = () => {
           role: selectedRole,
           difficulty,
           questionNumber: questionNumber + 1,
+          sessionId: sessionIdRef.current || sessionId,
           previousQuestions: sessionQuestions,
           profile: interviewProfile || {},
         }),
@@ -602,6 +615,7 @@ const MockInterview = () => {
       const question = data.question;
       if (!question) throw new Error('Empty question returned from model');
       setCurrentQuestion(question);
+      setSkillsTested(Array.isArray(data.skills_tested) ? data.skills_tested : []);
       setSessionQuestions(prev => [...prev, question]);
       toast.success('New question generated!');
     } catch (error) {
@@ -610,7 +624,7 @@ const MockInterview = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedRole, difficulty, questionNumber, sessionQuestions, interviewProfile]);
+  }, [selectedRole, difficulty, questionNumber, sessionQuestions, interviewProfile, sessionId]);
 
   // Evaluate answer via backend (server-side RAG + HF Llama)
   const evaluateAnswer = useCallback(async () => {
@@ -639,6 +653,8 @@ const MockInterview = () => {
           answer: userAnswer,
           role: selectedRole,
           difficulty,
+          sessionId: sessionIdRef.current,
+          questionNumber: questionNumber + 1,
           profile: interviewProfile || {},
           // Optional multimodal payload — all null during per-question evals.
           emotionSummary: emotionSummary ? {
@@ -660,6 +676,11 @@ const MockInterview = () => {
       }
       const data = await res.json();
       setFeedback(data);
+      setConceptsCovered(Array.isArray(data.concepts_covered) ? data.concepts_covered : []);
+      setConceptsMissing(Array.isArray(data.concepts_missing) ? data.concepts_missing : []);
+      setScoreBreakdown(data.score_breakdown || null);
+      setCoveragePct(typeof data.coverage_pct === 'number' ? data.coverage_pct : null);
+      setMissingConceptsFeedback(data.missingConceptsFeedback || '');
 
       // Feature 6 — build a client-side interview_metric envelope from
       // the captured voice session. Falls back to null if voice was
@@ -694,7 +715,7 @@ const MockInterview = () => {
         improvements: data.improvements,
         timestamp: new Date().toISOString()
       }]);
-      
+
       setSessionFeedbacks(prev => [...prev, data]);
 
       toast.success('Answer evaluated!');
@@ -704,7 +725,17 @@ const MockInterview = () => {
     } finally {
       setLoading(false);
     }
-  }, [userAnswer, currentQuestion, selectedRole, difficulty, interviewProfile]);
+  }, [
+    userAnswer,
+    currentQuestion,
+    selectedRole,
+    difficulty,
+    interviewProfile,
+    questionNumber,
+    questionTrends,
+    emotionSummary,
+    presenceData,
+  ]);
 
   // Start interview — snapshot the user's profile so subsequent
   // question/evaluate calls can ground server-side RAG, then generate Q1.
@@ -719,8 +750,17 @@ const MockInterview = () => {
     setSessionScore(0);
     setSessionAnswers([]); // Reset Q&A pairs
     setSessionFeedbacks([]); // Reset feedbacks
+    const newSessionId = generateSessionId();
+    sessionIdRef.current = newSessionId;
+    setSessionId(newSessionId);
     setEmotionSummary(null);
     setMetricsEnvelope(null);
+    setSkillsTested([]);
+    setConceptsCovered([]);
+    setConceptsMissing([]);
+    setScoreBreakdown(null);
+    setCoveragePct(null);
+    setMissingConceptsFeedback('');
     // ── CHANGE 5: Clear coaching state on restart ──
     setVoiceCoaching([]);
     setExpressionCoaching([]);
@@ -758,6 +798,12 @@ const MockInterview = () => {
     });
     setUserAnswer('');
     setFeedback(null);
+    setSkillsTested([]);
+    setConceptsCovered([]);
+    setConceptsMissing([]);
+    setScoreBreakdown(null);
+    setCoveragePct(null);
+    setMissingConceptsFeedback('');
     setInterviewPhase('listening');
     generateQuestion();
   }, [generateQuestion]);
@@ -783,7 +829,7 @@ const MockInterview = () => {
     try {
       const avgScore = sessionScore / Math.max(questionNumber + 1, 1);
       const totalQuestions = questionNumber + 1;
-      
+
       // Prepare detailed session data
       const sessionData = {
         userId: currentUser.uid,
@@ -793,18 +839,18 @@ const MockInterview = () => {
         questionsAsked: totalQuestions,
         averageScore: avgScore,
         totalScore: sessionScore,
-        
+
         // Store all Q&A pairs with feedback
         questionsAndAnswers: sessionAnswers,
-        
+
         // Session metadata
         sessionDuration: null, // Can add timer if needed
         completedAt: serverTimestamp(),
         createdAt: serverTimestamp(),
-        
+
         // Individual scores for tracking
         scores: sessionFeedbacks.map(f => f.score),
-        
+
         // Overall session summary
         summary: {
           totalQuestions: totalQuestions,
@@ -817,7 +863,7 @@ const MockInterview = () => {
 
       // Save to Firebase
       const docRef = await addDoc(collection(db, 'interviewHistory'), sessionData);
-      
+
       console.log('Interview session saved with ID:', docRef.id);
 
       toast.success(`Interview completed! Average score: ${avgScore.toFixed(1)}/10`);
@@ -1028,7 +1074,7 @@ const MockInterview = () => {
                           </p>
                         </div>
                       </div>
-                      
+
                       {/* Score breakdown */}
                       {item.summary && (
                         <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-border/50">
@@ -1047,8 +1093,8 @@ const MockInterview = () => {
                           <div className="text-center">
                             <p className="text-xs text-muted">Difficulty</p>
                             <p className={`text-sm font-semibold capitalize ${
-                              item.difficulty === 'advanced' ? 'text-red-500' : 
-                              item.difficulty === 'intermediate' ? 'text-yellow-500' : 
+                              item.difficulty === 'advanced' ? 'text-red-500' :
+                              item.difficulty === 'intermediate' ? 'text-yellow-500' :
                               'text-green-500'
                             }`}>
                               {item.difficulty}
@@ -1644,6 +1690,18 @@ const MockInterview = () => {
                     {currentQuestion || 'Click "New Question" to begin.'}
                   </h3>
                 )}
+                {skillsTested.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2 pr-20">
+                    {skillsTested.map((skill) => (
+                      <span
+                        key={skill}
+                        className="text-[11px] px-2 py-1 rounded-md bg-purple-500/10 text-purple-200 border border-purple-500/20"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <span className="absolute bottom-3 right-4 text-[10px] text-white/40 uppercase tracking-wider">
                   {difficulty}
                 </span>
@@ -1800,6 +1858,80 @@ const MockInterview = () => {
                         </ul>
                       </div>
                     </div>
+
+                    {scoreBreakdown && (
+                      <div className="pt-2 border-t border-white/[0.06]">
+                        <p className="text-[11px] text-white/40 uppercase tracking-widest mb-3">
+                          Score Breakdown
+                        </p>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {[
+                            ['Core concepts', scoreBreakdown.core_concepts, 40],
+                            ['Technical depth', scoreBreakdown.technical_depth, 30],
+                            ['Practical example', scoreBreakdown.practical_example, 20],
+                            ['Clarity', scoreBreakdown.clarity, 10],
+                          ].map(([label, value, max]) => {
+                            const pct = Math.max(0, Math.min(100, Math.round(((value || 0) / max) * 100)));
+                            return (
+                              <div key={label} className="space-y-1.5">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-white/60">{label}</span>
+                                  <span className="text-white/80">{value || 0}/{max}</span>
+                                </div>
+                                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-[#A855F7]"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {(conceptsCovered.length > 0 || conceptsMissing.length > 0 || coveragePct !== null) && (
+                      <div className="pt-2 border-t border-white/[0.06] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] text-white/40 uppercase tracking-widest">
+                            Concept Coverage
+                          </p>
+                          {coveragePct !== null && (
+                            <span className="text-xs font-semibold text-purple-300">{coveragePct}%</span>
+                          )}
+                        </div>
+                        {conceptsCovered.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {conceptsCovered.map((concept) => (
+                              <span
+                                key={`covered-${concept}`}
+                                className="text-[11px] px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-200 border border-emerald-500/20"
+                              >
+                                {concept}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {conceptsMissing.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {conceptsMissing.map((concept) => (
+                              <span
+                                key={`missing-${concept}`}
+                                className="text-[11px] px-2 py-1 rounded-md bg-amber-500/10 text-amber-200 border border-amber-500/20"
+                              >
+                                {concept}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {missingConceptsFeedback && (
+                          <p className="text-xs text-white/60 leading-relaxed">
+                            {missingConceptsFeedback}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {/* Overall coaching summary block */}
                     {interviewEnded && coachingSummary && (
