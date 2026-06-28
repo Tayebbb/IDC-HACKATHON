@@ -1,17 +1,19 @@
 /**
  * FaceExpressionOverlay.jsx
  * ---------------------------------------------------------------
- * Live webcam â†’ Hugging Face vit-face-expression (browser direct).
+ * Live webcam -> local face-api.js -> cropped backend HF proxy.
  *
  * UI no longer shows emotion labels (happy / sad / angry / surprise / â€¦).
  * Instead, every detection frame is mapped to a single actionable interview
  * coaching tip, surfaced as a rolling 3-tip queue under the camera.
  *
- * Architecture: The current build does NOT use face-api.js (banned by the
- * project's "no local ML model" architecture). Per-frame `expressions` come
- * from Hugging Face Inference API (HF returns label/score pairs). Per-frame
- * `landmarks` are not available, so the landmark-driven eye-contact tip is
- * implemented as a graceful no-op (the same priority chain is preserved).
+ * Architecture: the current build is hybrid. Browser-side face-api.js performs
+ * face detection and local expression scoring from co-deployed models in
+ * /public/models. When local-only mode is off, the detected face region is
+ * cropped and sent to the backend /face-expression proxy, which forwards only
+ * that crop to Hugging Face trpakov/vit-face-expression. The frontend blends
+ * local and backend scores, smooths them over time, calibrates a resting-face
+ * baseline, and emits coaching tips.
  *
  * Exports:
  *   default â€” the FaceExpressionOverlay component
@@ -35,6 +37,8 @@ import API_URL from '../config';
 const EXPRESSION_MODEL = 'trpakov/vit-face-expression';
 const SAMPLE_INTERVAL_MS = 3000;
 const TIP_FADE_AFTER_MS = 4000;
+const HF_MAX_RETRIES = 3;
+const PRIVACY_NOTICE_KEY = 'careerpath_expression_privacy_ack';
 const NEGATIVE_EMOTIONS = new Set(['angry', 'disgust', 'fear', 'sad']);
 const FACE_API_MODEL_URL = '/models';
 
@@ -68,9 +72,9 @@ async function _loadFaceApi() {
       console.info('[FaceExpressionOverlay] face-api models loaded (local).');
       return mod;
     } catch (e) {
-      // Non-fatal: HF-only fallback path stays active.
+      // Non-fatal: backend HF may still classify crops; UI shows degraded mode.
 
-      console.warn('[FaceExpressionOverlay] face-api load failed; HF-only mode.', e);
+      console.warn('[FaceExpressionOverlay] face-api load failed; backend-only mode.', e);
       _faceApiReady = false;
       _faceApiModule = null;
       return null;
@@ -114,6 +118,25 @@ function isInsecureContext() {
   return !['localhost', '127.0.0.1', '::1'].includes(hostname);
 }
 
+function _getPrivacyAck() {
+  try {
+    return typeof window !== 'undefined'
+      && window.localStorage.getItem(PRIVACY_NOTICE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function _setPrivacyAck() {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(PRIVACY_NOTICE_KEY, 'true');
+    }
+  } catch {
+    // Non-fatal: privacy notice can reappear if storage is unavailable.
+  }
+}
+
 // =====================================================================
 // Per-frame coaching priority chain (matches the redesigned spec).
 //
@@ -124,7 +147,7 @@ function isInsecureContext() {
 //
 // Returns: { tip: string, type: 'positive'|'warning'|'info', icon: string }
 // =====================================================================
-function _normalizeScores(hfList) {
+export function _normalizeScores(hfList) {
   // hfList example: [{label:'happy', score:0.82}, ...]
   const out = {};
   for (const { label, score } of hfList || []) {
@@ -447,7 +470,7 @@ async function _detectFaceAndEmotion(canvas) {
 // Ensemble two probability distributions over the same label set.
 // Each distribution is weighted by the model's relative confidence so
 // that whichever model is more decisive on THIS frame counts more.
-function _ensembleScores(hfScores, localScores) {
+export function _ensembleScores(hfScores, localScores) {
   if (!localScores) return hfScores || {};
   if (!hfScores)    return localScores;
   const labels = new Set([...Object.keys(hfScores), ...Object.keys(localScores)]);
@@ -463,6 +486,75 @@ function _ensembleScores(hfScores, localScores) {
     out[label] = (hfScores[label] || 0) * wHf + (localScores[label] || 0) * wLocal;
   }
   return out;
+}
+
+export function _parseBackendExpressionResponse(data) {
+  const labels = Array.isArray(data?.labels) ? data.labels : [];
+  return {
+    labels,
+    scores: labels.length ? _normalizeScores(labels) : null,
+    success: Boolean(data?.success && labels.length),
+    retrievalPath: data?.retrieval_path || 'error',
+  };
+}
+
+function _sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function _expandedFaceCrop(bbox, width, height) {
+  if (!bbox || !width || !height) return null;
+  const pad = 0.25;
+  const rawX = bbox.x - (bbox.w * pad);
+  const rawY = bbox.y - (bbox.h * pad);
+  const rawW = bbox.w * (1 + pad * 2);
+  const rawH = bbox.h * (1 + pad * 2);
+  const x = Math.max(0, Math.floor(rawX));
+  const y = Math.max(0, Math.floor(rawY));
+  const w = Math.min(width - x, Math.ceil(rawW));
+  const h = Math.min(height - y, Math.ceil(rawH));
+  if (w < 32 || h < 32) return null;
+  return { x, y, w, h };
+}
+
+async function _blobFromFaceCrop(sourceCanvas, bbox) {
+  const crop = _expandedFaceCrop(bbox, sourceCanvas.width, sourceCanvas.height);
+  if (!crop) return null;
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = crop.w;
+  cropCanvas.height = crop.h;
+  const cropCtx = cropCanvas.getContext('2d');
+  cropCtx.drawImage(
+    sourceCanvas,
+    crop.x, crop.y, crop.w, crop.h,
+    0, 0, crop.w, crop.h,
+  );
+  return new Promise((res) => cropCanvas.toBlob(res, 'image/jpeg', 0.82));
+}
+
+async function _postFaceExpressionWithRetry(apiUrl, blob) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= HF_MAX_RETRIES; attempt += 1) {
+    try {
+      const form = new FormData();
+      form.append('file', blob, 'face-crop.jpg');
+      const resp = await fetch(`${apiUrl}/face-expression`, {
+        method: 'POST',
+        body: form,
+      });
+      if (!resp.ok) {
+        const detail = await resp.text();
+        throw new Error(`Backend ${resp.status}: ${(detail || '').slice(0, 100)}`);
+      }
+      return await resp.json();
+    } catch (err) {
+      lastError = err;
+      if (attempt < HF_MAX_RETRIES) {
+        await _sleep(350 * (2 ** (attempt - 1)));
+      }
+    }
+  }
+  throw lastError || new Error('Expression backend unavailable');
 }
 
 // =====================================================================
@@ -560,7 +652,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   ref,
 ) {
   const videoRef         = useRef(null);
-  const canvasRef        = useRef(null);   // hidden â€” used for HF capture
+  const canvasRef        = useRef(null);   // hidden: local detection + cropped capture
   const overlayCanvasRef = useRef(null);   // visible â€” bounding box
   const streamRef        = useRef(null);
   const intervalRef      = useRef(null);
@@ -580,6 +672,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const [, _setTick]    = useState(0);                    // ticker for fade re-render
   const [camError,      setCamError]      = useState(null);
   const [hfError,       setHfError]       = useState(null); // transient HF problem (non-blocking)
+  const [hfState,       setHfState]       = useState('idle'); // idle | ready | retrying | degraded | local-only
   const [updating,      setUpdating]      = useState(false);
   const [cameraStarted, setCameraStarted] = useState(false);
   const [faceVisible,   setFaceVisible]   = useState(false);
@@ -587,6 +680,8 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const [trackingScore, setTrackingScore] = useState(0);   // 0..1 â€” detector confidence
   const [calibrated,    setCalibrated]    = useState(false);
   const [faceApiState,  setFaceApiState]  = useState('loading'); // loading | ready | unavailable
+  const [localOnlyMode, setLocalOnlyMode] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(_getPrivacyAck);
   // Median-smoothed live emotion shown on the overlay badge.
   // Shape: { label: string, score: number } | null
   const [liveEmotion,   setLiveEmotion]   = useState(null);
@@ -672,45 +767,54 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
     detectionScoreRef.current = (detectionScoreRef.current * 0.6) + (detection.detectionScore * 0.4);
     setTrackingScore(detectionScoreRef.current);
 
-    if (_faceApiReady && !bbox) {
+    if (!bbox) {
       // face-api is loaded AND it confidently says there's no face â†’
-      // user genuinely out of frame; skip the HF round-trip.
+      // Local detection could not find a face; skip the backend HF round-trip.
       setFaceVisible(false);
       _drawBoundingBox(overlayCanvasRef.current, videoRef.current, null);
       _pushTip({ tip: 'Center your face in the frame', type: 'warning', icon: 'Eye' });
       return;
     }
 
-    const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.8));
-    if (!blob) return;
+    const faceBlob = localOnlyMode ? null : await _blobFromFaceCrop(canvas, bbox);
+    if (!localOnlyMode && !faceBlob) {
+      setFaceVisible(false);
+      setHfState('degraded');
+      _drawBoundingBox(overlayCanvasRef.current, videoRef.current, bbox);
+      _pushTip({ tip: 'Hold steady while we find your face crop', type: 'info', icon: 'Eye' });
+      return;
+    }
 
     inFlightRef.current = true;
     setUpdating(true);
     try {
-      // Send the JPEG frame to the backend proxy, which forwards it to
-      // trpakov/vit-face-expression on HF. Keeps HF_TOKEN server-side.
+      // Send only the cropped face region to the backend proxy, which
+      // forwards it to trpakov/vit-face-expression on HF.
       const apiUrl = API_URL.replace(/\/+$/, '');
-      const form = new FormData();
-      form.append('file', blob, 'frame.jpg');
-      const resp = await fetch(`${apiUrl}/face-expression`, {
-        method: 'POST',
-        body: form,
-      });
       let hfScoresFromList = null;
       let backendLabelsList = [];
-      if (resp.ok) {
-        const data = await resp.json();
-        // Backend now returns the full sorted list of {label, score} dicts
-        // (lowercase labels, sorted desc). Keep both the raw list (for the
-        // per-frame fullFrame log) and the normalised dict (for ensemble).
-        backendLabelsList = Array.isArray(data?.labels) ? data.labels : [];
-        if (backendLabelsList.length) {
-          hfScoresFromList = _normalizeScores(backendLabelsList);
-          setHfError(null);
-        }
+      if (localOnlyMode) {
+        setHfState('local-only');
+        setHfError(null);
       } else {
-        const detail = await resp.text();
-        setHfError(`Backend ${resp.status}: ${(detail || '').slice(0, 100)}`);
+        try {
+          setHfState('retrying');
+          const data = await _postFaceExpressionWithRetry(apiUrl, faceBlob);
+          const parsed = _parseBackendExpressionResponse(data);
+          // Backend returns the full sorted list of {label, score} dicts.
+          // Keep both the raw list (for fullFrame log) and the normalised
+          // dict (for ensemble).
+          backendLabelsList = parsed.labels;
+          hfScoresFromList = parsed.scores;
+          setHfState(parsed.success ? 'ready' : 'degraded');
+          setHfError(null);
+        } catch (err) {
+          const msg = `${err?.name || 'Error'}: ${err?.message || err}`;
+          console.warn('[FaceExpressionOverlay] backend call failed after retries:', msg);
+          setHfState('degraded');
+          setHfError(`${msg.slice(0, 120)}; using local-only mode`);
+          setLocalOnlyMode(true);
+        }
       }
 
       // Ensemble: weighted blend of HF + face-api distributions. If only
@@ -821,6 +925,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
         ? `Backend ${err.status}: ${(err.message || '').slice(0, 100)}`
         : `${err?.name || 'Error'}: ${err?.message || err}`;
       console.warn('[FaceExpressionOverlay] backend call failed:', msg);
+      setHfState('degraded');
       setHfError(msg.slice(0, 140));
     } finally {
       inFlightRef.current = false;
@@ -845,6 +950,8 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
     setCalibrated(false);
     setTrackingScore(0);
     setLiveEmotion(null);
+    setHfError(null);
+    setHfState(localOnlyMode ? 'local-only' : 'idle');
 
     if (!navigator?.mediaDevices?.getUserMedia) {
       setCamError('Webcam not available in this browser.');
@@ -852,6 +959,10 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
     }
 
     try {
+      if (!privacyAccepted && typeof window !== 'undefined') {
+        _setPrivacyAck();
+        setPrivacyAccepted(true);
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720, facingMode: 'user' },
         audio: false,
@@ -878,7 +989,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       setCameraStarted(false);
     }
 
-  }, []);
+  }, [localOnlyMode, privacyAccepted]);
 
   // Parent flagged inactive â†’ stop the camera.
   useEffect(() => {
@@ -954,12 +1065,21 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   // Render
   // =====================================================================
   const now = Date.now();
+  const localReady = faceApiState === 'ready';
+  const hfReady = hfState === 'ready';
+  const modelBadge = localOnlyMode
+    ? `local ${localReady ? '✓' : '…'} / HF off`
+    : hfState === 'degraded'
+    ? `local ${localReady ? '✓' : '…'} / HF degraded`
+    : hfState === 'retrying'
+    ? `local ${localReady ? '✓' : '…'} / HF retrying`
+    : `local ${localReady ? '✓' : '…'} / HF ${hfReady ? '✓' : '…'}`;
 
   return (
     <div className="w-full space-y-3">
       {/* Webcam frame */}
       <div className="relative w-full rounded-xl overflow-hidden bg-section border border-purple-900/40">
-        {/* Hidden canvas â€” used for HF capture only */}
+        {/* Hidden canvas used for local detection and cropped backend capture. */}
         <canvas ref={canvasRef} className="hidden" />
 
         {httpsWarning && (
@@ -998,12 +1118,33 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
               onClick={startCamera}
               className="text-xs px-3 py-1.5 rounded-md border border-purple-500/40 text-purple-300 hover:bg-purple-500/10"
             >
-              Try Again
+              Re-request Camera
             </button>
+            <p className="text-[11px] text-white/45 max-w-sm">
+              If the prompt does not appear, allow camera access from your browser site settings and retry.
+            </p>
           </div>
         ) : !cameraStarted ? (
           <div className="flex flex-col items-center justify-center h-48 px-4 text-center gap-3">
             <p className="text-sm text-text-muted">Enable your webcam for live expression coaching.</p>
+            {!privacyAccepted && (
+              <p className="max-w-sm text-[11px] leading-snug text-amber-200/90 bg-amber-950/30 border border-amber-900/40 rounded-md px-3 py-2">
+                Webcam frames are sampled and sent to our backend for expression analysis. Raw frames are not stored.
+              </p>
+            )}
+            <label className="inline-flex items-center gap-2 text-xs text-white/70">
+              <input
+                type="checkbox"
+                checked={localOnlyMode}
+                onChange={(e) => {
+                  setLocalOnlyMode(e.target.checked);
+                  setHfState(e.target.checked ? 'local-only' : 'idle');
+                  setHfError(null);
+                }}
+                className="accent-purple-500"
+              />
+              Local-only mode
+            </label>
             <button
               onClick={startCamera}
               disabled={!active}
@@ -1020,7 +1161,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
                 updating
               </div>
             )}
-            {/* Top-left: tracking confidence + face-api status */}
+            {/* Top-left: model readiness + tracking confidence */}
             <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/70 bg-black/30 backdrop-blur-sm rounded-md px-2 py-1">
               <span
                 className={`inline-block w-2 h-2 rounded-full ${
@@ -1031,13 +1172,14 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
                     : 'bg-red-400'
                 }`}
               />
-              <span>
+              <span className="hidden">
                 {faceApiState === 'ready'
-                  ? `Local + HF Â· ${Math.round(trackingScore * 100)}%`
+                  ? `hybrid ${Math.round(trackingScore * 100)}%`
                   : faceApiState === 'loading'
                   ? 'Loading modelsâ€¦'
-                  : `HF only Â· ${Math.round(trackingScore * 100)}%`}
+                  : `backend fallback ${Math.round(trackingScore * 100)}%`}
               </span>
+              <span>{modelBadge} · {Math.round(trackingScore * 100)}%</span>
               {calibrated && (
                 <span className="ml-1 text-emerald-300/90 normal-case">Â· calibrated</span>
               )}

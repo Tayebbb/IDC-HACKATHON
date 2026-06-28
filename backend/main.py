@@ -6,6 +6,7 @@ import logging
 import math
 import os as _os
 import re
+import time as _time
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -89,8 +90,10 @@ class ChatRequest(BaseModel):
     history: list[dict] = Field(default_factory=list)
     preferred_track: str | None = Field(None, max_length=64)
     experience_level: str | None = Field(None, max_length=32)
+    source_type: str | None = Field(None, max_length=32)
     preferredTrack: str | None = Field(None, max_length=64)
     experienceLevel: str | None = Field(None, max_length=32)
+    sourceType: str | None = Field(None, max_length=32)
 
 
 class SourceItem(BaseModel):
@@ -99,6 +102,7 @@ class SourceItem(BaseModel):
     title: str
     snippet: str
     score: float
+    why_this_source: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -111,6 +115,7 @@ class ChatResponse(BaseModel):
     retrieval_path: str
     signal_types_used: list[str]
     generation_model: str
+    grounding_verification: dict | None = None
 
 # Configure CORS middleware FIRST (before routes)
 # Defaults to wildcard for local dev / hackathon demos. In production set
@@ -373,7 +378,7 @@ async def root():
     "/health/dependencies",
     tags=["health"],
     summary="Dependency readiness check",
-    response_description="Status of corpus, embeddings, HF token, ChromaDB, and AI routes",
+    response_description="Status of corpus, embeddings, HF token, optional ChromaDB dependency, and AI routes",
 )
 async def health_dependencies():
     hf_token_set = bool(_os.getenv('HF_TOKEN', ''))
@@ -429,6 +434,7 @@ async def health_dependencies():
         'ai_routes_ready': ai_ready,
         'chroma_connected': chroma_ok,
         'chroma_chunks': chroma_chunks,
+        'chroma_role': 'dependency_only_not_primary_retrieval_path',
         'use_local_embeddings': _USE_LOCAL_EMBEDDINGS,
         'enable_reranker': _ENABLE_RERANKER,
         'sentence_transformers_installed': _check_st_installed(),
@@ -889,6 +895,26 @@ _HF_TOKEN = _os.getenv('HF_TOKEN', '')
 _QUERY_CACHE = {}                # query -> (sources, retrieval_path)
 _LAST_EMBED_PATH = 'none'
 
+
+def _clamped_env_float(name: str, default: float, lo: float, hi: float) -> float:
+    try:
+        return max(lo, min(hi, float(_os.getenv(name, str(default)))))
+    except (TypeError, ValueError):
+        return default
+
+
+_RAG_ALPHA = _clamped_env_float('RAG_ALPHA', 0.5, 0.0, 1.0)
+_RAG_DEBUG_ENABLED = _os.getenv('ENABLE_RAG_DEBUG', 'false').lower() == 'true'
+_REFERENCE_STORE_PATH = _DATA_DIR / 'interview_references.json'
+
+_ROLE_QUERY_EXPANSIONS: Dict[str, List[str]] = {
+    'backend': ['api', 'rest', 'database', 'sql', 'server', 'fastapi'],
+    'frontend': ['react', 'javascript', 'ui', 'html', 'css', 'browser'],
+    'devops': ['docker', 'kubernetes', 'ci cd', 'cloud', 'linux'],
+    'ai/ml': ['machine learning', 'python', 'pytorch', 'nlp', 'rag', 'embeddings'],
+    'communication': ['product', 'leadership', 'writing', 'presentation', 'stakeholders'],
+}
+
 # ── Hybrid Search Globals (Tasks 1-5) ────────────────────────
 _HYBRID_CORPUS: List[Dict] = []      # 157 raw items from seed_corpus.json
 _HYBRID_READY: bool = False
@@ -1214,10 +1240,17 @@ def _filter_corpus(
     corpus: List[Dict],
     preferred_track: 'str | None' = None,
     experience_level: 'str | None' = None,
+    source_type: 'str | None' = None,
 ) -> List[Dict]:
     """Narrow corpus by track and experience before scoring."""
     MIN_ITEMS = 10
     filtered = corpus
+
+    allowed_types = _normalise_source_types(source_type)
+    if allowed_types:
+        candidate = [i for i in filtered if str(i.get('type', '')).lower() in allowed_types]
+        if candidate:
+            filtered = candidate
 
     if preferred_track and preferred_track.strip().lower() not in ('', 'general'):
         track_key = preferred_track.strip().lower()
@@ -1251,6 +1284,87 @@ def _filter_corpus(
             )
 
     return filtered
+
+
+def _normalise_source_types(source_type: 'str | None') -> set[str]:
+    if not source_type:
+        return set()
+    aliases = {
+        'jobs': 'job',
+        'roles': 'job',
+        'courses': 'course',
+        'resources': 'course',
+        'advice': 'advice',
+        'roadmaps': 'roadmap',
+    }
+    raw = re.split(r'[,| ]+', source_type.lower())
+    allowed = {'job', 'course', 'advice', 'roadmap'}
+    normalised = {aliases.get(item.strip(), item.strip()) for item in raw if item.strip()}
+    return {item for item in normalised if item in allowed}
+
+
+def _expand_query(query: str, preferred_track: 'str | None' = None) -> str:
+    """Small synonym expansion; keeps BM25/dense queries CPU-cheap and deterministic."""
+    base = (query or '').strip()
+    q_l = base.lower()
+    expansions: List[str] = []
+    track = (preferred_track or '').strip().lower()
+    if track in _ROLE_QUERY_EXPANSIONS:
+        expansions.extend(_ROLE_QUERY_EXPANSIONS[track])
+    for key, terms in _ROLE_QUERY_EXPANSIONS.items():
+        if key in q_l or any(term in q_l for term in terms[:3]):
+            expansions.extend(terms)
+    if 'full stack' in q_l or 'fullstack' in q_l:
+        expansions.extend(_ROLE_QUERY_EXPANSIONS['frontend'][:3])
+        expansions.extend(_ROLE_QUERY_EXPANSIONS['backend'][:4])
+    deduped = []
+    for term in expansions:
+        if term not in q_l and term not in deduped:
+            deduped.append(term)
+    return (base + ' ' + ' '.join(deduped[:10])).strip()
+
+
+def _source_reason(source: Dict[str, Any], query: str) -> str:
+    title = str(source.get('title') or 'this source')
+    source_type = str(source.get('type') or 'source')
+    skills = _source_meta(source).get('skills') or source.get('skills') or []
+    query_tokens = set(_tokenize(query or ''))
+    skill_hits = [
+        str(skill) for skill in skills
+        if query_tokens & set(_tokenize(str(skill)))
+    ][:3]
+    score = source.get('_hybrid_score', source.get('score', 0.0))
+    if skill_hits:
+        return f"Matched {source_type} '{title}' via skills: {', '.join(skill_hits)}."
+    return f"Matched {source_type} '{title}' with retrieval score {score}."
+
+
+def _with_source_reasons(sources: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+    enriched = []
+    for source in sources:
+        item = dict(source)
+        item['why_this_source'] = _source_reason(item, query)
+        enriched.append(item)
+    return enriched
+
+
+def _retrieval_trace(
+    retrieval_path: str,
+    sources: List[Dict[str, Any]],
+    started_at: float,
+) -> Dict[str, Any]:
+    return {
+        'retrieval_path': retrieval_path,
+        'top_source_ids': [
+            str(s.get('id') or s.get('parent_id') or s.get('chunk_id') or s.get('title') or '')
+            for s in sources[:8]
+        ],
+        'scores': [
+            float(s.get('_hybrid_score', s.get('score', 0.0)) or 0.0)
+            for s in sources[:8]
+        ],
+        'latency_ms': round((_time.perf_counter() - started_at) * 1000, 2),
+    }
 
 
 # ── TASK 3 — Pure-Python BM25 scorer ─────────────────────────
@@ -1642,16 +1756,18 @@ def build_rag_answer(query: str, sources: list) -> str:
     parts.append(opener)
     parts.append('')
 
-    for s in sources[:3]:
+    for idx, s in enumerate(sources[:3], start=1):
         s_type = s.get('type', '')
         s_title = s.get('title', '') or 'Source'
         s_text = _source_text(s)
         meta = _source_meta(s)
+        citation = f"[S{idx}]"
+        why = s.get('why_this_source')
 
         if s_type == 'job':
             skills = meta.get('skills', [])
             skills_mention = f" key skills: {', '.join(skills[:5])}" if skills else ''
-            parts.append(f"- **{s_title}** (job) -{skills_mention}")
+            parts.append(f"- {citation} **{s_title}** (job) -{skills_mention}")
             parts.append(f"  {_preview(s_text, 200)}")
         elif s_type == 'course':
             skills = meta.get('skills', [])
@@ -1659,21 +1775,51 @@ def build_rag_answer(query: str, sources: list) -> str:
             cost = meta.get('cost', '')
             skills_mention = f" key skills: {', '.join(skills[:4])}" if skills else ''
             label = ' - '.join(str(x) for x in [platform, cost] if x)
-            parts.append(f"- **{s_title}** (course){' - ' + label if label else ''}{skills_mention}")
+            parts.append(f"- {citation} **{s_title}** (course){' - ' + label if label else ''}{skills_mention}")
             parts.append(f"  {_preview(s_text, 180)}")
         elif s_type == 'advice':
             clean = _preview(s_text, 300).replace('Q: ', '').replace(' A: ', '\n  ')
-            parts.append(f"- {clean}")
+            parts.append(f"- {citation} {clean}")
         elif s_type == 'roadmap':
-            parts.append(f"- **{s_title}**")
+            parts.append(f"- {citation} **{s_title}**")
             parts.append(f"  {_preview(s_text, 250)}")
         else:
-            parts.append(f"- **{s_title}**: {_preview(s_text, 200)}")
+            parts.append(f"- {citation} **{s_title}**: {_preview(s_text, 200)}")
+        if why:
+            parts.append(f"  Why: {why}")
 
+    parts.append('')
+    parts.append('Citations: ' + ', '.join(
+        f"[S{i}] {s.get('title', 'Source')}" for i, s in enumerate(sources[:3], start=1)
+    ))
     parts.append('')
     parts.append(_get_followup_tip(query, source_types))
 
     return '\n'.join(parts)
+
+
+def _verify_grounding(answer: str, sources: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Cheap verifier stub: no model call, flags unsupported-looking answers."""
+    if not sources:
+        return {'grounded': False, 'warnings': ['No sources were retrieved.']}
+    answer_l = (answer or '').lower()
+    source_text = ' '.join(
+        [str(s.get('title', '')) + ' ' + _source_text(s) for s in sources]
+    ).lower()
+    source_terms = {
+        tok for tok in _tokenize(source_text)
+        if len(tok) > 4 and tok not in {'source', 'skills', 'description'}
+    }
+    answer_terms = {
+        tok for tok in _tokenize(answer_l)
+        if len(tok) > 4 and tok not in {'career', 'skills', 'learn'}
+    }
+    overlap = len(answer_terms & source_terms)
+    return {
+        'grounded': overlap >= 2 or any(str(s.get('title', '')).lower() in answer_l for s in sources[:3]),
+        'overlap_terms': overlap,
+        'warnings': [] if overlap >= 2 else ['Low lexical overlap with retrieved sources.'],
+    }
 
 
 def _generate_general_answer(query: str) -> str:
@@ -1769,6 +1915,7 @@ async def options_chat():
 async def chat(body: ChatRequest):
     """Hybrid RAG career assistant."""
     try:
+        started_at = _time.perf_counter()
         user_message = (body.message or '').strip()
         # Clip absurdly long client-side histories defensively (Firestore can
         # accumulate 100+ turns across sessions).
@@ -1778,16 +1925,19 @@ async def chat(body: ChatRequest):
 
         preferred_track = body.preferred_track or body.preferredTrack
         experience_level = body.experience_level or body.experienceLevel
+        source_type = body.source_type or body.sourceType
         query = extract_search_query(user_message)
+        expanded_query = _expand_query(query, preferred_track)
 
         if _HYBRID_READY:
             filtered = _filter_corpus(
                 _HYBRID_CORPUS,
                 preferred_track=preferred_track,
                 experience_level=experience_level,
+                source_type=source_type,
             )
-            top_chunks = await _hybrid_retrieve(query, filtered, top_k=20, alpha=0.5)
-            retrieval_path = 'hybrid'
+            top_chunks = await _hybrid_retrieve(expanded_query, filtered, top_k=20, alpha=_RAG_ALPHA)
+            retrieval_path = f'hybrid_alpha_{_RAG_ALPHA:g}'
             sources = [
                 {
                     'id': c.get('id', c.get('title', '')),
@@ -1806,14 +1956,16 @@ async def chat(body: ChatRequest):
                 for c in top_chunks
             ]
         else:
+            top_chunks = []
             retrieval_path = 'none'
             sources = []
 
+        sources = _with_source_reasons(sources, query)
         if not grade_sources(query, sources):
             fallback_sources = _keyword_search(user_message, top_k=4)
             fallback_path = 'keyword'
             if fallback_sources:
-                sources = fallback_sources
+                sources = _with_source_reasons(fallback_sources, query)
                 retrieval_path = fallback_path
 
         factors = [
@@ -1846,11 +1998,12 @@ async def chat(body: ChatRequest):
                 'title': s.get('title', ''),
                 'snippet': _source_text(s)[:120],
                 'score': float(s.get('score', 0.0) or 0.0),
+                'why_this_source': s.get('why_this_source'),
             }
             for s in sources
         ]
 
-        basis = f"RAG retrieval via {retrieval_path}. Query: '{query}'"
+        basis = f"RAG retrieval via {retrieval_path}. Query: '{query}'. Expanded: '{expanded_query}'"
         context_window = _build_context_window(top_chunks) if _HYBRID_READY else ''
         profile_hints = []
         if preferred_track:
@@ -1866,6 +2019,12 @@ async def chat(body: ChatRequest):
             max_new_tokens=400,
             sources=sources,
         )
+        grounding = _verify_grounding(answer_text, sources)
+        trace = _retrieval_trace(retrieval_path, sources, started_at)
+        log.info(
+            '[RAG] path=%s top_source_ids=%s scores=%s latency_ms=%s',
+            trace['retrieval_path'], trace['top_source_ids'], trace['scores'], trace['latency_ms'],
+        )
         return {
             'response': answer_text,
             'reply': answer_text,
@@ -1876,6 +2035,7 @@ async def chat(body: ChatRequest):
             'retrieval_path': retrieval_path,
             'signal_types_used': ['rag_source'] if factors else [],
             'generation_model': _GENERATOR_MODEL_NAME if _GENERATOR_READY else 'template',
+            'grounding_verification': grounding,
         }
 
     except HTTPException:
@@ -1938,7 +2098,7 @@ def _generate_rag_answer(
     prompt = (
         "<|system|>\n"
         "You are CareerPath AI, a career guidance assistant for students and fresh graduates. "
-        "Answer ONLY using the context provided. Be specific, cite source titles, and keep your answer under 200 words.\n"
+        "Answer ONLY using the context provided. Be specific, cite sources as [S1], [S2], etc., and keep your answer under 200 words.\n"
         "<|end|>\n"
         f"<|user|>\nCONTEXT:\n{context_window}\n\n"
         + (f"USER PROFILE:\n{profile_summary}\n\n" if profile_summary else "")
@@ -2099,17 +2259,84 @@ async def _rag_context(
         experience_level = (
             profile.get('experienceLevel') or profile.get('level')
         )
+        source_type = profile.get('sourceType') or profile.get('source_type')
+    else:
+        source_type = None
+    expanded_query = _expand_query(query, preferred_track)
     filtered = _filter_corpus(
         _HYBRID_CORPUS,
         preferred_track=preferred_track,
         experience_level=experience_level,
+        source_type=source_type,
     )
     try:
-        top = await _hybrid_retrieve(query, filtered, top_k=top_k, alpha=0.5)
+        top = await _hybrid_retrieve(expanded_query, filtered, top_k=top_k, alpha=_RAG_ALPHA)
     except Exception as e:
         log.warning('[rag_context] retrieve failed: %s', e)
         return ''
     return _build_context_window(top)
+
+
+@app.get(
+    '/debug/rag',
+    tags=['health'],
+    summary='Inspect RAG retrieval for a test query',
+    response_description='Dev-only retrieval trace with source ids, scores, and latency',
+)
+async def debug_rag(
+    query: str,
+    preferredTrack: str | None = None,
+    experienceLevel: str | None = None,
+    sourceType: str | None = None,
+    top_k: int = 5,
+):
+    if not _RAG_DEBUG_ENABLED:
+        raise HTTPException(status_code=404, detail='RAG debug disabled')
+    if not _HYBRID_CORPUS:
+        _load_hybrid_corpus()
+
+    started_at = _time.perf_counter()
+    safe_top_k = max(1, min(int(top_k or 5), 20))
+    expanded_query = _expand_query(query, preferredTrack)
+    filtered = _filter_corpus(
+        _HYBRID_CORPUS,
+        preferred_track=preferredTrack,
+        experience_level=experienceLevel,
+        source_type=sourceType,
+    ) if _HYBRID_READY else []
+
+    top: List[Dict[str, Any]] = []
+    retrieval_path = f'hybrid_alpha_{_RAG_ALPHA:g}' if filtered else 'none'
+    if filtered:
+        try:
+            top = await _hybrid_retrieve(
+                expanded_query,
+                filtered,
+                top_k=safe_top_k,
+                alpha=_RAG_ALPHA,
+            )
+        except Exception as e:
+            log.warning('[debug-rag] retrieve failed: %s', e)
+            retrieval_path = 'retrieve_error'
+
+    sources = _with_source_reasons([_source_summary(item) for item in top], query)
+    trace = _retrieval_trace(retrieval_path, sources, started_at)
+    return {
+        'enabled': True,
+        'query': query,
+        'expanded_query': expanded_query,
+        'alpha': _RAG_ALPHA,
+        'filters': {
+            'preferredTrack': preferredTrack,
+            'experienceLevel': experienceLevel,
+            'sourceType': sourceType,
+        },
+        'retrieval_path': trace['retrieval_path'],
+        'top_source_ids': trace['top_source_ids'],
+        'scores': trace['scores'],
+        'latency_ms': trace['latency_ms'],
+        'sources': sources,
+    }
 
 
 def _strip_code_fences(text: str) -> str:
@@ -2196,6 +2423,55 @@ async def roadmap(req: Dict[str, Any]):
 _REFERENCE_STORE: Dict[str, Dict[str, Any]] = {}
 
 
+def _load_reference_store() -> None:
+    global _REFERENCE_STORE
+    if not _REFERENCE_STORE and _REFERENCE_STORE_PATH.exists():
+        try:
+            data = _json.loads(_REFERENCE_STORE_PATH.read_text(encoding='utf-8'))
+            if isinstance(data, dict):
+                _REFERENCE_STORE = {
+                    str(k): v for k, v in data.items()
+                    if isinstance(v, dict)
+                }
+        except Exception as e:
+            log.warning('[interview-rag] reference store load skipped: %s', e)
+
+
+def _persist_reference_store() -> None:
+    try:
+        _REFERENCE_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _REFERENCE_STORE_PATH.write_text(
+            _json.dumps(_REFERENCE_STORE, ensure_ascii=False),
+            encoding='utf-8',
+        )
+    except Exception as e:
+        log.warning('[interview-rag] reference store persist skipped: %s', e)
+
+
+def _role_question_key(role: str, difficulty: str) -> str:
+    role_key = re.sub(r'[^a-z0-9]+', '-', (role or 'role').lower()).strip('-')
+    diff_key = re.sub(r'[^a-z0-9]+', '-', (difficulty or 'medium').lower()).strip('-')
+    return f'role-history:{role_key}:{diff_key}'
+
+
+def _recent_role_questions(role: str, difficulty: str, limit: int = 8) -> List[str]:
+    _load_reference_store()
+    payload = _REFERENCE_STORE.get(_role_question_key(role, difficulty)) or {}
+    questions = payload.get('questions') if isinstance(payload, dict) else []
+    return [str(q)[:300] for q in questions if q][-limit:] if isinstance(questions, list) else []
+
+
+def _store_role_question(role: str, difficulty: str, question: str) -> None:
+    if not question:
+        return
+    key = _role_question_key(role, difficulty)
+    existing = _recent_role_questions(role, difficulty, limit=20)
+    questions = [q for q in existing if q != question]
+    questions.append(question[:300])
+    _REFERENCE_STORE[key] = {'questions': questions[-20:]}
+    _persist_reference_store()
+
+
 def _infer_track_from_role(role: str) -> str:
     """Map a free-form interview role to a corpus track."""
     text = (role or '').lower()
@@ -2233,6 +2509,7 @@ async def _get_interview_rag_context(
         _load_hybrid_corpus()
     track = _infer_track_from_role(role)
     query = f'{difficulty} {role} interview skills project APIs databases examples'
+    expanded_query = _expand_query(query, track)
     filtered = _filter_corpus(
         _HYBRID_CORPUS,
         preferred_track=track,
@@ -2241,7 +2518,7 @@ async def _get_interview_rag_context(
     top: List[Dict[str, Any]] = []
     if filtered:
         try:
-            top = await _hybrid_retrieve(query, filtered, top_k=top_k, alpha=0.5)
+            top = await _hybrid_retrieve(expanded_query, filtered, top_k=top_k, alpha=_RAG_ALPHA)
         except Exception as e:
             log.warning('[interview-rag] retrieve failed: %s', e)
             top = []
@@ -2268,7 +2545,7 @@ async def _get_interview_rag_context(
     return {
         'track': track,
         'context': _build_context_window(top) if top else '',
-        'sources': [_source_summary(i) for i in top],
+        'sources': _with_source_reasons([_source_summary(i) for i in top], query),
         'skills_tested': skills[:6],
         'rag_grounded': bool(top),
     }
@@ -2363,15 +2640,18 @@ def _store_reference(
 ) -> None:
     if not session_id:
         return
+    _load_reference_store()
     _REFERENCE_STORE[_reference_key(str(session_id), question_number)] = payload
     if len(_REFERENCE_STORE) > 500:
         for key in list(_REFERENCE_STORE.keys())[:100]:
             _REFERENCE_STORE.pop(key, None)
+    _persist_reference_store()
 
 
 def _get_reference(session_id: str | None, question_number: int) -> Dict[str, Any] | None:
     if not session_id:
         return None
+    _load_reference_store()
     return _REFERENCE_STORE.get(_reference_key(str(session_id), question_number))
 
 
@@ -2538,6 +2818,7 @@ async def interview_question(req: Dict[str, Any]):
     if not isinstance(previous, list):
         previous = []
     previous = [str(p)[:300] for p in previous if p][-10:]
+    previous = list(dict.fromkeys(previous + _recent_role_questions(role, difficulty)))[-12:]
     previous_block = (
         '\nAvoid repeating any of these previously-asked questions:\n- '
         + '\n- '.join(previous)
@@ -2605,6 +2886,7 @@ async def interview_question(req: Dict[str, Any]):
         'sources': rag.get('sources') or [],
         'rag_grounded': bool(rag.get('rag_grounded')),
     })
+    _store_role_question(role, difficulty, cleaned)
     return {
         'question': cleaned,
         'rag_grounded': bool(rag.get('rag_grounded')),
@@ -2884,9 +3166,10 @@ async def _llm_hot_skills(cv_analysis: Dict[str, List[str]]) -> str:
 # ---------------------------------------------------------------------------
 # POST /face-expression — proxy for trpakov/vit-face-expression
 # ---------------------------------------------------------------------------
-# Replaces the previous browser-direct HF call from FaceExpressionOverlay.jsx.
-# Browser POSTs the captured JPEG frame as multipart; backend forwards the
-# raw bytes to the HF image-classification endpoint and returns the label list.
+# Receives cropped proxy calls from FaceExpressionOverlay.jsx.
+# Browser POSTs a cropped face JPEG as multipart; backend forwards the bytes
+# to the HF image-classification endpoint and returns the label list. The
+# uploaded image bytes are not persisted.
 _HF_FACE_MODEL = 'trpakov/vit-face-expression'
 _HF_FACE_URL = f'https://router.huggingface.co/hf-inference/models/{_HF_FACE_MODEL}'
 
@@ -2977,11 +3260,11 @@ async def options_face_expression():
 @app.post(
     '/face-expression',
     tags=["face"],
-    summary="Classify facial expression from a webcam frame",
+    summary="Classify facial expression from a cropped webcam face image",
     response_description="Sorted emotion labels with scores; always HTTP 200 with graceful degradation",
 )
 async def face_expression(file: UploadFile = File(...)):
-    """Forward a webcam JPEG frame to the HF expression classifier.
+    """Forward a cropped webcam face JPEG to the HF expression classifier.
 
     Always returns HTTP 200 with a graceful-degradation envelope:
       { labels, top_label, top_score, retrieval_path, success }
@@ -3078,6 +3361,7 @@ async def generate_application(req: Dict[str, Any]):
 @app.on_event("startup")
 async def startup_event():
     _load_hybrid_corpus()
+    _load_reference_store()
     _load_generator()
     log.info("[GEN] Optional reranker/local embeddings load lazily on first use.")
     _load_corpus()
