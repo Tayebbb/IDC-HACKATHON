@@ -757,13 +757,13 @@
  * transforms, so specificity alone isn't enough).
  * Body class is toggled from App.jsx.
  * --------------------------------------------------------------- */
-body.immersive-chat > .App > nav {
+body.immersive-chat .App > nav {
   transform: translateY(-110%) !important;
   transition: transform 220ms ease-out !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
-body.immersive-chat.nav-revealed > .App > nav {
+body.immersive-chat.nav-revealed .App > nav {
   transform: translateY(0) !important;
   opacity: 1 !important;
   pointer-events: auto !important;
