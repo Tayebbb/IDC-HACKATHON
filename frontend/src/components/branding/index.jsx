@@ -267,7 +267,10 @@ export function AILoading({
 export function BrandStrip({ className = '' }) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const austLogo = isLight ? AUST_IDC_BLACK : AUST_IDC_WHITE;
+  // All three brand tiles share a dark backdrop in light mode (so the
+  // white-only CodeFront logo is legible). The AUST logo therefore always
+  // uses its white variant on the dark-card surface.
+  const austLogo = AUST_IDC_WHITE;
 
   const item = (label, logo, alt, height = 32, glowColor = 'rgba(168,85,247,0.2)', darkBg = false) => (
     <div 
@@ -338,8 +341,8 @@ export function BrandStrip({ className = '' }) {
       />
       
       {item('Built for',     CODEFRONT_LOGO,  'CodeFront', 44, 'rgba(168, 85, 247, 0.2)', isLight)}
-      {item('Powered by',    MINDSPARKS_LOGO, 'Mindsparks 26', 52, 'rgba(245, 158, 11, 0.2)')}
-      {item('Organized by',  austLogo,        'AUST IDC', 56, 'rgb(var(--c-on-card) / 0.15)')}
+      {item('Powered by',    MINDSPARKS_LOGO, 'Mindsparks 26', 52, 'rgba(245, 158, 11, 0.2)', isLight)}
+      {item('Organized by',  austLogo,        'AUST IDC', 56, 'rgb(var(--c-on-card) / 0.15)', isLight)}
     </div>
   );
 }

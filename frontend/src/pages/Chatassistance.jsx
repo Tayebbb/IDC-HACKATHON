@@ -1,207 +1,333 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, User, Trash2 } from "lucide-react";
+import {
+  Send, User, Trash2, Copy, Check, StopCircle, ArrowDown,
+  Briefcase, GraduationCap, Target, MessageSquare,
+  Plus, Menu, X as XIcon, Sparkles,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
-import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, serverTimestamp } from "firebase/firestore";
+import {
+  collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc,
+  serverTimestamp, query, orderBy,
+} from "firebase/firestore";
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import ReasoningCard from "../components/ReasoningCard";
 import { AIMark } from "../components/branding";
 import API_URL from "../config";
 
-const GREETING = "Hi! I'm your CareerPath assistant. Ask me anything about jobs, skills, interviews, or career growth.";
+/* ----------------------------------------------------------------- */
+/* Constants                                                          */
+/* ----------------------------------------------------------------- */
+
+const GREETING =
+  "Hi! I'm your CareerPath assistant. Ask me anything about jobs, skills, interviews, or career growth.";
+
+const SUGGESTED_PROMPTS = [
+  { icon: Briefcase, label: "Top jobs for me", prompt: "What jobs match my current skills and what would make me a stronger candidate?" },
+  { icon: GraduationCap, label: "Recommend a course", prompt: "Recommend a learning roadmap to upskill toward a frontend developer role." },
+  { icon: Target, label: "Skill gap analysis", prompt: "Analyze my skill gaps for a Data Analyst role and tell me what to learn next." },
+  { icon: MessageSquare, label: "Interview prep", prompt: "Give me 3 common interview questions for a junior software engineer with sample answers." },
+];
+
+const MAX_INPUT_CHARS = 2000;
+
+/* ----------------------------------------------------------------- */
+/* Helpers                                                            */
+/* ----------------------------------------------------------------- */
+
+function newThreadId() {
+  return (
+    (typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID()) ||
+    `t_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  );
+}
+
+function deriveTitle(msgs) {
+  const firstUser = msgs.find((m) => m.role === "user");
+  if (!firstUser) return "New chat";
+  const t = (firstUser.content || "").replace(/\s+/g, " ").trim();
+  return t.length > 50 ? t.slice(0, 50) + "…" : t || "New chat";
+}
+
+function relativeTime(d) {
+  if (!d) return "";
+  const date = d.toDate ? d.toDate() : new Date(d);
+  const diff = (Date.now() - date.getTime()) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+/* ----------------------------------------------------------------- */
+/* Component                                                          */
+/* ----------------------------------------------------------------- */
 
 export default function Chatassistance() {
   const { currentUser } = useAuth();
+
+  // Multi-thread state
+  const [threads, setThreads] = useState([]); // [{id, title, lastUpdated}]
+  const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState([
-    { role: "model", content: GREETING }
+    { role: "model", content: GREETING },
   ]);
+
+  // UI state
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState(-1);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mobile drawer
+
   const chatBoxRef = useRef(null);
+  const textareaRef = useRef(null);
   const abortRef = useRef(null);
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (chatBoxRef.current) {
-      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-    }
-  }, [messages]);
+  /* ----------- Firestore: thread list + active thread ----------- */
 
-  // Load chat history from Firebase on mount
-  useEffect(() => {
-    if (currentUser) {
-      loadChatHistory();
-    }
+  const threadsCol = useCallback(() => {
+    if (!currentUser) return null;
+    return collection(db, "users", currentUser.uid, "chatThreads");
   }, [currentUser]);
 
-  // Save messages to Firebase
-  const saveChatHistory = async (messagesToSave) => {
-    if (!currentUser) return;
+  const threadDoc = useCallback(
+    (id) => {
+      if (!currentUser || !id) return null;
+      return doc(db, "users", currentUser.uid, "chatThreads", id);
+    },
+    [currentUser]
+  );
 
-    try {
-      setIsSaving(true);
-      const chatDocRef = doc(db, "users", currentUser.uid, "chatHistory", "conversations");
-
-      // Check if document exists
-      const docSnap = await getDoc(chatDocRef);
-
-      if (docSnap.exists()) {
-        // Update existing document with new messages
-        await updateDoc(chatDocRef, {
-          messages: messagesToSave,
-          lastUpdated: serverTimestamp(),
-        });
-      } else {
-        // Create new document
-        await setDoc(chatDocRef, {
-          messages: messagesToSave,
-          userId: currentUser.uid,
-          createdAt: serverTimestamp(),
-          lastUpdated: serverTimestamp(),
-        });
+  // Load all threads on mount / when user changes
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!currentUser) {
+        // Anonymous: single local thread only
+        const localId = "local";
+        setThreads([{ id: localId, title: "New chat", lastUpdated: new Date() }]);
+        setActiveId(localId);
+        return;
       }
-    } catch (error) {
-      console.error("Error saving chat history:", error);
-      toast.error("Failed to save conversation");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+      try {
+        const col = threadsCol();
+        const q = query(col, orderBy("lastUpdated", "desc"));
+        const snap = await getDocs(q);
+        const list = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            title: data.title || "New chat",
+            lastUpdated: data.lastUpdated || null,
+          };
+        });
 
-  // Load chat history from Firebase
-  const loadChatHistory = async () => {
-    if (!currentUser) return;
-
-    try {
-      const chatDocRef = doc(db, "users", currentUser.uid, "chatHistory", "conversations");
-      const docSnap = await getDoc(chatDocRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        // Drop the default greeting AND any stale error messages that got
-        // persisted before the backend schema fix (otherwise "Sorry, something
-        // went wrong..." keeps haunting the user across reloads).
-        const STALE_ERROR_PATTERNS = [
-          /sorry, something went wrong/i,
-          /please include at least one relevant keyword/i,
-          /couldn'?t find anything in our corpus/i,
-        ];
-        const isStaleErr = (m) =>
-          m.role === "model" &&
-          STALE_ERROR_PATTERNS.some((re) => re.test(m.content || ""));
-        if (data.messages && data.messages.length > 0) {
-          const savedMessages = data.messages.filter(
-            (m) => m.content !== GREETING && !isStaleErr(m)
-          );
-          // Also drop trailing user turns whose model response we just stripped,
-          // so the cleaned thread doesn't end on a dangling "user" bubble.
-          while (
-            savedMessages.length > 0 &&
-            savedMessages[savedMessages.length - 1].role === "user"
-          ) {
-            savedMessages.pop();
-          }
-          if (savedMessages.length > 0) {
-            setMessages([
-              { role: "model", content: GREETING },
-              ...savedMessages
-            ]);
+        // Legacy migration: pull old single-doc conversation if exists
+        if (list.length === 0) {
+          try {
+            const legacy = await getDoc(
+              doc(db, "users", currentUser.uid, "chatHistory", "conversations")
+            );
+            if (legacy.exists()) {
+              const data = legacy.data();
+              const legacyMsgs = (data.messages || []).filter(
+                (m) => m.content !== GREETING
+              );
+              if (legacyMsgs.length > 0) {
+                const id = newThreadId();
+                await setDoc(threadDoc(id), {
+                  title: deriveTitle(legacyMsgs),
+                  messages: legacyMsgs,
+                  createdAt: data.createdAt || serverTimestamp(),
+                  lastUpdated: data.lastUpdated || serverTimestamp(),
+                });
+                list.push({
+                  id,
+                  title: deriveTitle(legacyMsgs),
+                  lastUpdated: data.lastUpdated || new Date(),
+                });
+              }
+            }
+          } catch {
+            /* legacy load is best-effort */
           }
         }
+
+        if (cancelled) return;
+        if (list.length === 0) {
+          // create empty starter thread
+          const id = newThreadId();
+          await setDoc(threadDoc(id), {
+            title: "New chat",
+            messages: [],
+            createdAt: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
+          });
+          list.push({ id, title: "New chat", lastUpdated: new Date() });
+        }
+        setThreads(list);
+        setActiveId(list[0].id);
+      } catch (e) {
+        console.error("[chat] load threads failed", e);
       }
-    } catch (error) {
-      console.error("Error loading chat history:", error);
     }
-  };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser, threadsCol, threadDoc]);
 
-  // Clear chat history
-  const clearChatHistory = async () => {
-    if (!currentUser) return;
+  // Load active thread messages
+  useEffect(() => {
+    let cancelled = false;
+    async function loadActive() {
+      if (!activeId) return;
+      if (!currentUser) {
+        setMessages([{ role: "model", content: GREETING }]);
+        return;
+      }
+      try {
+        const snap = await getDoc(threadDoc(activeId));
+        if (cancelled) return;
+        if (snap.exists()) {
+          const data = snap.data();
+          const msgs = Array.isArray(data.messages) ? data.messages : [];
+          // Strip greeting if persisted; we always prepend one client-side
+          const cleaned = msgs.filter((m) => m.content !== GREETING);
+          setMessages([{ role: "model", content: GREETING }, ...cleaned]);
+        } else {
+          setMessages([{ role: "model", content: GREETING }]);
+        }
+      } catch (e) {
+        console.error("[chat] load active failed", e);
+        setMessages([{ role: "model", content: GREETING }]);
+      }
+    }
+    loadActive();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeId, currentUser, threadDoc]);
 
-    if (!window.confirm("Are you sure you want to clear all chat history?")) {
+  // Persist messages to active thread doc
+  const saveActiveThread = useCallback(
+    async (msgs) => {
+      if (!currentUser || !activeId) return;
+      try {
+        setIsSaving(true);
+        const toPersist = msgs.filter((m) => m.content !== GREETING);
+        const title = deriveTitle(msgs);
+        await updateDoc(threadDoc(activeId), {
+          title,
+          messages: toPersist,
+          lastUpdated: serverTimestamp(),
+        });
+        setThreads((prev) =>
+          prev
+            .map((t) =>
+              t.id === activeId
+                ? { ...t, title, lastUpdated: new Date() }
+                : t
+            )
+            .sort((a, b) => {
+              const ad = a.lastUpdated?.toDate
+                ? a.lastUpdated.toDate().getTime()
+                : new Date(a.lastUpdated || 0).getTime();
+              const bd = b.lastUpdated?.toDate
+                ? b.lastUpdated.toDate().getTime()
+                : new Date(b.lastUpdated || 0).getTime();
+              return bd - ad;
+            })
+        );
+      } catch (e) {
+        console.error("[chat] save failed", e);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [currentUser, activeId, threadDoc]
+  );
+
+  /* ----------- Thread actions ----------- */
+
+  const newThread = async () => {
+    if (!currentUser) {
+      setMessages([{ role: "model", content: GREETING }]);
+      setActiveId("local");
+      setSidebarOpen(false);
       return;
     }
-
+    const id = newThreadId();
     try {
-      const chatDocRef = doc(db, "users", currentUser.uid, "chatHistory", "conversations");
-      await setDoc(chatDocRef, {
+      await setDoc(threadDoc(id), {
+        title: "New chat",
         messages: [],
-        userId: currentUser.uid,
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp(),
       });
-
-      // Reset messages to initial state
-      setMessages([
-        { role: "model", content: GREETING }
+      setThreads((prev) => [
+        { id, title: "New chat", lastUpdated: new Date() },
+        ...prev,
       ]);
-      toast.success("Chat history cleared");
-    } catch (error) {
-      console.error("Error clearing chat history:", error);
-      toast.error("Failed to clear chat history");
+      setActiveId(id);
+      setSidebarOpen(false);
+      setTimeout(() => textareaRef.current?.focus(), 100);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to create new chat");
     }
   };
 
-  // Add keyframe animation
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @keyframes typing {
-        0%, 60%, 100% {
-          transform: translateY(0);
-          opacity: 0.7;
-        }
-        30% {
-          transform: translateY(-10px);
-          opacity: 1;
-        }
-      }
-      
-      @keyframes typing {
-        0% {
-          transform: translateY(0);
-          opacity: 0.7;
-        }
-        20% {
-          transform: translateY(-8px);
-          opacity: 1;
-        }
-        40% {
-          transform: translateY(0);
-          opacity: 0.7;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
+  const switchThread = (id) => {
+    setActiveId(id);
+    setSidebarOpen(false);
+  };
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+  const deleteThread = async (id) => {
+    if (!currentUser) return;
+    if (!window.confirm("Delete this chat?")) return;
+    try {
+      await deleteDoc(threadDoc(id));
+      setThreads((prev) => {
+        const next = prev.filter((t) => t.id !== id);
+        // If deleted active, pick another or create new
+        if (id === activeId) {
+          if (next.length > 0) setActiveId(next[0].id);
+          else {
+            // create a fresh one
+            setTimeout(newThread, 0);
+          }
+        }
+        return next;
+      });
+      toast.success("Chat deleted");
+    } catch (e) {
+      console.error(e);
+      toast.error("Delete failed");
+    }
+  };
 
-    const userMessage = input.trim();
-    setError("");
+  /* ----------- Chat send / stop ----------- */
+
+  const sendMessage = async (overrideText) => {
+    const text = (overrideText ?? input).trim();
+    if (!text) return;
+
+    const userMessage = text;
     setInput("");
 
-    // Add user message to chat
     const newMessages = [...messages, { role: "user", content: userMessage }];
     setMessages(newMessages);
     setLoading(true);
-    let controller = null;
 
+    let controller = null;
     try {
-      // Build history (excluding the current user message).
-      // Cap to the last 40 turns so we never exceed the backend's 50-item
-      // ChatRequest.history limit (Firestore can accumulate hundreds).
       const history = messages
-        .map(m => ({
-          role: m.role,
-          content: m.content,
-        }))
+        .map((m) => ({ role: m.role, content: m.content }))
         .slice(-40);
 
       if (abortRef.current) abortRef.current.abort();
@@ -221,41 +347,39 @@ export default function Chatassistance() {
       }
 
       const data = await response.json();
-      const reply = data.response || data.reply || "I'm not sure how to answer that. Could you rephrase?";
+      const reply =
+        data.response ||
+        data.reply ||
+        "I'm not sure how to answer that. Could you rephrase?";
 
-      // Feature 5 â€” attach RAG explainability to the model message so
-      // ReasoningCard can render below it.
       const modelMsg = {
         role: "model",
         content: reply,
         sources: data.sources || [],
         factors: data.factors || [],
-        confidence: data.confidence || (data.sources?.length ? 'High' : 'Medium'),
-        basis: data.basis || (data.sources?.length
-          ? `${data.sources.length} retrieved source(s) via ${data.retrieval_path || 'backend RAG'}`
-          : 'no corpus sources retrieved'),
+        confidence: data.confidence || (data.sources?.length ? "High" : "Medium"),
+        basis:
+          data.basis ||
+          (data.sources?.length
+            ? `${data.sources.length} retrieved source(s) via ${data.retrieval_path || "backend RAG"}`
+            : "no corpus sources retrieved"),
       };
-      const updatedMessages = [...newMessages, modelMsg];
-      setMessages(updatedMessages);
-
-      // Save to Firebase
-      if (currentUser) {
-        await saveChatHistory(updatedMessages);
-      }
-    } catch (error) {
-      if (error.name === "AbortError") return;
-      console.error("Error:", error);
-      // Add error message
-      const errorMessages = [
+      const updated = [...newMessages, modelMsg];
+      setMessages(updated);
+      saveActiveThread(updated);
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      console.error(err);
+      const updated = [
         ...newMessages,
-        { role: "model", content: "Sorry, something went wrong talking to the server. Please try again." }
+        {
+          role: "model",
+          content:
+            "Sorry, something went wrong talking to the server. Please try again.",
+        },
       ];
-      setMessages(errorMessages);
-
-      // Save error state to Firebase
-      if (currentUser) {
-        await saveChatHistory(errorMessages);
-      }
+      setMessages(updated);
+      saveActiveThread(updated);
     } finally {
       if (!controller || abortRef.current === controller) {
         abortRef.current = null;
@@ -264,6 +388,102 @@ export default function Chatassistance() {
     }
   };
 
+  const stopGeneration = () => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    setLoading(false);
+    toast("Stopped", { icon: "⏹️" });
+  };
+
+  /* ----------- UI side-effects ----------- */
+
+  // Focus
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, [activeId]);
+
+  // Auto-grow textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 180) + "px";
+  }, [input]);
+
+  // Scroll tracking
+  const handleScroll = useCallback(() => {
+    const el = chatBoxRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setIsAtBottom(distance < 80);
+  }, []);
+
+  // Auto-scroll to bottom on new message if anchored
+  useEffect(() => {
+    if (chatBoxRef.current && isAtBottom) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  }, [messages, isAtBottom, loading]);
+
+  const scrollToBottom = () => {
+    const el = chatBoxRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setIsAtBottom(true);
+  };
+
+  // Inject one-off CSS for scrollbar + dot animation + markdown polish
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      @keyframes cp-typing-dot {
+        0%, 60%, 100% { transform: translateY(0);    opacity: 0.45; }
+        30%           { transform: translateY(-6px); opacity: 1;    }
+      }
+      .cp-scroll::-webkit-scrollbar { width: 10px; }
+      .cp-scroll::-webkit-scrollbar-track { background: transparent; }
+      .cp-scroll::-webkit-scrollbar-thumb {
+        background: rgb(var(--c-on-card) / 0.18);
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+      .cp-scroll::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-on-card) / 0.30); background-clip: padding-box; }
+      .cp-row:hover .cp-actions { opacity: 1; }
+      .cp-actions { opacity: 0; transition: opacity 0.15s ease; }
+      .cp-prose p { margin: 0.5em 0; }
+      .cp-prose ul, .cp-prose ol { margin: 0.5em 0; padding-left: 1.25em; }
+      .cp-prose li { margin: 0.25em 0; }
+      .cp-prose code:not(pre code) {
+        background: rgb(var(--c-on-card) / 0.10);
+        padding: 1px 6px;
+        border-radius: 5px;
+        font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+        font-size: 0.88em;
+      }
+      .cp-prose pre {
+        background: rgb(var(--c-bg-elevated) / 0.95);
+        border: 1px solid rgb(var(--c-on-card) / 0.10);
+        padding: 12px 14px;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+        font-size: 12.5px;
+        line-height: 1.55;
+        margin: 0.6em 0;
+      }
+      .cp-prose strong { color: rgb(var(--c-on-card)); font-weight: 600; }
+      .cp-prose a { color: rgb(var(--c-primary)); text-decoration: underline; text-underline-offset: 2px; }
+      .cp-prose h1, .cp-prose h2, .cp-prose h3 { font-weight: 600; margin: 0.8em 0 0.3em; }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
+  /* ----------- Helpers ----------- */
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -271,337 +491,496 @@ export default function Chatassistance() {
     }
   };
 
+  const copyMessage = async (text, idx) => {
+    try {
+      await navigator.clipboard.writeText(text || "");
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(-1), 1500);
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
+  const visibleMessages = useMemo(
+    () => messages.filter((m, i) => !(i === 0 && m.content === GREETING)),
+    [messages]
+  );
+
+  const showEmptyState = visibleMessages.length === 0 && !loading;
+
+  /* ----------- Render ----------- */
+
   return (
-    <div style={styles.container}>
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={styles.header}
-      >
-        <div style={styles.headerIcon}>
-          <Sparkles size={26} style={{ color: '#FFFFFF' }} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <h1 style={styles.title}>AI Assistance</h1>
-          <p style={styles.subtitle}>Career & Skill Development Assistant</p>
-        </div>
-        <motion.button
-          whileHover={{ scale: 1.05, background: "rgba(239,68,68,0.2)" }}
-          whileTap={{ scale: 0.95 }}
-          onClick={clearChatHistory}
-          title="Clear chat history"
-          style={{
-            padding: "10px 16px",
-            background: "rgba(239,68,68,0.15)",
-            border: "1px solid rgba(239,68,68,0.4)",
-            borderRadius: "12px",
-            color: "#EF4444",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            fontSize: "13px",
-            fontWeight: "600",
-            transition: "all 0.2s",
-          }}
-        >
-          <Trash2 size={16} />
-          <span>Clear</span>
-        </motion.button>
-      </motion.div>
+    <div className="flex h-[calc(100vh-64px)] bg-base text-text-main">
+      {/* ───── Sidebar ───── */}
+      <Sidebar
+        threads={threads}
+        activeId={activeId}
+        onNew={newThread}
+        onSelect={switchThread}
+        onDelete={deleteThread}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {/* Chat Messages */}
-      <div ref={chatBoxRef} style={styles.chatBox}>
-        <AnimatePresence>
-          {messages.map((msg, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              style={{
-                ...styles.messageRow,
-                justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-              }}
+      {/* ───── Main column ───── */}
+      <main className="flex-1 flex flex-col min-w-0 relative">
+        {/* Slim top bar */}
+        <header className="flex items-center gap-3 px-4 sm:px-6 h-14 border-b border-text-main/10 bg-bg-base/80 backdrop-blur z-10">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-text-main/5 text-text-main"
+            title="Open menu"
+          >
+            <Menu size={18} />
+          </button>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-gradient-to-br from-primary to-accent-pink shadow-sm">
+              <Sparkles size={14} className="text-white" />
+            </span>
+            <h1 className="text-sm font-semibold truncate">
+              {threads.find((t) => t.id === activeId)?.title || "New chat"}
+            </h1>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            {isSaving && (
+              <span className="text-[11px] text-text-muted hidden sm:inline">
+                Saving…
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={newThread}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium text-text-main border border-text-main/10 hover:bg-text-main/5"
+              title="New chat"
             >
-              {msg.role === "model" && (
-                <AIMark height={20} />
-              )}
-              <div
-                style={{
-                  ...styles.messageBubble,
-                  ...(msg.role === "user" ? styles.userBubble : styles.modelBubble),
-                }}
-              >
-                <div style={{ margin: "0 0 12px 0", lineHeight: "1.5", wordBreak: "break-word", overflowWrap: "break-word" }}>
-                  <ReactMarkdown
-                    components={{
-                      p: ({node, ...props}) => <p style={{ margin: "8px 0" }} {...props} />,
-                      ul: ({node, ...props}) => <ul style={{ margin: "8px 0", paddingLeft: "20px" }} {...props} />,
-                      ol: ({node, ...props}) => <ol style={{ margin: "8px 0", paddingLeft: "20px" }} {...props} />,
-                      li: ({node, ...props}) => <li style={{ margin: "4px 0" }} {...props} />,
-                      strong: ({node, ...props}) => <strong style={{ fontWeight: "600", color: msg.role === "user" ? "#FFFFFF" : "#FCD34D" }} {...props} />,
-                      em: ({node, ...props}) => <em style={{ fontStyle: "italic" }} {...props} />,
-                      code: ({node, inline, ...props}) => inline ? <code style={{ backgroundColor: "rgb(var(--c-shadow) / 0.2)", padding: "2px 6px", borderRadius: "4px", fontSize: "0.9em" }} {...props} /> : <code {...props} />,
-                    }}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
-                </div>
+              <Plus size={14} /> New
+            </button>
+          </div>
+        </header>
 
-                {msg.sources && msg.sources.length > 0 && (
-                  <div className="mt-2 space-y-1 mb-3">
-                    <p className="text-xs text-text-muted font-semibold">Sources</p>
-                    {msg.sources.map((src) => (
-                      <div key={src.id} className="text-xs text-purple-400 bg-white/5 rounded px-2 py-1">
-                        <span className="capitalize">{src.type}</span>
-                        {" Â· "}
-                        <span className="text-text-muted">{src.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Feature 5 â€” RAG explainability */}
-                {msg.role === "model" && Array.isArray(msg.factors) && msg.factors.length > 0 && (
-                  <ReasoningCard
-                    title="Why this answer?"
-                    factors={msg.factors}
-                    basis={msg.basis}
-                    confidence={msg.confidence}
-                  />
-                )}
-              </div>
-              {msg.role === "user" && (
-                <div style={styles.avatarUser}>
-                  <User size={18} style={{ color: '#FFFFFF' }} />
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            style={{ ...styles.messageRow, justifyContent: "flex-start" }}
-          >
-            <AIMark height={20} />
-            <div style={{ ...styles.messageBubble, ...styles.modelBubble, ...styles.typingIndicator }}>
-              <span style={{ ...styles.dot, animationDelay: '0s' }}></span>
-              <span style={{ ...styles.dot, animationDelay: '0.2s' }}></span>
-              <span style={{ ...styles.dot, animationDelay: '0.4s' }}></span>
+        {/* Conversation area */}
+        <div
+          ref={chatBoxRef}
+          onScroll={handleScroll}
+          className="cp-scroll flex-1 overflow-y-auto"
+        >
+          {showEmptyState ? (
+            <EmptyState onPick={(p) => sendMessage(p)} />
+          ) : (
+            <div className="w-full">
+              {visibleMessages.map((msg, idx) => (
+                <MessageRow
+                  key={idx}
+                  msg={msg}
+                  idx={idx}
+                  onCopy={() => copyMessage(msg.content, idx)}
+                  copied={copiedIdx === idx}
+                />
+              ))}
+              {loading && <TypingRow />}
+              <div className="h-6" />
             </div>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Input Area */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={styles.inputArea}
-      >
-        <div style={styles.inputWrapper}>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about jobs, skills, career roadmap... (Enter to send, Shift+Enter for new line)"
-            style={styles.textarea}
-            rows={1}
-          />
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={sendMessage}
-            style={{
-              ...styles.button,
-              opacity: !input.trim() ? 0.5 : 1,
-              cursor: !input.trim() ? 'not-allowed' : 'pointer'
-            }}
-            disabled={!input.trim()}
-          >
-            <Send size={20} />
-          </motion.button>
+          )}
         </div>
-      </motion.div>
+
+        {/* Scroll-to-bottom FAB */}
+        <AnimatePresence>
+          {!isAtBottom && (
+            <motion.button
+              key="fab"
+              type="button"
+              onClick={scrollToBottom}
+              initial={{ opacity: 0, scale: 0.85, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 8 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="absolute right-6 bottom-32 w-10 h-10 rounded-full bg-primary text-white shadow-glass-glow flex items-center justify-center"
+              title="Scroll to latest"
+            >
+              <ArrowDown size={16} />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Composer */}
+        <Composer
+          input={input}
+          setInput={setInput}
+          onSubmit={() => sendMessage()}
+          onStop={stopGeneration}
+          loading={loading}
+          onKeyDown={handleKeyDown}
+          textareaRef={textareaRef}
+        />
+      </main>
     </div>
   );
 }
 
-const styles = {
-  container: {
-    maxWidth: "1200px",
-    width: "100%",
-    margin: "0 auto",
-    padding: "24px 20px",
-    fontFamily: "Poppins, Inter, system-ui, sans-serif",
-    height: "calc(100vh - 80px)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "16px",
-    background: "linear-gradient(135deg, rgb(var(--c-card) / 0.8) 0%, rgb(var(--c-card-2) / 0.9) 100%)",
-    borderRadius: "16px",
-    border: "1px solid rgb(var(--c-primary) / 0.25)",
-    boxShadow: "0 4px 20px rgb(var(--c-primary) / 0.12)",
-    flexWrap: "wrap",
-  },
-  headerIcon: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "12px",
-    background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 0 20px rgb(var(--c-primary) / 0.4)",
-  },
-  title: {
-    color: 'rgb(var(--c-on-card))',
-    margin: 0,
-    fontSize: "clamp(18px, 4vw, 24px)",
-    fontWeight: "700",
-    background: "linear-gradient(90deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    backgroundClip: "text",
-    wordBreak: "break-word",
-  },
-  subtitle: {
-    color: "rgb(var(--c-on-card) / 0.65)",
-    fontSize: "clamp(12px, 2.5vw, 14px)",
-    wordBreak: "break-word",
-    margin: 0,
-    fontWeight: "500",
-  },
-  chatBox: {
-    flex: 1,
-    overflowY: "auto",
-    padding: "24px",
-    background: "rgb(var(--c-card) / 0.5)",
-    borderRadius: "16px",
-    border: "1px solid rgb(var(--c-primary) / 0.15)",
-    minHeight: "400px",
-    scrollbarWidth: "thin",
-    scrollbarColor: "rgb(var(--c-primary) / 0.3) transparent",
-  },
-  messageRow: {
-    display: "flex",
-    marginBottom: "20px",
-    alignItems: "flex-end",
-    gap: "12px",
-  },
-  avatar: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "10px",
-    background: "rgb(var(--c-primary) / 0.15)",
-    border: "1px solid rgb(var(--c-primary) / 0.25)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  avatarUser: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "10px",
-    background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    boxShadow: "0 0 15px rgb(var(--c-primary) / 0.3)",
-  },
-  messageBubble: {
-    maxWidth: "min(70%, 800px)",
-    padding: "14px 18px",
-    borderRadius: "16px",
-    wordWrap: "break-word",
-    whiteSpace: "pre-wrap",
-    lineHeight: "1.6",
-    fontSize: "14px",
-  },
-  userBubble: {
-    background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
-    color: 'white',
-    borderBottomRightRadius: "4px",
-    boxShadow: "0 4px 12px rgb(var(--c-primary) / 0.25)",
-  },
-  modelBubble: {
-    background: "rgb(var(--c-on-card) / 0.05)",
-    color: "rgb(var(--c-on-card) / 0.95)",
-    border: "1px solid rgb(var(--c-primary) / 0.15)",
-    borderBottomLeftRadius: "4px",
-  },
-  typingIndicator: {
-    display: "flex",
-    gap: "6px",
-    alignItems: "center",
-    padding: "14px 20px",
-  },
-  dot: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "50%",
-    background: "rgb(var(--c-primary))",
-    display: "inline-block",
-    animation: "typing 1.4s infinite ease-in-out",
-  },
-  inputArea: {
-    padding: "0",
-  },
-  inputWrapper: {
-    display: "flex",
-    gap: "12px",
-    alignItems: "flex-end",
-    padding: "16px 20px",
-    background: "rgb(var(--c-card) / 0.7)",
-    borderRadius: "16px",
-    border: "1px solid rgb(var(--c-primary) / 0.2)",
-    boxShadow: "0 4px 20px rgb(var(--c-shadow) / 0.3)",
-  },
-  textarea: {
-    flex: 1,
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid rgb(var(--c-primary) / 0.2)",
-    fontSize: "14px",
-    fontFamily: "Poppins, Inter, system-ui, sans-serif",
-    resize: "none",
-    background: "rgb(var(--c-on-card) / 0.05)",
-    color: 'rgb(var(--c-on-card))',
-    outline: "none",
-    transition: "border-color 0.2s, box-shadow 0.2s",
-    maxHeight: "120px",
-    minHeight: "44px",
-    wordWrap: "break-word",
-    overflowWrap: "break-word",
-    whiteSpace: "pre-wrap",
-  },
-  button: {
-    padding: "12px 16px",
-    background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
-    color: 'white',
-    border: "none",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontSize: "16px",
-    fontWeight: "600",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 4px 12px rgb(var(--c-primary) / 0.3)",
-    transition: "all 0.2s",
-    height: "44px",
-    width: "44px",
-  },
-};
+/* ----------------------------------------------------------------- */
+/* Sidebar                                                            */
+/* ----------------------------------------------------------------- */
+
+function Sidebar({ threads, activeId, onNew, onSelect, onDelete, open, onClose }) {
+  return (
+    <>
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="md:hidden fixed inset-0 bg-black/50 z-30"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside
+        className={[
+          "z-40 md:z-auto bg-bg-section border-r border-text-main/10",
+          "flex flex-col w-[280px] h-full",
+          "fixed md:static top-0 left-0 transition-transform duration-200",
+          open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        ].join(" ")}
+      >
+        <div className="h-14 px-3 flex items-center gap-2 border-b border-text-main/10">
+          <button
+            type="button"
+            onClick={onNew}
+            className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-lg bg-gradient-to-r from-primary to-accent-pink text-white text-[13px] font-medium shadow-glass-sm hover:opacity-95"
+          >
+            <Plus size={15} /> New chat
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-text-main/5"
+            title="Close"
+          >
+            <XIcon size={16} />
+          </button>
+        </div>
+
+        <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-text-subtle">
+          Recent chats
+        </div>
+
+        <div className="cp-scroll flex-1 overflow-y-auto px-2 pb-3">
+          {threads.length === 0 && (
+            <p className="px-3 py-4 text-xs text-text-muted">
+              No conversations yet. Start one!
+            </p>
+          )}
+          {threads.map((t) => {
+            const isActive = t.id === activeId;
+            return (
+              <div
+                key={t.id}
+                className={[
+                  "group relative my-0.5 rounded-lg cursor-pointer transition-colors",
+                  isActive
+                    ? "bg-primary/15 border border-primary/30"
+                    : "hover:bg-text-main/5 border border-transparent",
+                ].join(" ")}
+                onClick={() => onSelect(t.id)}
+              >
+                <div className="flex items-center gap-2 px-3 py-2 pr-9">
+                  <MessageSquare
+                    size={14}
+                    className={isActive ? "text-primary" : "text-text-muted"}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-medium truncate text-text-main">
+                      {t.title || "New chat"}
+                    </div>
+                    <div className="text-[10.5px] text-text-subtle truncate">
+                      {relativeTime(t.lastUpdated)}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(t.id);
+                  }}
+                  className="cp-actions absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-7 h-7 rounded-md text-text-muted hover:text-error hover:bg-error/10"
+                  title="Delete"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="px-3 py-3 border-t border-text-main/10 flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent-pink flex items-center justify-center text-white text-xs font-semibold">
+            <User size={14} />
+          </div>
+          <div className="text-[12px] text-text-muted truncate">
+            CareerPath AI · v1
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+/* ----------------------------------------------------------------- */
+/* MessageRow                                                         */
+/* ----------------------------------------------------------------- */
+
+function MessageRow({ msg, idx, onCopy, copied }) {
+  const isUser = msg.role === "user";
+  // Full-width alternating row backgrounds (Claude-style)
+  const rowBg = isUser ? "bg-transparent" : "bg-text-main/[0.025]";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22 }}
+      className={`cp-row w-full ${rowBg} border-b border-text-main/[0.04]`}
+    >
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 flex gap-3 sm:gap-4">
+        {/* Avatar */}
+        <div className="flex-shrink-0 pt-0.5">
+          {isUser ? (
+            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-accent-pink flex items-center justify-center text-white">
+              <User size={14} />
+            </div>
+          ) : (
+            <div className="w-7 h-7 rounded-md bg-bg-elevated border border-text-main/10 flex items-center justify-center">
+              <AIMark height={16} />
+            </div>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[12.5px] font-semibold text-text-main">
+              {isUser ? "You" : "CareerPath AI"}
+            </span>
+            {!isUser && (
+              <span className="cp-actions ml-auto inline-flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={onCopy}
+                  title={copied ? "Copied" : "Copy"}
+                  className="inline-flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-main hover:bg-text-main/10"
+                >
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                </button>
+              </span>
+            )}
+          </div>
+
+          <div className="cp-prose text-[14.5px] leading-relaxed text-text-main/95 break-words">
+            <ReactMarkdown>{msg.content}</ReactMarkdown>
+          </div>
+
+          {/* Sources */}
+          {msg.sources && msg.sources.length > 0 && (
+            <div className="mt-3 grid gap-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-subtle">
+                Sources
+              </p>
+              {msg.sources.slice(0, 5).map((src, i) => (
+                <div
+                  key={src.id || i}
+                  className="text-[11.5px] text-text-muted bg-text-main/[0.04] border border-text-main/[0.08] rounded-md px-2.5 py-1.5 flex items-center gap-2"
+                >
+                  <span className="text-primary font-semibold capitalize">
+                    {src.type}
+                  </span>
+                  <span className="opacity-50">·</span>
+                  <span className="flex-1 truncate">{src.title}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* RAG explainability */}
+          {!isUser && Array.isArray(msg.factors) && msg.factors.length > 0 && (
+            <div className="mt-3">
+              <ReasoningCard
+                title="Why this answer?"
+                factors={msg.factors}
+                basis={msg.basis}
+                confidence={msg.confidence}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ----------------------------------------------------------------- */
+/* TypingRow                                                          */
+/* ----------------------------------------------------------------- */
+
+function TypingRow() {
+  return (
+    <div className="w-full bg-text-main/[0.025] border-b border-text-main/[0.04]">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 flex gap-3 sm:gap-4">
+        <div className="flex-shrink-0 pt-0.5">
+          <div className="w-7 h-7 rounded-md bg-bg-elevated border border-text-main/10 flex items-center justify-center">
+            <AIMark height={16} />
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-text-muted">
+          <span className="text-[12.5px] font-semibold text-text-main">CareerPath AI</span>
+          <span className="text-[12.5px]">is thinking</span>
+          <span className="inline-flex items-center gap-1 ml-1">
+            <Dot delay="0s" />
+            <Dot delay="0.18s" />
+            <Dot delay="0.36s" />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dot({ delay }) {
+  return (
+    <span
+      className="inline-block w-1.5 h-1.5 rounded-full bg-primary"
+      style={{ animation: `cp-typing-dot 1.2s ${delay} infinite ease-in-out` }}
+    />
+  );
+}
+
+/* ----------------------------------------------------------------- */
+/* EmptyState                                                         */
+/* ----------------------------------------------------------------- */
+
+function EmptyState({ onPick }) {
+  return (
+    <div className="min-h-full flex flex-col items-center justify-center px-4 py-12">
+      <div className="max-w-2xl w-full text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent-pink shadow-glass-glow mb-5">
+          <Sparkles size={26} className="text-white" />
+        </div>
+        <h2 className="text-2xl font-semibold text-text-main mb-2">
+          How can I help with your career today?
+        </h2>
+        <p className="text-sm text-text-muted mb-8">
+          Ask about jobs, skill gaps, learning paths, or interview prep.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left">
+          {SUGGESTED_PROMPTS.map(({ icon: Icon, label, prompt }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => onPick(prompt)}
+              className="group flex items-start gap-3 p-3.5 rounded-xl border border-text-main/10 bg-bg-section/50 hover:bg-bg-section hover:border-primary/40 hover:shadow-glass-sm transition-all text-left"
+            >
+              <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/15 text-primary border border-primary/25 inline-flex items-center justify-center">
+                <Icon size={14} />
+              </span>
+              <span className="min-w-0">
+                <div className="text-[13px] font-semibold text-text-main">
+                  {label}
+                </div>
+                <div className="text-[11.5px] text-text-muted line-clamp-2 mt-0.5">
+                  {prompt}
+                </div>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------------- */
+/* Composer                                                           */
+/* ----------------------------------------------------------------- */
+
+function Composer({
+  input,
+  setInput,
+  onSubmit,
+  onStop,
+  loading,
+  onKeyDown,
+  textareaRef,
+}) {
+  const overLimit = input.length > MAX_INPUT_CHARS;
+  return (
+    <div className="border-t border-text-main/10 bg-bg-base/85 backdrop-blur">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3">
+        <div
+          className={[
+            "flex items-end gap-2 p-2 rounded-2xl bg-bg-section border transition-colors",
+            overLimit
+              ? "border-error/60 shadow-[0_0_0_3px_rgb(var(--c-error)/0.20)]"
+              : "border-text-main/10 focus-within:border-primary/50 focus-within:shadow-[0_0_0_3px_rgb(var(--c-primary)/0.18)]",
+          ].join(" ")}
+        >
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value.slice(0, MAX_INPUT_CHARS + 50))}
+            onKeyDown={onKeyDown}
+            placeholder="Message CareerPath AI…"
+            rows={1}
+            disabled={loading}
+            className="flex-1 bg-transparent text-text-main placeholder:text-text-subtle text-[14.5px] leading-6 resize-none outline-none px-3 py-2 max-h-[180px] min-h-[40px]"
+          />
+          {loading ? (
+            <button
+              type="button"
+              onClick={onStop}
+              className="flex-shrink-0 w-10 h-10 rounded-xl bg-error text-white inline-flex items-center justify-center hover:opacity-90 shadow-sm"
+              title="Stop"
+            >
+              <StopCircle size={18} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={!input.trim() || overLimit}
+              className={[
+                "flex-shrink-0 w-10 h-10 rounded-xl inline-flex items-center justify-center transition-opacity shadow-sm",
+                !input.trim() || overLimit
+                  ? "bg-text-main/15 text-text-muted cursor-not-allowed"
+                  : "bg-gradient-to-br from-primary to-accent-pink text-white hover:opacity-95",
+              ].join(" ")}
+              title="Send (Enter)"
+            >
+              <Send size={16} />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center justify-between mt-1.5 px-1">
+          <p className="text-[10.5px] text-text-subtle">
+            <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-text-main/15 bg-text-main/5">
+              Enter
+            </kbd>{" "}
+            to send · <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-text-main/15 bg-text-main/5">Shift</kbd>+<kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-text-main/15 bg-text-main/5">Enter</kbd> for new line
+          </p>
+          <p
+            className={`text-[10.5px] tabular-nums ${
+              overLimit ? "text-error" : "text-text-subtle"
+            }`}
+          >
+            {input.length} / {MAX_INPUT_CHARS}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
