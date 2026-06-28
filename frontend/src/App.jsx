@@ -7,6 +7,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Components (loaded immediately as they're needed on every page)
 import Navbar from "./components/Navbar";
@@ -101,16 +102,28 @@ function AppContent() {
       {!isAdminRoute && <Footer />}
       {/* Floating AI Assistant Button - Show on all pages */}
       <FloatingAIButton />
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'rgb(var(--c-bg-elevated))',
+            color: 'rgb(var(--c-text-main))',
+            border: '1px solid rgb(var(--c-glass-border) / 0.18)',
+            backdropFilter: 'blur(12px)',
+          },
+        }}
+      />
     </div>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

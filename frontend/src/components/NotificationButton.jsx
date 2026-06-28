@@ -1,6 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
+/**
+ * NotificationButton — bell with dummy notifications dropdown.
+ * Preserves existing behaviour; restyled to glass.
+ */
 export default function NotificationButton() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -11,39 +16,62 @@ export default function NotificationButton() {
         setIsOpen(false);
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const dummyNotifications = [
-    'Welcome back!',
-    'Your profile is 80% complete',
-    'New course available'
+    { title: 'Welcome back!', meta: 'Just now' },
+    { title: 'Your profile is 80% complete', meta: '2h ago' },
+    { title: 'New course available', meta: 'Yesterday' },
   ];
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full hover:bg-gray-800 text-white transition-colors"
+        type="button"
+        onClick={() => setIsOpen((s) => !s)}
+        className="btn-icon w-10 h-10 relative"
+        aria-label="Notifications"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
       >
-        <Bell size={20} />
-        <span className="absolute -top-1 -right-1 bg-red-600 text-xs px-1.5 py-0.5 rounded-full text-white font-bold">
+        <Bell size={18} />
+        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-error text-white text-[10px] font-bold rounded-full px-1 ring-2 ring-bg-base">
           3
         </span>
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-gray-900 rounded-lg p-3 shadow-lg border border-gray-800 z-50">
-          <h4 className="text-white font-semibold text-sm mb-2 px-2">Notifications</h4>
-          {dummyNotifications.map((notification, index) => (
-            <div key={index} className="px-2 py-2 text-gray-300 text-sm hover:bg-gray-800 rounded cursor-pointer transition-colors">
-              • {notification}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute right-0 mt-2 w-72 glass-panel z-50 overflow-hidden"
+            role="menu"
+          >
+            <div className="px-4 py-3 border-b border-glass-border/15 flex items-center justify-between">
+              <p className="text-sm font-semibold text-text-main">Notifications</p>
+              <span className="badge badge-primary">3 new</span>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="py-1.5 max-h-96 overflow-auto">
+              {dummyNotifications.map((n, i) => (
+                <button
+                  type="button"
+                  key={i}
+                  className="w-full text-left px-4 py-2.5 hover:bg-primary/10 transition-colors duration-150"
+                  role="menuitem"
+                >
+                  <p className="text-sm text-text-main">{n.title}</p>
+                  <p className="text-xs text-text-subtle mt-0.5">{n.meta}</p>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

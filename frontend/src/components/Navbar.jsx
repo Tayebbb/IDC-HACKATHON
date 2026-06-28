@@ -1,22 +1,71 @@
 /**
- * Navbar Component
- * Responsive navigation with mobile menu and dark mode toggle
+ * Navbar — glass top navigation.
+ *
+ * Preserves all existing behaviour:
+ *  - Public links when logged out, private links when logged in
+ *  - AI Tools dropdown
+ *  - User menu with profile/logout
+ *  - Notification button
+ *  - Mobile menu
+ *  - Scroll-based blur intensification
+ *
+ * Adds:
+ *  - Dark / light theme toggle
+ *  - Glass surface that adapts to theme tokens
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User, LogOut, ChevronDown, Sparkles } from 'lucide-react';
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  ChevronDown,
+  Sparkles,
+  LayoutDashboard,
+  FileUp,
+  Map,
+  MessageSquare,
+  Mic,
+  PenLine,
+  Network,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationButton from './NotificationButton';
 import { MINDSPARKS_LOGO } from './branding';
+import { ThemeToggle } from './ui';
+
+const navLinksForAuth = [
+  { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Jobs', href: '/jobs' },
+  { name: 'Resources', href: '/resources' },
+  { name: 'Contact', href: '/contact' },
+];
+
+const navLinksForPublic = [
+  { name: 'Home', href: '/' },
+  { name: 'Jobs', href: '/jobs' },
+  { name: 'Resources', href: '/resources' },
+  { name: 'Contact', href: '/contact' },
+];
+
+const aiFeatures = [
+  { name: 'AI Assistance', href: '/chatassistance', icon: MessageSquare, hint: 'Career chat & guidance' },
+  { name: 'CV Upload', href: '/cv-upload', icon: FileUp, hint: 'Analyze your CV' },
+  { name: 'Career Roadmap', href: '/career-roadmap', icon: Map, hint: 'Plan your career' },
+  { name: 'Mock Interview', href: '/mock-interview', icon: Mic, hint: 'Practice with AI' },
+  { name: 'Application Generator', href: '/job-application-generator', icon: PenLine, hint: 'Tailor cover letters' },
+  { name: 'Knowledge Graph', href: '/knowledge-graph', icon: Network, hint: 'Visualize your skills' },
+];
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAIMenu, setShowAIMenu] = useState(false);
+  const aiCloseTimer = useRef(null);
   const location = useLocation();
   const { currentUser, logout } = useAuth();
 
@@ -25,19 +74,23 @@ const Navbar = () => {
     const handleScroll = () => {
       if (rafId) return;
       rafId = window.requestAnimationFrame(() => {
-        const y = window.scrollY;
-        setScrollY(y);
-        setIsScrolled(y > 20);
+        setIsScrolled(window.scrollY > 20);
         rafId = null;
       });
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (rafId) window.cancelAnimationFrame(rafId);
     };
   }, []);
+
+  // Close menus on route change
+  useEffect(() => {
+    setIsOpen(false);
+    setShowUserMenu(false);
+    setShowAIMenu(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -48,86 +101,49 @@ const Navbar = () => {
     }
   };
 
-  const navLinks = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Jobs', href: '/jobs' },
-    { name: 'Resources', href: '/resources' },
-    { name: 'Contact', href: '/contact' },
-  ];
-
-  const aiFeatures = [
-    { name: 'AI Assistance', href: '/chatassistance', icon: '' },
-    { name: 'CV Upload', href: '/cv-upload', icon: '' },
-    { name: 'Career Roadmap', href: '/career-roadmap', icon: '' },
-    { name: 'Mock Interview', href: '/mock-interview', icon: '' },
-    { name: 'Application Generator', href: '/job-application-generator', icon: '' },
-    { name: 'Knowledge Graph', href: '/knowledge-graph', icon: '' },
-  ];
-
-  const publicNavLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'Jobs', href: '/jobs' },
-    { name: 'Resources', href: '/resources' },
-    { name: 'Contact', href: '/contact' },
-  ];
-
-  const userNavLinks = [];
-
-  const navVariants = {
-    initial: { y: -100 },
-    animate: { y: 0, transition: { type: 'spring', stiffness: 100, damping: 20 } },
+  const openAIMenu = () => {
+    if (aiCloseTimer.current) clearTimeout(aiCloseTimer.current);
+    setShowAIMenu(true);
+  };
+  const closeAIMenuDelayed = () => {
+    aiCloseTimer.current = setTimeout(() => setShowAIMenu(false), 120);
   };
 
-  const mobileMenuVariants = {
-    closed: { opacity: 0, height: 0, transition: { duration: 0.3, ease: 'easeInOut' } },
-    open: { opacity: 1, height: 'auto', transition: { duration: 0.3, ease: 'easeInOut' } },
-  };
-
-  const linkVariants = {
-    initial: { y: 20, opacity: 0 },
-    animate: (i) => ({
-      y: 0,
-      opacity: 1,
-      transition: { delay: i * 0.1, duration: 0.3 }
-    })
-  };
+  const isActive = (href) => location.pathname === href;
+  const links = currentUser ? navLinksForAuth : navLinksForPublic;
 
   return (
     <motion.nav
-      variants={navVariants}
-      initial="initial"
-      animate="animate"
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 110, damping: 20 }}
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
-        // Cleaner glassmorphism: transparent at top, subtle dark blur once scrolled.
         background: isScrolled
-          ? 'rgba(11, 14, 28, 0.78)'
-          : 'rgba(11, 14, 28, 0.30)',
-        backdropFilter: isScrolled ? 'blur(14px) saturate(140%)' : 'blur(6px)',
-        WebkitBackdropFilter: isScrolled ? 'blur(14px) saturate(140%)' : 'blur(6px)',
+          ? 'rgb(var(--c-bg-base) / 0.72)'
+          : 'rgb(var(--c-bg-base) / 0.30)',
+        backdropFilter: isScrolled ? 'blur(16px) saturate(160%)' : 'blur(8px)',
+        WebkitBackdropFilter: isScrolled ? 'blur(16px) saturate(160%)' : 'blur(8px)',
         borderBottom: isScrolled
-          ? '1px solid rgba(168, 85, 247, 0.18)'
+          ? '1px solid rgb(var(--c-glass-border) / 0.14)'
           : '1px solid transparent',
         paddingTop: isScrolled ? '0.5rem' : '0.875rem',
         paddingBottom: isScrolled ? '0.5rem' : '0.875rem',
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          
+        <div className="flex items-center justify-between gap-3">
+
           {/* Logo */}
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Link to="/" className="flex items-center space-x-3 group">
-              {/* Mindsparks logo badge */}
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Link to="/" className="flex items-center gap-3 group">
               <div
                 className="relative flex-shrink-0 flex items-center justify-center rounded-xl transition-all duration-300"
                 style={{
                   background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
                   padding: '5px 10px',
-                  boxShadow: '0 0 18px rgba(245,158,11,0.22), inset 0 0 0 1px rgba(245,158,11,0.32)',
+                  boxShadow:
+                    '0 0 18px rgba(245,158,11,0.22), inset 0 0 0 1px rgba(245,158,11,0.32)',
                   height: 40,
                 }}
               >
@@ -136,376 +152,336 @@ const Navbar = () => {
                   alt="Mindsparks IDC"
                   style={{ height: 24, width: 'auto', display: 'block' }}
                 />
-                {/* Hover glow ring */}
                 <div
                   className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                  style={{ boxShadow: '0 0 28px rgba(245,158,11,0.45), inset 0 0 0 1px rgba(245,158,11,0.5)' }}
+                  style={{
+                    boxShadow:
+                      '0 0 28px rgba(245,158,11,0.45), inset 0 0 0 1px rgba(245,158,11,0.5)',
+                  }}
                 />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent glow-text" style={{ backgroundImage: 'linear-gradient(90deg,#A855F7,#D500F9)' }}>
+              <span className="text-2xl font-bold gradient-text glow-text">
                 CareerPath
               </span>
             </Link>
           </motion.div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-1">
-            {(currentUser ? navLinks : publicNavLinks).map((link, index) => (
-              <motion.div key={link.name} whileHover={{ y: -2 }}>
-                <Link
-                  to={link.href}
-                  className={`cursor-hover relative px-4 py-2 rounded-lg font-medium transition-all duration-200 group ${
-                    location.pathname === link.href
-                      ? 'text-primary'
-                      : 'text-muted hover:text-primary'
-                  }`}
-                >
-                  <span className="relative z-10">{link.name}</span>
-                  <div
-                    className={`absolute inset-0 rounded-lg transition-all duration-200 ${
-                      location.pathname === link.href
-                        ? 'opacity-100 scale-100'
-                        : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'
-                    }`}
-                    style={{background: 'rgba(168,85,247,0.06)'}}
+          {/* Desktop links */}
+          <div className="hidden lg:flex items-center gap-1">
+            {links.map((link) => (
+              <Link
+                key={link.name}
+                to={link.href}
+                className={`relative px-4 py-2 rounded-xl font-medium transition-colors duration-200 ${
+                  isActive(link.href)
+                    ? 'text-primary-light'
+                    : 'text-text-muted hover:text-text-main'
+                }`}
+              >
+                <span className="relative z-10">{link.name}</span>
+                {isActive(link.href) && (
+                  <motion.span
+                    layoutId="nav-pill"
+                    className="absolute inset-0 rounded-xl bg-primary/12 ring-1 ring-primary/30"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
-                  <div
-                    className={`absolute bottom-0 left-1/2 h-0.5 transition-all duration-200 ${
-                      location.pathname === link.href
-                        ? 'w-3/4 -translate-x-1/2'
-                        : 'w-0 -translate-x-1/2 group-hover:w-1/2'
-                    }`}
-                    style={{background: 'linear-gradient(90deg,#A855F7,#D500F9)'}}
-                  />
-                </Link>
-              </motion.div>
+                )}
+              </Link>
             ))}
 
-            {/* AI Features Dropdown */}
+            {/* AI Tools dropdown (only when authed) */}
             {currentUser && (
-              <div className="relative group">
-                <motion.button
-                  whileHover={{ y: -2 }}
-                  onMouseEnter={() => setShowAIMenu(true)}
-                  onMouseLeave={() => setShowAIMenu(false)}
-                  className="cursor-hover relative px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-muted hover:text-primary"
+              <div
+                className="relative"
+                onMouseEnter={openAIMenu}
+                onMouseLeave={closeAIMenuDelayed}
+              >
+                <button
+                  type="button"
+                  className={`relative inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium transition-colors duration-200 ${
+                    showAIMenu ? 'text-primary-light' : 'text-text-muted hover:text-text-main'
+                  }`}
+                  aria-haspopup="menu"
+                  aria-expanded={showAIMenu}
                 >
-                  <Sparkles size={18} />
-                  <span className="relative z-10">AI Tools</span>
-                  <ChevronDown size={16} className={`transition-transform duration-300 ${showAIMenu ? 'rotate-180' : ''}`} />
-                  <div
-                    className={`absolute inset-0 rounded-lg transition-all duration-200 ${
-                      showAIMenu
-                        ? 'opacity-100 scale-100'
-                        : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'
-                    }`}
-                    style={{background: 'rgba(168,85,247,0.06)'}}
+                  <Sparkles size={16} />
+                  <span>AI Tools</span>
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${showAIMenu ? 'rotate-180' : ''}`}
                   />
-                  <div
-                    className={`absolute bottom-0 left-1/2 h-0.5 transition-all duration-200 ${
-                      showAIMenu
-                        ? 'w-3/4 -translate-x-1/2'
-                        : 'w-0 -translate-x-1/2 group-hover:w-1/2'
-                    }`}
-                    style={{background: 'linear-gradient(90deg,#A855F7,#D500F9)'}}
-                  />
-                </motion.button>
+                </button>
 
-                {/* AI Dropdown Menu */}
                 <AnimatePresence>
                   {showAIMenu && (
                     <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      onMouseEnter={() => setShowAIMenu(true)}
-                      onMouseLeave={() => setShowAIMenu(false)}
-                      className="absolute top-full left-0 mt-2 w-56 rounded-xl shadow-xl border py-2 z-50 neon-card"
-                      style={{background:'#11152B', borderColor:'rgba(168,85,247,0.12)'}}
+                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                      className="absolute top-full left-0 mt-2 w-72 rounded-2xl glass-panel py-2 z-50"
+                      role="menu"
                     >
-                      {aiFeatures.map((feature, index) => (
-                        <Link
-                          key={feature.name}
-                          to={feature.href}
-                          onClick={() => setShowAIMenu(false)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-[rgba(168,85,247,0.08)] transition-all duration-150 group"
-                        >
-                          <span className="text-xl">{feature.icon}</span>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium" style={{color:'#FFFFFF'}}>{feature.name}</p>
-                            <p className="text-xs text-muted">
-                              {feature.name === 'AI Assistance' && 'Get AI help'}
-                              {feature.name === 'CV Upload' && 'Analyze your CV'}
-                              {feature.name === 'Career Roadmap' && 'Plan your career'}
-                              {feature.name === 'Application Generator' && 'Tailor cover letters'}
-                              {feature.name === 'Mock Interview' && 'Practice interviews'}
-                              {feature.name === 'Knowledge Graph' && 'Visualize core skills'}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </div>
-
-          {/* Desktop Auth Buttons */}
-          <div className="hidden lg:flex items-center space-x-4">
-            {currentUser ? (
-              <>
-                {currentUser && <NotificationButton />}
-                <div className="relative">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-3 px-4 py-2 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-neon-glow"
-                  style={{background:'rgba(17,21,43,0.6)', borderColor:'rgba(168,85,247,0.12)'}}
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-sm" style={{background:'linear-gradient(90deg,#A855F7,#D500F9)'}}>
-                    <User size={18} className="text-white" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-sm" style={{color:'#FFFFFF'}}>
-                      {currentUser.displayName?.split(' ')[0] || 'User'}
-                    </p>
-                  </div>
-                  <ChevronDown size={16} className={`text-muted transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
-                </motion.button>
-
-                <AnimatePresence>
-                  {showUserMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute right-0 mt-3 w-64 rounded-xl shadow-xl border py-3 z-50 neon-card"
-                      style={{background:'#11152B', borderColor:'rgba(168,85,247,0.12)'}}
-                    >
-                      {/* User Info Header */}
-                      <div className="px-4 py-3 border-b" style={{borderColor:'rgba(255,255,255,0.04)'}}>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm" style={{background:'linear-gradient(90deg,#A855F7,#D500F9)'}}>
-                            <User size={20} className="text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate" style={{color:'#FFFFFF'}}>
-                              {currentUser.displayName || 'User Name'}
-                            </p>
-                            <p className="text-xs text-muted truncate">
-                              {currentUser.email}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Menu Items */}
-                      <div className="py-2">
-                        {/* Profile Option */}
-                        <Link
-                          to="/profile"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center space-x-3 px-4 py-3 hover:bg-[rgba(168,85,247,0.06)] transition-all duration-150 group"
-                        >
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150" style={{background:'rgba(168,85,247,0.06)'}}>
-                            <User size={16} className="text-primary glow-icon" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium" style={{color:'#FFFFFF'}}>Profile</p>
-                            <p className="text-xs text-muted">
-                              Manage your account
-                            </p>
-                          </div>
-                        </Link>
-
-                        {/* Logout Option */}
-                        <button
-                          onClick={() => {
-                            handleLogout();
-                            setShowUserMenu(false);
-                          }}
-                          className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-[rgba(239,68,68,0.06)] transition-all duration-150 group"
-                        >
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150" style={{background:'rgba(239,68,68,0.06)'}}>
-                            <LogOut size={16} className="text-red-500" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-sm font-medium" style={{color:'#FFFFFF'}}>Logout</p>
-                            <p className="text-xs text-muted">
-                              Sign out of your account
-                            </p>
-                          </div>
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Click outside to close */}
-                {showUserMenu && (
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowUserMenu(false)}
-                  />
-                )}
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Link
-                    to="/login"
-                    className="px-4 py-2 font-medium text-muted hover:text-primary transition-colors"
-                  >
-                    Login
-                  </Link>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Link
-                    to="/register"
-                    className="cursor-hover relative px-6 py-2.5 font-medium text-white rounded-xl btn-primary"
-                  >
-                    <span className="relative z-10">Get Started</span>
-                  </Link>
-                </motion.div>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2 rounded-lg text-white hover:bg-[rgba(168,85,247,0.06)] transition-colors"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </motion.button>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              variants={mobileMenuVariants}
-              initial="closed"
-              animate="open"
-              exit="closed"
-              className="lg:hidden overflow-hidden"
-            >
-              <div className="py-4 space-y-2">
-                {[...(currentUser ? navLinks : publicNavLinks), ...(currentUser ? userNavLinks : [])].map((link, index) => (
-                  <motion.div
-                    key={link.name}
-                    variants={linkVariants}
-                    initial="initial"
-                    animate="animate"
-                    custom={index}
-                  >
-                    <Link
-                      to={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className={`block px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                        location.pathname === link.href
-                          ? 'text-primary border-l-4'
-                          : 'text-muted hover:bg-[rgba(168,85,247,0.06)]'
-                      }`}
-                      style={location.pathname === link.href ? {background:'rgba(168,85,247,0.06)', borderColor:'#A855F7'} : {}}
-                    >
-                      {link.name}
-                    </Link>
-                  </motion.div>
-                ))}
-                {currentUser && (
-                  <>
-                    {/* AI Tools Section */}
-                    <motion.div
-                      variants={linkVariants}
-                      initial="initial"
-                      animate="animate"
-                      custom={navLinks.length + userNavLinks.length}
-                      className="pt-2"
-                    >
-                      <div className="px-4 py-2 flex items-center space-x-2">
-                        <Sparkles size={16} className="text-primary" />
-                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">AI Tools</span>
-                      </div>
-                      <div className="space-y-1 mt-2">
-                        {aiFeatures.map((feature, idx) => (
+                      {aiFeatures.map((feature) => {
+                        const Icon = feature.icon;
+                        const active = isActive(feature.href);
+                        return (
                           <Link
                             key={feature.name}
                             to={feature.href}
-                            onClick={() => setIsOpen(false)}
-                            className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                              location.pathname === feature.href
-                                ? 'text-primary border-l-4'
-                                : 'text-muted hover:bg-[rgba(168,85,247,0.06)]'
+                            onClick={() => setShowAIMenu(false)}
+                            className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 ${
+                              active
+                                ? 'bg-primary/14 text-primary-light'
+                                : 'hover:bg-primary/8 text-text-main'
                             }`}
-                            style={location.pathname === feature.href ? {background:'rgba(168,85,247,0.06)', borderColor:'#A855F7'} : {}}
+                            role="menuitem"
                           >
-                            <span className="text-lg">{feature.icon}</span>
-                            <span>{feature.name}</span>
+                            <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-primary/12 text-primary-light ring-1 ring-primary/25 flex-shrink-0">
+                              <Icon size={16} />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{feature.name}</p>
+                              <p className="text-xs text-text-muted truncate">{feature.hint}</p>
+                            </div>
                           </Link>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
 
-                    {/* Profile Link */}
-                    <motion.div
-                      variants={linkVariants}
-                      initial="initial"
-                      animate="animate"
-                      custom={navLinks.length + userNavLinks.length + aiFeatures.length}
-                      className="pt-2"
+          {/* Desktop right side */}
+          <div className="hidden lg:flex items-center gap-2">
+            <ThemeToggle size="sm" />
+            {currentUser ? (
+              <>
+                <NotificationButton />
+                <div className="relative">
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowUserMenu((s) => !s)}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl glass-surface transition-shadow duration-200 hover:shadow-glass"
+                    aria-haspopup="menu"
+                    aria-expanded={showUserMenu}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-card-gradient flex items-center justify-center text-white">
+                      <User size={16} />
+                    </div>
+                    <span className="hidden xl:inline text-sm font-medium text-text-main max-w-[100px] truncate">
+                      {currentUser.displayName?.split(' ')[0] || 'User'}
+                    </span>
+                    <ChevronDown
+                      size={14}
+                      className={`text-text-muted transition-transform duration-200 ${
+                        showUserMenu ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label="Close menu"
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowUserMenu(false)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                          className="absolute right-0 mt-2 w-64 rounded-2xl glass-panel z-50 overflow-hidden"
+                          role="menu"
+                        >
+                          <div className="px-4 py-3 border-b border-glass-border/15 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-card-gradient flex items-center justify-center text-white">
+                              <User size={18} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-text-main truncate">
+                                {currentUser.displayName || 'User'}
+                              </p>
+                              <p className="text-xs text-text-muted truncate">
+                                {currentUser.email}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="py-1.5">
+                            <Link
+                              to="/profile"
+                              onClick={() => setShowUserMenu(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-primary/10 transition-colors duration-150 text-text-main"
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-primary/12 text-primary-light">
+                                <User size={14} />
+                              </span>
+                              <div className="text-left">
+                                <p className="text-sm font-medium">Profile</p>
+                                <p className="text-xs text-text-muted">Manage your account</p>
+                              </div>
+                            </Link>
+                            <Link
+                              to="/dashboard"
+                              onClick={() => setShowUserMenu(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-primary/10 transition-colors duration-150 text-text-main"
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-primary/12 text-primary-light">
+                                <LayoutDashboard size={14} />
+                              </span>
+                              <div className="text-left">
+                                <p className="text-sm font-medium">Dashboard</p>
+                                <p className="text-xs text-text-muted">Your overview</p>
+                              </div>
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleLogout();
+                                setShowUserMenu(false);
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-error/10 transition-colors duration-150 text-text-main"
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-error/12 text-error">
+                                <LogOut size={14} />
+                              </span>
+                              <div className="text-left">
+                                <p className="text-sm font-medium">Logout</p>
+                                <p className="text-xs text-text-muted">Sign out</p>
+                              </div>
+                            </button>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 rounded-xl font-medium text-text-muted hover:text-text-main transition-colors"
+                >
+                  Login
+                </Link>
+                <Link to="/register" className="btn-primary btn-sm">
+                  Get Started
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile menu button + theme toggle */}
+          <div className="flex items-center gap-1 lg:hidden">
+            <ThemeToggle size="sm" />
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              onClick={() => setIsOpen(!isOpen)}
+              className="btn-icon w-10 h-10"
+              aria-label={isOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isOpen}
+            >
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:hidden overflow-hidden"
+            >
+              <div className="py-3 space-y-1">
+                {links.map((link) => (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-4 py-2.5 rounded-xl font-medium transition-colors ${
+                      isActive(link.href)
+                        ? 'bg-primary/14 text-primary-light ring-1 ring-primary/25'
+                        : 'text-text-muted hover:bg-primary/8 hover:text-text-main'
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+
+                {currentUser && (
+                  <>
+                    <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-xs uppercase tracking-wider text-text-subtle">
+                      <Sparkles size={12} />
+                      AI Tools
+                    </div>
+                    {aiFeatures.map((feature) => {
+                      const Icon = feature.icon;
+                      return (
+                        <Link
+                          key={feature.name}
+                          to={feature.href}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors ${
+                            isActive(feature.href)
+                              ? 'bg-primary/14 text-primary-light ring-1 ring-primary/25'
+                              : 'text-text-muted hover:bg-primary/8 hover:text-text-main'
+                          }`}
+                        >
+                          <Icon size={16} />
+                          <span className="font-medium">{feature.name}</span>
+                        </Link>
+                      );
+                    })}
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-text-muted hover:bg-primary/8 hover:text-text-main transition-colors"
                     >
-                      <Link
-                        to="/profile"
-                        onClick={() => setIsOpen(false)}
-                        className={`block px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                          location.pathname === '/profile'
-                            ? 'text-primary border-l-4'
-                            : 'text-muted hover:bg-[rgba(168,85,247,0.06)]'
-                        }`}
-                        style={location.pathname === '/profile' ? {background:'rgba(168,85,247,0.06)', borderColor:'#A855F7'} : {}}
-                      >
-                        Profile
-                      </Link>
-                    </motion.div>
+                      <User size={16} />
+                      <span className="font-medium">Profile</span>
+                    </Link>
                   </>
                 )}
 
-                <div className="pt-4 border-t" style={{borderColor:'rgba(255,255,255,0.04)'}}>
+                <div className="pt-3 mt-3 border-t border-glass-border/15">
                   {currentUser ? (
-                    <motion.button
-                      variants={linkVariants}
-                      initial="initial"
-                      animate="animate"
-                      custom={navLinks.length + userNavLinks.length}
+                    <button
+                      type="button"
                       onClick={() => {
                         handleLogout();
                         setIsOpen(false);
                       }}
-                      className="w-full flex items-center space-x-2 px-4 py-3 text-left text-red-500 hover:bg-[rgba(239,68,68,0.06)] rounded-lg transition-colors"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-error hover:bg-error/8 transition-colors"
                     >
                       <LogOut size={16} />
-                      <span>Logout</span>
-                    </motion.button>
+                      <span className="font-medium">Logout</span>
+                    </button>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2 px-1">
                       <Link
                         to="/login"
                         onClick={() => setIsOpen(false)}
-                        className="block px-4 py-3 text-center font-medium text-muted hover:bg-[rgba(168,85,247,0.06)] rounded-lg transition-colors"
+                        className="block btn-secondary btn-sm w-full text-center"
                       >
                         Login
                       </Link>
                       <Link
                         to="/register"
                         onClick={() => setIsOpen(false)}
-                        className="block px-4 py-3 text-center font-medium text-white rounded-lg transition-colors shadow-lg btn-primary"
+                        className="block btn-primary btn-sm w-full text-center"
                       >
                         Get Started
                       </Link>

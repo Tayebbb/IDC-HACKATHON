@@ -137,7 +137,7 @@ const Register = () => {
     try {
       console.log('Starting signup for:', formData.email);
 
-      // 1⃣ Create user with email & password
+      // 1âƒ£ Create user with email & password
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
@@ -145,7 +145,7 @@ const Register = () => {
       );
       console.log('User created:', userCredential.user.email);
 
-      // 2⃣ Set display name
+      // 2âƒ£ Set display name
       if (formData.name) {
         await updateProfile(userCredential.user, {
           displayName: formData.name,
@@ -153,7 +153,7 @@ const Register = () => {
         console.log('Display name updated to:', formData.name);
       }
 
-      // 3⃣ Create Firestore document in collection "ChatBot" with doc ID = email
+      // 3âƒ£ Create Firestore document in collection "ChatBot" with doc ID = email
       const chatBotDocRef = doc(db, 'ChatBot', formData.email);
       console.log('Writing Firestore doc at ChatBot/' + formData.email);
 
@@ -190,7 +190,7 @@ const Register = () => {
 
       console.log('User profile document successfully created for:', userCredential.user.uid);
 
-      // 4⃣ NEW: Create document in "All_User" collection with subcollection "Interest"
+      // 4âƒ£ NEW: Create document in "All_User" collection with subcollection "Interest"
       // Structure: All_User/{email}/Interest/interest
       const interestDocRef = doc(
         db,
@@ -210,7 +210,7 @@ const Register = () => {
       console.log('Interest document successfully created for:', formData.email);
       console.log('Selected interests:', selectedInterests);
 
-      // 5⃣ Redirect to dashboard
+      // 5âƒ£ Redirect to dashboard
       navigate('/dashboard');
     } catch (error) {
       console.error('Registration / Firestore error:', error);
@@ -360,7 +360,7 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className="input-field pl-11"
-                  placeholder="••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   aria-label="Password"
                 />
               </div>
@@ -454,7 +454,7 @@ const Register = () => {
                       key={topic}
                       className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-[rgba(168,85,247,0.06)] border-[rgba(168,85,247,0.18)]'
+                          ? 'bg-primary/10 border-[rgba(168,85,247,0.18)]'
                           : isDisabled
                           ? 'bg-section border-[rgba(255,255,255,0.02)] opacity-50 cursor-not-allowed'
                           : 'bg-section border-[rgba(255,255,255,0.04)] hover:border-[rgba(168,85,247,0.12)]'

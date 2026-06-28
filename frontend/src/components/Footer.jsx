@@ -1,6 +1,6 @@
 /**
- * Footer Component
- * Site-wide footer with links and information
+ * Footer — site-wide footer.
+ * Styled with the glass design system, theme-aware.
  */
 
 import { Link } from 'react-router-dom';
@@ -33,39 +33,42 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-base border-t" style={{borderColor:'rgba(255,255,255,0.04)'}}>
-      <div className="section-container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="relative mt-12 border-t border-glass-border/15 bg-bg-base/40">
+      <div className="section-container py-12 sm:py-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'linear-gradient(90deg,#6A00F5,#D500F9)'}}>
-                <span className="text-white font-bold text-lg">C</span>
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-card-gradient flex items-center justify-center text-white font-bold text-lg shadow-glass-glow">
+                C
               </div>
-              <span className="font-heading text-xl font-bold">CareerPath</span>
+              <span className="font-heading text-xl font-bold gradient-text">CareerPath</span>
             </div>
-            <p className="text-muted text-sm">
+            <p className="text-text-muted text-sm leading-relaxed">
               Empowering youth with career opportunities and personalized learning paths aligned with SDG 8.
             </p>
-            <div className="flex space-x-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-lg bg-section hover:shadow-neon-glow transition-all"
-                  aria-label={social.label}
-                >
-                  <social.icon size={18} />
-                </a>
-              ))}
+            <div className="flex flex-wrap gap-2">
+              {socialLinks.map((social) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-icon w-9 h-9"
+                    aria-label={social.label}
+                  >
+                    <Icon size={16} />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
           {/* Platform Links */}
           <div>
-            <h3 className="font-heading font-semibold mb-4">Platform</h3>
+            <h3 className="font-heading font-semibold text-text-main mb-4">Platform</h3>
             <ul className="space-y-2">
               {footerLinks.platform.map((link) => (
                 <li key={link.label}>
@@ -74,14 +77,14 @@ const Footer = () => {
                       href={link.to}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-muted hover:text-primary transition-colors text-sm"
+                      className="text-sm text-text-muted hover:text-primary-light transition-colors"
                     >
                       {link.label}
                     </a>
                   ) : (
                     <Link
                       to={link.to}
-                      className="text-muted hover:text-primary transition-colors text-sm"
+                      className="text-sm text-text-muted hover:text-primary-light transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -93,13 +96,13 @@ const Footer = () => {
 
           {/* Support Links */}
           <div>
-            <h3 className="font-heading font-semibold mb-4">Support</h3>
+            <h3 className="font-heading font-semibold text-text-main mb-4">Support</h3>
             <ul className="space-y-2">
               {footerLinks.support.map((link) => (
                 <li key={link.label}>
                   <Link
                     to={link.to}
-                    className="text-muted hover:text-primary transition-colors text-sm"
+                    className="text-sm text-text-muted hover:text-primary-light transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -108,37 +111,43 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Newsletter (placeholder) */}
+          {/* Newsletter */}
           <div>
-            <h3 className="font-heading font-semibold mb-4">Stay Updated</h3>
-            <p className="text-muted text-sm mb-3">
-              Get notified about new job opportunities and resources.
+            <h3 className="font-heading font-semibold text-text-main mb-4">Stay updated</h3>
+            <p className="text-sm text-text-muted mb-3">
+              Get new job opportunities and resources in your inbox.
             </p>
-            <div className="flex">
+            <form
+              className="flex items-stretch gap-2"
+              onSubmit={(e) => e.preventDefault()}
+              aria-label="Subscribe to newsletter"
+            >
               <input
                 type="email"
-                placeholder="Your email"
-                className="flex-1 px-3 py-2 text-sm rounded-l-lg input-field"
+                placeholder="you@example.com"
+                className="input-field flex-1 text-sm py-2"
                 aria-label="Email for newsletter"
               />
-              <button className="px-4 py-2 text-white rounded-r-lg bg-gradient-to-br from-[#A855F7] to-[#7C3AED] hover:shadow-neon-glow transition-all text-sm font-medium">
+              <button type="submit" className="btn-primary btn-sm whitespace-nowrap">
                 Subscribe
               </button>
-            </div>
+            </form>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0" style={{borderColor:'rgba(255,255,255,0.04)'}}>
-          <p className="text-muted text-sm flex items-center">
-            © {currentYear} CareerPath. Built with <Heart size={16} className="mx-1 text-pink-500" /> for youth employment
+        <div className="mt-10 pt-6 border-t border-glass-border/12 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-text-muted text-sm inline-flex items-center flex-wrap gap-1">
+            © {currentYear} CareerPath. Built with
+            <Heart size={14} className="text-accent-pink" aria-hidden />
+            for youth employment.
           </p>
-          <p className="text-muted text-sm">
-            Aligned with <span className="font-semibold text-primary">SDG 8</span> - Decent Work & Economic Growth
+          <p className="text-text-muted text-sm">
+            Aligned with{' '}
+            <span className="font-semibold text-primary-light">SDG 8</span> — Decent Work & Economic Growth
           </p>
         </div>
 
-        {/* Competition attribution — CodeFront × Mindsparks × AUST IDC */}
         <CompetitionFooter />
       </div>
     </footer>

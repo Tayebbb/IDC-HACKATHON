@@ -153,7 +153,7 @@ export default function JobApplicationGenerator() {
             style={styles.loadingContainer}
           >
             <div style={styles.loadingContent}>
-              <Loader size={48} style={{ color: '#A855F7', animation: 'spin 2s linear infinite' }} />
+              <Loader size={48} style={{ color: 'rgb(var(--c-primary))', animation: 'spin 2s linear infinite' }} />
               <h3 style={styles.loadingText}>Loading profile context...</h3>
             </div>
           </motion.div>
@@ -199,7 +199,7 @@ export default function JobApplicationGenerator() {
                 Enter the job title you are applying for to generate a custom matching application letter.
               </p>
               <div style={styles.inputGroup}>
-                <Sparkles size={20} style={{ color: '#A855F7' }} />
+                <Sparkles size={20} style={{ color: 'rgb(var(--c-primary))' }} />
                 <input
                   type="text"
                   value={targetJob}
@@ -320,13 +320,13 @@ const styles = {
     padding: '24px',
     background: 'rgba(17,21,43,0.6)',
     borderRadius: '16px',
-    border: '1px solid rgba(168,85,247,0.12)',
+    border: '1px solid rgb(var(--c-primary) / 0.12)',
   },
   headerIcon: {
     width: '56px',
     height: '56px',
     borderRadius: '12px',
-    background: 'linear-gradient(135deg, #A855F7, #7C3AED)',
+    background: 'linear-gradient(135deg, rgb(var(--c-primary)), #7C3AED)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -337,7 +337,7 @@ const styles = {
     margin: 0,
     fontSize: '28px',
     fontWeight: '700',
-    background: 'linear-gradient(90deg, #A855F7, #D500F9)',
+    background: 'linear-gradient(90deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',
@@ -356,7 +356,7 @@ const styles = {
     padding: '24px',
     background: 'rgba(17,21,43,0.4)',
     borderRadius: '16px',
-    border: '1px solid rgba(168,85,247,0.08)',
+    border: '1px solid rgb(var(--c-primary) / 0.08)',
   },
   sectionTitle: {
     color: '#FFFFFF',
@@ -393,12 +393,12 @@ const styles = {
   skillTag: {
     display: 'inline-block',
     padding: '6px 12px',
-    background: 'rgba(168,85,247,0.2)',
-    color: '#A855F7',
+    background: 'rgb(var(--c-primary) / 0.2)',
+    color: 'rgb(var(--c-primary))',
     borderRadius: '8px',
     fontSize: '13px',
     fontWeight: '500',
-    border: '1px solid rgba(168,85,247,0.3)',
+    border: '1px solid rgb(var(--c-primary) / 0.3)',
   },
   noSkills: {
     color: 'rgba(255,255,255,0.4)',
@@ -409,7 +409,7 @@ const styles = {
     padding: '24px',
     background: 'rgba(17,21,43,0.4)',
     borderRadius: '16px',
-    border: '1px solid rgba(168,85,247,0.08)',
+    border: '1px solid rgb(var(--c-primary) / 0.08)',
   },
   inputDescription: {
     color: 'rgba(255,255,255,0.6)',
@@ -423,7 +423,7 @@ const styles = {
     padding: '12px 16px',
     background: 'rgba(255,255,255,0.04)',
     borderRadius: '12px',
-    border: '1px solid rgba(168,85,247,0.15)',
+    border: '1px solid rgb(var(--c-primary) / 0.15)',
     marginBottom: '16px',
   },
   input: {
@@ -437,7 +437,7 @@ const styles = {
   },
   generateButton: {
     padding: '12px 24px',
-    background: 'linear-gradient(135deg, #A855F7, #7C3AED)',
+    background: 'linear-gradient(135deg, rgb(var(--c-primary)), #7C3AED)',
     color: '#FFFFFF',
     border: 'none',
     borderRadius: '8px',
@@ -448,7 +448,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    boxShadow: '0 4px 12px rgba(168,85,247,0.3)',
+    boxShadow: '0 4px 12px rgb(var(--c-primary) / 0.3)',
   },
   errorCard: {
     padding: '16px',
@@ -483,20 +483,20 @@ const styles = {
   },
   roadmapHeader: {
     padding: '32px',
-    background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(213,0,249,0.1))',
+    background: 'linear-gradient(135deg, rgb(var(--c-primary) / 0.2), rgb(var(--c-accent-pink) / 0.1))',
     borderRadius: '20px',
-    border: '1px solid rgba(168,85,247,0.3)',
+    border: '1px solid rgb(var(--c-primary) / 0.3)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    boxShadow: '0 8px 24px rgba(168,85,247,0.15)',
+    boxShadow: '0 8px 24px rgb(var(--c-primary) / 0.15)',
   },
   roadmapTitle: {
     color: '#FFFFFF',
     fontSize: '32px',
     fontWeight: '800',
     margin: '0 0 12px 0',
-    background: 'linear-gradient(135deg, #E879F9, #A855F7, #D500F9)',
+    background: 'linear-gradient(135deg, #E879F9, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',
@@ -511,7 +511,7 @@ const styles = {
     padding: '32px',
     background: 'rgba(17,21,43,0.8)',
     borderRadius: '16px',
-    border: '1px solid rgba(168,85,247,0.2)',
+    border: '1px solid rgb(var(--c-primary) / 0.2)',
     boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
   },
   letterText: {
@@ -531,21 +531,21 @@ const styles = {
   },
   primaryButton: {
     padding: '14px 32px',
-    background: 'linear-gradient(135deg, #A855F7, #7C3AED)',
+    background: 'linear-gradient(135deg, rgb(var(--c-primary)), #7C3AED)',
     color: '#FFFFFF',
     border: 'none',
     borderRadius: '12px',
     fontSize: '15px',
     fontWeight: '700',
     cursor: 'pointer',
-    boxShadow: '0 6px 20px rgba(168,85,247,0.4)',
+    boxShadow: '0 6px 20px rgb(var(--c-primary) / 0.4)',
     transition: 'all 0.3s ease',
   },
   secondaryButton: {
     padding: '14px 32px',
-    background: 'rgba(168,85,247,0.1)',
+    background: 'rgb(var(--c-primary) / 0.1)',
     color: '#E879F9',
-    border: '2px solid rgba(168,85,247,0.4)',
+    border: '2px solid rgb(var(--c-primary) / 0.4)',
     borderRadius: '12px',
     fontSize: '15px',
     fontWeight: '700',

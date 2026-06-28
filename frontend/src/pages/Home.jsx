@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { BrandStrip } from '../components/branding';
 
-// ─── MilestoneCard ────────────────────────────────────────────────────────────
+// â”€â”€â”€ MilestoneCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MilestoneCard = ({ milestone }) => {
   const Icon = milestone.icon;
   return (
@@ -66,14 +66,14 @@ const MilestoneCard = ({ milestone }) => {
   );
 };
 
-// ─── TimelineCard ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ TimelineCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TimelineCard = ({ milestone, isLeft }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
 
   return (
     <div ref={ref} className="relative flex items-center">
-      {/* ── Desktop layout (alternating sides) ─────────────────────────── */}
+      {/* â”€â”€ Desktop layout (alternating sides) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div
         className="hidden md:grid w-full"
         style={{ gridTemplateColumns: '1fr 56px 1fr', alignItems: 'center' }}
@@ -92,7 +92,7 @@ const TimelineCard = ({ milestone, isLeft }) => {
           )}
         </div>
 
-        {/* Center node — dot + connector line */}
+        {/* Center node â€” dot + connector line */}
         <div className="flex items-center justify-center relative" style={{ height: 56 }}>
           {/* Horizontal connector toward the card */}
           <motion.div
@@ -143,7 +143,7 @@ const TimelineCard = ({ milestone, isLeft }) => {
         </div>
       </div>
 
-      {/* ── Mobile layout (single column, left spine) ───────────────────── */}
+      {/* â”€â”€ Mobile layout (single column, left spine) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="flex md:hidden w-full items-start gap-4 pl-14 relative">
         {/* Dot on mobile spine */}
         <motion.div
@@ -176,7 +176,7 @@ const TimelineCard = ({ milestone, isLeft }) => {
   );
 };
 
-// ─── Home ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Home â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Home = () => {
   const stats = [
     { number: '500+', label: 'Job Opportunities' },
@@ -189,7 +189,7 @@ const Home = () => {
       icon: Globe,
       number: '500+',
       label: 'Job Opportunities',
-      description: 'Curated listings matched to your skills — from internships to full-time roles across top industries.',
+      description: 'Curated listings matched to your skills â€” from internships to full-time roles across top industries.',
       color: '#A855F7',
       glow: 'rgba(168,85,247,0.35)',
     },
@@ -221,7 +221,7 @@ const Home = () => {
       icon: BarChart3,
       number: '6+',
       label: 'AI-Powered Tools',
-      description: 'From CV analysis and mock interviews to career roadmaps — all powered by the Mindsparks intelligence layer.',
+      description: 'From CV analysis and mock interviews to career roadmaps â€” all powered by the Mindsparks intelligence layer.',
       color: '#A855F7',
       glow: 'rgba(168,85,247,0.35)',
     },
@@ -229,7 +229,7 @@ const Home = () => {
       icon: Star,
       number: 'SDG 8',
       label: 'UN Goal Aligned',
-      description: 'Driving decent work and economic growth for youth — purposefully built around the UN Sustainable Development Goals.',
+      description: 'Driving decent work and economic growth for youth â€” purposefully built around the UN Sustainable Development Goals.',
       color: '#D500F9',
       glow: 'rgba(213,0,249,0.35)',
     },
@@ -274,7 +274,7 @@ const Home = () => {
                 </h1>
 
                 <p className="text-base sm:text-lg text-muted mb-8 max-w-xl">
-                  Match your skills to relevant jobs and learning resources — build a roadmap that leads to real opportunities.
+                  Match your skills to relevant jobs and learning resources â€” build a roadmap that leads to real opportunities.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -322,11 +322,11 @@ const Home = () => {
                   <motion.div
                     animate={{ y: [0, -10, 0] }}
                     transition={{ duration: 3, repeat: Infinity }}
-                    className="absolute top-10 -left-6 bg-[#11152B] border-2 border-primary/30 rounded-xl p-4 shadow-2xl backdrop-blur-sm"
+                    className="absolute top-10 -left-6 bg-section border-2 border-primary/30 rounded-xl p-4 shadow-2xl backdrop-blur-sm"
                     style={{ boxShadow: '0 0 30px rgba(168,85,247,0.3), 0 10px 40px rgba(0,0,0,0.5)' }}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-[#A855F7] to-[#D500F9]">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-primary to-accent-pink">
                         <TrendingUp className="text-white" size={20} />
                       </div>
                       <div>
@@ -340,11 +340,11 @@ const Home = () => {
                   <motion.div
                     animate={{ y: [0, 10, 0] }}
                     transition={{ duration: 3, repeat: Infinity, delay: 1 }}
-                    className="absolute bottom-10 -right-6 bg-[#11152B] border-2 border-primary/30 rounded-xl p-4 shadow-2xl backdrop-blur-sm"
+                    className="absolute bottom-10 -right-6 bg-section border-2 border-primary/30 rounded-xl p-4 shadow-2xl backdrop-blur-sm"
                     style={{ boxShadow: '0 0 30px rgba(168,85,247,0.3), 0 10px 40px rgba(0,0,0,0.5)' }}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-[#A855F7] to-[#D500F9]">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-primary to-accent-pink">
                         <Award className="text-white" size={20} />
                       </div>
                       <div>
@@ -360,7 +360,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── Milestone Timeline Section ─────────────────────────────────────── */}
+      {/* â”€â”€ Milestone Timeline Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="stats-section bg-base py-20 sm:py-28">
         <div className="section-container">
           {/* Brand strip */}
@@ -386,7 +386,7 @@ const Home = () => {
               <span style={{ color: '#A855F7' }}>Milestone Journey</span>
             </h2>
             <p className="text-lg text-muted max-w-2xl mx-auto">
-              Every number tells a story. See how we&apos;ve grown — and how we&apos;re helping
+              Every number tells a story. See how we&apos;ve grown â€” and how we&apos;re helping
               students and fresh graduates step confidently into their careers.
             </p>
           </motion.div>
@@ -508,7 +508,7 @@ const Home = () => {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="bg-gradient-to-br from-[#A855F7] to-[#7C3AED] rounded-2xl p-12 text-center text-white"
+            className="bg-gradient-to-br from-primary to-[#7C3AED] rounded-2xl p-12 text-center text-white"
           >
             <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
               Ready to Start Your Career Journey?

@@ -231,7 +231,7 @@ const CourseResources = () => {
         <div className="fixed top-4 right-4 z-50 animate-slide-in">
           <div className={`flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
             notification.type === 'success' 
-              ? 'bg-gradient-to-r from-[#A855F7] to-[#D500F9] text-white' 
+              ? 'bg-gradient-to-r from-primary to-accent-pink text-white' 
               : 'bg-red-500 text-white'
           }`}>
             {notification.type === 'success' ? (
@@ -411,7 +411,7 @@ const CourseResources = () => {
       {/* Course Detail Modal */}
       {selectedCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40 animate-fade-in backdrop-blur-sm" style={{paddingTop: '80px', paddingBottom: '20px'}}>
-          <div className="bg-[#11152B] border-2 border-primary/40 rounded-2xl max-w-2xl w-full max-h-full overflow-y-auto animate-scale-in shadow-2xl" style={{boxShadow: '0 0 60px rgba(168,85,247,0.4), 0 20px 80px rgba(0,0,0,0.6)'}}>
+          <div className="bg-section border-2 border-primary/40 rounded-2xl max-w-2xl w-full max-h-full overflow-y-auto animate-scale-in shadow-2xl" style={{boxShadow: '0 0 60px rgba(168,85,247,0.4), 0 20px 80px rgba(0,0,0,0.6)'}}>
             {/* Modal Header */}
             <div className="relative h-52 overflow-hidden rounded-t-2xl">
               <img
@@ -425,7 +425,7 @@ const CourseResources = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
               <button
                 onClick={() => setSelectedCourse(null)}
-                className="sticky top-2 right-2 float-right bg-gradient-to-r from-[#A855F7] to-[#D500F9] hover:from-[#9333EA] hover:to-[#C026D3] rounded-full p-2 transition-all shadow-lg z-10"
+                className="sticky top-2 right-2 float-right bg-gradient-to-r from-primary to-accent-pink hover:from-[#9333EA] hover:to-[#C026D3] rounded-full p-2 transition-all shadow-lg z-10"
                 style={{boxShadow: '0 0 20px rgba(168,85,247,0.5)'}}
               >
                 <X size={20} className="text-white" />
@@ -441,12 +441,12 @@ const CourseResources = () => {
             <div className="p-4 sm:p-6">
               {/* Enrollment Status */}
               <div className="flex flex-wrap items-center gap-2 mb-5 pb-4 border-b border-primary/20">
-                <div className="flex items-center gap-2 bg-[rgba(168,85,247,0.1)] px-3 py-1.5 rounded-lg">
+                <div className="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-lg">
                   <Users size={16} className="text-primary" />
                   <span className="font-semibold text-main text-sm">{selectedCourse.enrollments.length} students enrolled</span>
                 </div>
                 {enrolledCourses.has(selectedCourse.id) && (
-                  <span className="bg-gradient-to-r from-[#A855F7] to-[#D500F9] text-white px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1.5 shadow-lg" style={{boxShadow: '0 0 20px rgba(168,85,247,0.4)'}}>
+                  <span className="bg-gradient-to-r from-primary to-accent-pink text-white px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1.5 shadow-lg" style={{boxShadow: '0 0 20px rgba(168,85,247,0.4)'}}>
                     <CheckCircle size={14} />
                     You're enrolled
                   </span>
@@ -456,7 +456,7 @@ const CourseResources = () => {
               {/* Overview Section */}
               <div className="mb-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-5 bg-gradient-to-b from-[#A855F7] to-[#D500F9] rounded-full"></div>
+                  <div className="w-1 h-5 bg-gradient-to-b from-primary to-accent-pink rounded-full"></div>
                   <h3 className="text-lg font-bold text-main">Course Overview</h3>
                 </div>
                 <p className="text-muted text-sm leading-relaxed whitespace-pre-line">
@@ -467,7 +467,7 @@ const CourseResources = () => {
               {/* Outline Section */}
               <div className="mb-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-5 bg-gradient-to-b from-[#A855F7] to-[#D500F9] rounded-full"></div>
+                  <div className="w-1 h-5 bg-gradient-to-b from-primary to-accent-pink rounded-full"></div>
                   <h3 className="text-lg font-bold text-main">Course Outline</h3>
                 </div>
                 <div className="bg-gradient-to-br from-[rgba(168,85,247,0.08)] to-[rgba(213,0,249,0.08)] border border-primary/20 rounded-lg p-3">
@@ -498,7 +498,7 @@ const CourseResources = () => {
                   <button
                     onClick={() => handleEnrollment(selectedCourse.id)}
                     disabled={enrolling || !currentUser}
-                    className="flex-1 bg-gradient-to-r from-[#A855F7] to-[#D500F9] hover:from-[#9333EA] hover:to-[#C026D3] text-white py-2 px-4 rounded-lg transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    className="flex-1 bg-gradient-to-r from-primary to-accent-pink hover:from-[#9333EA] hover:to-[#C026D3] text-white py-2 px-4 rounded-lg transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                     style={{boxShadow: '0 0 30px rgba(168,85,247,0.4)'}}
                   >
                     {enrolling && enrollingCourseId === selectedCourse.id ? 'Enrolling...' : currentUser ? 'Enroll in This Course' : 'Sign in to Enroll'}

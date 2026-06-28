@@ -122,8 +122,8 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
         label: 'Applicants by Career Track',
         data: Object.values(analyticsData.applicantsByTrack),
         backgroundColor: [
-          'rgba(168, 85, 247, 0.8)',
-          'rgba(213, 0, 249, 0.8)',
+          'rgb(var(--c-primary) / 0.8)',
+          'rgb(var(--c-accent-pink) / 0.8)',
           'rgba(6, 182, 212, 0.8)',
           'rgba(34, 197, 94, 0.8)',
           'rgba(249, 115, 22, 0.8)',
@@ -140,8 +140,8 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
         borderWidth: 2,
         borderRadius: 8,
         hoverBackgroundColor: [
-          'rgba(168, 85, 247, 1)',
-          'rgba(213, 0, 249, 1)',
+          'rgb(var(--c-primary) / 1)',
+          'rgb(var(--c-accent-pink) / 1)',
           'rgba(6, 182, 212, 1)',
           'rgba(34, 197, 94, 1)',
           'rgba(249, 115, 22, 1)',
@@ -159,7 +159,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
         label: 'Applicants by Location',
         data: Object.values(analyticsData.applicantsByLocation),
         borderColor: 'rgb(168, 85, 247)',
-        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        backgroundColor: 'rgb(var(--c-primary) / 0.1)',
         borderWidth: 3,
         fill: true,
         tension: 0.4,
@@ -180,8 +180,8 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
         label: 'Applicants',
         data: Object.values(analyticsData.applicantsByExperience),
         backgroundColor: [
-          'rgba(168, 85, 247, 0.8)',
-          'rgba(213, 0, 249, 0.8)',
+          'rgb(var(--c-primary) / 0.8)',
+          'rgb(var(--c-accent-pink) / 0.8)',
           'rgba(6, 182, 212, 0.8)',
         ],
         borderColor: [
@@ -202,7 +202,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
         label: 'Platform Overview',
         data: [analyticsData.totalJobs, analyticsData.totalUsers, analyticsData.totalApplicants],
         backgroundColor: [
-          'rgba(168, 85, 247, 0.8)',
+          'rgb(var(--c-primary) / 0.8)',
           'rgba(6, 182, 212, 0.8)',
           'rgba(34, 197, 94, 0.8)',
         ],
@@ -237,7 +237,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         titleColor: '#fff',
         bodyColor: '#E0E0E0',
-        borderColor: 'rgba(168, 85, 247, 0.5)',
+        borderColor: 'rgb(var(--c-primary) / 0.5)',
         borderWidth: 1,
         padding: 12,
         displayColors: true,
@@ -250,7 +250,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
           color: '#A0A0A0',
         },
         grid: {
-          color: 'rgba(168, 85, 247, 0.1)',
+          color: 'rgb(var(--c-primary) / 0.1)',
         }
       },
       x: {
@@ -258,7 +258,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
           color: '#A0A0A0',
         },
         grid: {
-          color: 'rgba(168, 85, 247, 0.1)',
+          color: 'rgb(var(--c-primary) / 0.1)',
         }
       },
       r: {
@@ -266,7 +266,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
           color: '#A0A0A0',
         },
         grid: {
-          color: 'rgba(168, 85, 247, 0.1)',
+          color: 'rgb(var(--c-primary) / 0.1)',
         }
       }
     }
@@ -309,7 +309,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
             className="bg-[#1a1a2e] rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
           >
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-[#A855F7] to-[#D500F9] p-6 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-gradient-to-r from-primary to-accent-pink p-6 flex items-center justify-between z-10">
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 <Activity size={28} />
                 Platform Analytics & Insights
@@ -336,7 +336,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
                       icon={Briefcase}
                       label="Total Jobs"
                       value={analyticsData.totalJobs}
-                      color="#A855F7"
+                      color="rgb(var(--c-primary))"
                     />
                     <StatBox
                       icon={Users}
@@ -370,7 +370,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
                         whileTap={{ scale: 0.95 }}
                         className={`px-6 py-2 rounded-lg font-semibold transition-all ${
                           activeTab === tab
-                            ? 'bg-gradient-to-r from-[#A855F7] to-[#D500F9] text-white shadow-lg'
+                            ? 'bg-gradient-to-r from-primary to-accent-pink text-white shadow-lg'
                             : 'bg-white/10 text-main hover:bg-white/20'
                         }`}
                       >
@@ -478,7 +478,7 @@ const AnalyticsModal = ({ isOpen, onClose }) => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={onClose}
-                    className="px-8 py-3 bg-gradient-to-r from-[#A855F7] to-[#D500F9] text-white rounded-lg font-semibold transition-all"
+                    className="px-8 py-3 bg-gradient-to-r from-primary to-accent-pink text-white rounded-lg font-semibold transition-all"
                   >
                     Close Analytics
                   </motion.button>

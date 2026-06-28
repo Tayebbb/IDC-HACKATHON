@@ -313,7 +313,7 @@ const Dashboard = () => {
       // Wait, readiness-score expects a 0-100 score, but averageScore is average of 1-10. Wait!
       // Let's multiply average score by 10 to put it in 0-100 range!
       // Wait, let's look at Check 1.3:
-      // POST /readiness-score → body: {"skills":["React"],"dnaScores":{"Frontend":80,"Backend":40,"DevOps":30,"AI/ML":20,"Communication":60},"profileCompletion":70,"interviewScore":65}
+      // POST /readiness-score â†’ body: {"skills":["React"],"dnaScores":{"Frontend":80,"Backend":40,"DevOps":30,"AI/ML":20,"Communication":60},"profileCompletion":70,"interviewScore":65}
       // Here, interviewScore is 65 (which is 65 out of 100).
       // But in Firebase, the MockInterview ends and saves:
       // averageScore = sessionScore / questionNumber (which is on a scale of 0-10).
@@ -364,7 +364,7 @@ const Dashboard = () => {
           </p>
         </motion.div>
 
-        {/* Career Intelligence — Features 2 & 3 */}
+        {/* Career Intelligence â€” Features 2 & 3 */}
         <IntelligenceSection
           skills={userProfile?.skills || []}
           profileCompletion={profileCompletion}
@@ -380,26 +380,26 @@ const Dashboard = () => {
             value={`${profileCompletion}%`}
             color={profileCompletion === 100 
               ? "bg-gradient-to-br from-green-500 to-emerald-500" 
-              : "bg-gradient-to-br from-[#A855F7] to-[#7C3AED]"}
+              : "bg-gradient-to-br from-primary to-[#7C3AED]"}
             subtext={profileCompletion === 100 ? "Complete!" : "Keep going!"}
           />
           <StatCard 
             icon={Briefcase} 
             label="Applied Jobs" 
             value={appliedJobs.length} 
-            color="bg-gradient-to-br from-[#D500F9] to-[#A855F7]" 
+            color="bg-gradient-to-br from-accent-pink to-primary" 
           />
           <StatCard 
             icon={GraduationCap} 
             label="Enrolled Courses" 
             value={enrolledCourses.length} 
-            color="bg-gradient-to-br from-[#7C3AED] to-[#D500F9]" 
+            color="bg-gradient-to-br from-[#7C3AED] to-accent-pink" 
           />
           <StatCard 
             icon={TrendingUp} 
             label="Recommendations" 
             value={recommendedCourses.length} 
-            color="bg-gradient-to-br from-[#A855F7] to-[#D500F9]" 
+            color="bg-gradient-to-br from-primary to-accent-pink" 
           />
         </div>
 
@@ -513,7 +513,7 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  <div className="mb-4 pt-3 border-t border-[rgba(168,85,247,0.1)]">
+                  <div className="mb-4 pt-3 border-t border-primary/10">
                     <p className="text-sm text-muted line-clamp-2 mb-3">{job.description}</p>
                     <div className="flex items-center gap-2 text-sm text-muted">
                       <Award size={14} />
@@ -629,7 +629,7 @@ const RecommendedCourseCard = ({ course, index }) => (
   >
     {/* Recommended Badge */}
     <div className="absolute top-4 left-4 z-10">
-      <span className="bg-gradient-to-r from-[#A855F7] to-[#D500F9] text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+      <span className="bg-gradient-to-r from-primary to-accent-pink text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
         <Sparkles size={14} />
         Recommended
       </span>
@@ -657,7 +657,7 @@ const RecommendedCourseCard = ({ course, index }) => (
     <div className="p-6">
       {/* Match Reason */}
       {course.matchedInterest && (
-        <div className="mb-3 flex items-center gap-2 text-xs bg-[rgba(168,85,247,0.1)] text-primary px-3 py-2 rounded-lg">
+        <div className="mb-3 flex items-center gap-2 text-xs bg-primary/10 text-primary px-3 py-2 rounded-lg">
           <Sparkles size={14} />
           <span>Matches your interest in <strong>{course.matchedInterest}</strong></span>
         </div>
@@ -708,7 +708,7 @@ const CourseCard = ({ course, index }) => (
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
       <div className="absolute top-4 right-4">
-        <span className="bg-gradient-to-r from-[#A855F7] to-[#D500F9] text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+        <span className="bg-gradient-to-r from-primary to-accent-pink text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
           <CheckCircle size={14} />
           Enrolled
         </span>
@@ -752,15 +752,15 @@ const JobCard = ({ job }) => (
     <div className="flex items-start justify-between mb-3">
       <div>
         <h3 className="font-semibold text-lg mb-1 text-main">{job.title}</h3>
-        <p className="text-sm text-muted">{job.company} • {job.location}</p>
+        <p className="text-sm text-muted">{job.company} â€¢ {job.location}</p>
       </div>
-      <span className="px-3 py-1 bg-[rgba(168,85,247,0.1)] text-primary text-xs font-medium rounded-full">
+      <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
         {job.type}
       </span>
     </div>
     <p className="text-sm text-muted mb-3 line-clamp-2">{job.description}</p>
     {job.matchReason && (
-      <div className="text-xs text-primary bg-[rgba(168,85,247,0.1)] px-3 py-2 rounded-lg">
+      <div className="text-xs text-primary bg-primary/10 px-3 py-2 rounded-lg">
          {job.matchReason}
       </div>
     )}

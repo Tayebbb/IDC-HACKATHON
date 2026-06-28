@@ -90,8 +90,8 @@ const Login = () => {
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 bg-base pt-20">
         {/* Background Glow */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#A855F7] to-[#D500F9] rounded-full mix-blend-multiply filter blur-3xl opacity-5"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-[#D500F9] to-[#A855F7] rounded-full mix-blend-multiply filter blur-3xl opacity-5"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary to-accent-pink rounded-full mix-blend-multiply filter blur-3xl opacity-5"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-accent-pink to-primary rounded-full mix-blend-multiply filter blur-3xl opacity-5"></div>
         </div>
 
         <motion.div
@@ -263,7 +263,7 @@ const Login = () => {
                     setError('');
                   }}
                   className="input-field pl-11 pr-12"
-                  placeholder="••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   aria-label="Password"
                   disabled={loading}
                 />
@@ -365,9 +365,9 @@ const Login = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
             onClick={() => setLoginType(null)}
-            className="w-full mt-4 px-4 py-2 rounded-lg text-sm font-medium text-muted hover:text-primary hover:bg-[rgba(168,85,247,0.06)] transition-all"
+            className="w-full mt-4 px-4 py-2 rounded-lg text-sm font-medium text-muted hover:text-primary hover:bg-primary/10 transition-all"
           >
-            ← Back to Login Options
+            â† Back to Login Options
           </motion.button>
         </div>
 

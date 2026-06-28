@@ -212,7 +212,7 @@ const AdminDashboard = () => {
               onClick={() => setShowAnalytics(!showAnalytics)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-4 rounded-lg text-left transition-all duration-200 border border-[rgba(168,85,247,0.3)] hover:border-[rgba(168,85,247,0.6)] hover:shadow-lg hover:shadow-[rgba(168,85,247,0.2)]"
+              className="p-4 rounded-lg text-left transition-all duration-200 border border-primary/30 hover:border-[rgba(168,85,247,0.6)] hover:shadow-lg hover:shadow-[rgba(168,85,247,0.2)]"
               style={{
                 background: 'rgba(168,85,247,0.06)',
               }}
@@ -287,7 +287,7 @@ const AdminDashboard = () => {
                   whileTap={{ scale: 0.95 }}
                   className={`px-6 py-2 rounded-lg font-semibold transition-all ${
                     activeChart === tab
-                      ? 'bg-gradient-to-r from-[#A855F7] to-[#D500F9] text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-primary to-accent-pink text-white shadow-lg'
                       : 'bg-white/10 text-main hover:bg-white/20'
                   }`}
                 >

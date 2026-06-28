@@ -1,9 +1,9 @@
 /**
  * FaceExpressionOverlay.jsx
  * ---------------------------------------------------------------
- * Live webcam → Hugging Face vit-face-expression (browser direct).
+ * Live webcam â†’ Hugging Face vit-face-expression (browser direct).
  *
- * UI no longer shows emotion labels (happy / sad / angry / surprise / …).
+ * UI no longer shows emotion labels (happy / sad / angry / surprise / â€¦).
  * Instead, every detection frame is mapped to a single actionable interview
  * coaching tip, surfaced as a rolling 3-tip queue under the camera.
  *
@@ -14,8 +14,8 @@
  * implemented as a graceful no-op (the same priority chain is preserved).
  *
  * Exports:
- *   default — the FaceExpressionOverlay component
- *   getExpressionCoaching(distribution) — kept for back-compat with
+ *   default â€” the FaceExpressionOverlay component
+ *   getExpressionCoaching(distribution) â€” kept for back-compat with
  *     MockInterview.jsx, which still calls it on the finalised emotion
  *     percentage distribution at end-of-interview.
  */
@@ -81,7 +81,7 @@ async function _loadFaceApi() {
   return _faceApiLoading;
 }
 
-// Smoothing window: 5 frames × 3 s = 15 s of context per decision.
+// Smoothing window: 5 frames Ã— 3 s = 15 s of context per decision.
 // Below this many frames we keep showing "warming up" instead of guessing.
 const SMOOTH_WINDOW = 5;
 const SMOOTH_MIN_FRAMES = 2;
@@ -130,7 +130,7 @@ function _normalizeScores(hfList) {
   for (const { label, score } of hfList || []) {
     out[label] = score;
   }
-  // Alias HF names → face-api.js names
+  // Alias HF names â†’ face-api.js names
   if ('fear' in out)     out.fearful   = out.fear;
   if ('surprise' in out) out.surprised = out.surprise;
   if ('disgust' in out)  out.disgusted = out.disgust;
@@ -139,7 +139,7 @@ function _normalizeScores(hfList) {
 
 function _pickRealtimeTip(expressions, baseline) {
   if (!expressions || Object.keys(expressions).length === 0) {
-    return { tip: 'Move closer to the camera — face not detected', type: 'warning', icon: 'Eye' };
+    return { tip: 'Move closer to the camera â€” face not detected', type: 'warning', icon: 'Eye' };
   }
 
   // Normalised totals so the priority chain reasons over RELATIVE weights,
@@ -177,15 +177,15 @@ function _pickRealtimeTip(expressions, baseline) {
   ].sort((a, b) => b[1] - a[1]);
   const [topLabel, topScore] = ranked[0];
 
-  // Strong negative signal → always warn first. We require BOTH absolute
+  // Strong negative signal â†’ always warn first. We require BOTH absolute
   // score over the bar AND a baseline-relative deviation so a naturally
   // serious resting face doesn't trip the warning.
   if (negativeTotal >= 0.55 && deltaNegative >= BASELINE_DELTA) {
     if (deltaFear >= 0.20 || surprised >= 0.45) {
-      return { tip: 'Take a breath — slow down and speak with intention', type: 'warning', icon: 'AlertCircle' };
+      return { tip: 'Take a breath â€” slow down and speak with intention', type: 'warning', icon: 'AlertCircle' };
     }
     if (deltaAngry >= 0.20 || deltaDisgust >= 0.15) {
-      return { tip: 'Relax your jaw and brow — aim for an open, neutral face', type: 'warning', icon: 'AlertCircle' };
+      return { tip: 'Relax your jaw and brow â€” aim for an open, neutral face', type: 'warning', icon: 'AlertCircle' };
     }
     if (deltaSad >= 0.20) {
       return { tip: 'Lift your chin slightly and maintain an upright posture', type: 'warning', icon: 'AlertCircle' };
@@ -196,26 +196,26 @@ function _pickRealtimeTip(expressions, baseline) {
   // overridden by a marginally higher neutral score). Either an absolute
   // happy score or a meaningful uplift over baseline both count.
   if (happy >= 0.50 || deltaHappy >= 0.20 || (happy >= 0.35 && happy >= neutral * 0.8)) {
-    return { tip: 'Natural warmth showing — keep that confident energy', type: 'positive', icon: 'CheckCircle2' };
+    return { tip: 'Natural warmth showing â€” keep that confident energy', type: 'positive', icon: 'CheckCircle2' };
   }
   if (topLabel === 'neutral' && topScore >= 0.55 && negativeTotal < 0.25) {
-    return { tip: 'Great composure — you look calm and professional', type: 'positive', icon: 'CheckCircle2' };
+    return { tip: 'Great composure â€” you look calm and professional', type: 'positive', icon: 'CheckCircle2' };
   }
 
-  // Mild surprise (often a thinking expression) — informational, not a warning.
+  // Mild surprise (often a thinking expression) â€” informational, not a warning.
   if (surprised >= 0.30 && surprised > negativeTotal) {
-    return { tip: 'Engaged and thinking — take a brief pause before answering', type: 'info', icon: 'CheckCircle2' };
+    return { tip: 'Engaged and thinking â€” take a brief pause before answering', type: 'info', icon: 'CheckCircle2' };
   }
 
   // Mild negative tilt without crossing the strong-signal bar.
   if (negativeTotal >= 0.30 && deltaNegative >= BASELINE_DELTA) {
-    return { tip: 'Soften your expression — relax the brow and breathe', type: 'warning', icon: 'AlertCircle' };
+    return { tip: 'Soften your expression â€” relax the brow and breathe', type: 'warning', icon: 'AlertCircle' };
   }
 
-  return { tip: 'Hold your position — looking good', type: 'positive', icon: 'CheckCircle2' };
+  return { tip: 'Hold your position â€” looking good', type: 'positive', icon: 'CheckCircle2' };
 }
 
-// Smooth a rolling buffer of per-frame label→score maps into a single
+// Smooth a rolling buffer of per-frame labelâ†’score maps into a single
 // averaged distribution. This is what we feed to _pickRealtimeTip so a
 // single noisy frame can never flip a tip on its own.
 function _averageDistribution(buffer) {
@@ -245,7 +245,7 @@ function _colorClasses(type) {
 }
 
 // =====================================================================
-// Legacy export — consumed by MockInterview.jsx at end-of-interview.
+// Legacy export â€” consumed by MockInterview.jsx at end-of-interview.
 // Receives the CUMULATIVE percent distribution (0-100 per label).
 // Returns an array of coaching cards summarising the whole session.
 // =====================================================================
@@ -273,7 +273,7 @@ export function getExpressionCoaching(distribution) {
   }
   if (sad >= 25) {
     coaching.push({ icon: '', priority: 'high',
-      tip: 'Your face read low-energy at times. Lift the corners of your mouth slightly — a neutral-to-positive expression projects confidence.' });
+      tip: 'Your face read low-energy at times. Lift the corners of your mouth slightly â€” a neutral-to-positive expression projects confidence.' });
   }
   if (angry >= 15 || disgust >= 12) {
     coaching.push({ icon: '', priority: 'medium',
@@ -283,13 +283,13 @@ export function getExpressionCoaching(distribution) {
   // === Positive patterns (only surfaced when negatives are under control) ==
   if (happy >= 30 && negativeTotal < 40) {
     coaching.push({ icon: '', priority: 'good',
-      tip: 'Great positive energy — your warmth came through clearly. Keep that going.' });
+      tip: 'Great positive energy â€” your warmth came through clearly. Keep that going.' });
   } else if (neutral >= 60 && negativeTotal < 25 && happy < 30) {
     coaching.push({ icon: '', priority: 'medium',
       tip: 'Very composed but quite flat. A small, genuine smile when greeting and closing each answer would lift engagement.' });
   } else if (happy < 10 && negativeTotal < 30) {
     coaching.push({ icon: '', priority: 'medium',
-      tip: 'Try to show more enthusiasm — a small smile when delivering your answer signals genuine interest.' });
+      tip: 'Try to show more enthusiasm â€” a small smile when delivering your answer signals genuine interest.' });
   }
 
   // === Final reassurance card if nothing else fired ========================
@@ -322,7 +322,7 @@ function _hasContentInFrame(canvas) {
   const h = canvas.height;
   if (!w || !h) return true;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  // Sample a 40% × 40% centre patch (where a candidate's face should be).
+  // Sample a 40% Ã— 40% centre patch (where a candidate's face should be).
   const sw = Math.max(32, Math.floor(w * 0.4));
   const sh = Math.max(32, Math.floor(h * 0.4));
   const sx = Math.floor((w - sw) / 2);
@@ -331,7 +331,7 @@ function _hasContentInFrame(canvas) {
   try {
     img = ctx.getImageData(sx, sy, sw, sh).data;
   } catch {
-    return true; // CORS-tainted canvas etc — don't block sampling
+    return true; // CORS-tainted canvas etc â€” don't block sampling
   }
   // Compute luminance variance on a stride to keep this fast.
   let n = 0, sum = 0, sumSq = 0;
@@ -347,7 +347,7 @@ function _hasContentInFrame(canvas) {
   return variance >= PRESENCE_VARIANCE_THRESHOLD;
 }
 
-// Cached detector instance — constructed lazily, reused across frames.
+// Cached detector instance â€” constructed lazily, reused across frames.
 let _faceDetectorInstance = null;
 let _faceDetectorTried = false;
 function _getShapeDetector() {
@@ -378,7 +378,7 @@ function _getShapeDetector() {
 //            detectionScore: number }  where detectionScore is in [0,1].
 // =====================================================================
 async function _detectFaceAndEmotion(canvas) {
-  // Path 1 — face-api.js (preferred: bbox + emotion in a single pass).
+  // Path 1 â€” face-api.js (preferred: bbox + emotion in a single pass).
   if (_faceApiReady && _faceApiModule) {
     try {
       const fa = _faceApiModule;
@@ -415,7 +415,7 @@ async function _detectFaceAndEmotion(canvas) {
     }
   }
 
-  // Path 2 — browser Shape Detection API (bbox only).
+  // Path 2 â€” browser Shape Detection API (bbox only).
   const detector = _getShapeDetector();
   if (detector && canvas) {
     try {
@@ -440,7 +440,7 @@ async function _detectFaceAndEmotion(canvas) {
     }
   }
 
-  // Path 3 — no detector available.
+  // Path 3 â€” no detector available.
   return { bbox: null, scores: null, detectionScore: 0 };
 }
 
@@ -490,7 +490,7 @@ function _drawBoundingBox(canvas, video, bbox) {
     w = bbox.w * scaleX;
     h = bbox.h * scaleY;
   } else {
-    // Estimated face area — centred, ~50% wide, ~75% tall.
+    // Estimated face area â€” centred, ~50% wide, ~75% tall.
     x = canvas.width  * 0.25;
     y = canvas.height * 0.10;
     w = canvas.width  * 0.50;
@@ -520,7 +520,7 @@ function _drawBoundingBox(canvas, video, bbox) {
 // Given the last few per-frame {label, score} samples, returns the label
 // that won the simple majority vote (>= ceil(N/2) hits) together with the
 // mean score of those winning frames. Returns null when no label has a
-// clear majority — callers should treat that as "don't update the badge
+// clear majority â€” callers should treat that as "don't update the badge
 // yet, keep sampling". The 0.55 confidence gate is applied by the caller.
 // =====================================================================
 function getMedianEmotion(buffer) {
@@ -560,8 +560,8 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   ref,
 ) {
   const videoRef         = useRef(null);
-  const canvasRef        = useRef(null);   // hidden — used for HF capture
-  const overlayCanvasRef = useRef(null);   // visible — bounding box
+  const canvasRef        = useRef(null);   // hidden â€” used for HF capture
+  const overlayCanvasRef = useRef(null);   // visible â€” bounding box
   const streamRef        = useRef(null);
   const intervalRef      = useRef(null);
   const inFlightRef      = useRef(false);
@@ -584,7 +584,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const [cameraStarted, setCameraStarted] = useState(false);
   const [faceVisible,   setFaceVisible]   = useState(false);
   const [httpsWarning]                    = useState(isInsecureContext());
-  const [trackingScore, setTrackingScore] = useState(0);   // 0..1 — detector confidence
+  const [trackingScore, setTrackingScore] = useState(0);   // 0..1 â€” detector confidence
   const [calibrated,    setCalibrated]    = useState(false);
   const [faceApiState,  setFaceApiState]  = useState('loading'); // loading | ready | unavailable
   // Median-smoothed live emotion shown on the overlay badge.
@@ -660,7 +660,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       detectionScoreRef.current = 0;
       setTrackingScore(0);
       _drawBoundingBox(overlayCanvasRef.current, videoRef.current, null);
-      _pushTip({ tip: 'Move closer to the camera — face not detected', type: 'warning', icon: 'Eye' });
+      _pushTip({ tip: 'Move closer to the camera â€” face not detected', type: 'warning', icon: 'Eye' });
       return;
     }
 
@@ -673,7 +673,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
     setTrackingScore(detectionScoreRef.current);
 
     if (_faceApiReady && !bbox) {
-      // face-api is loaded AND it confidently says there's no face →
+      // face-api is loaded AND it confidently says there's no face â†’
       // user genuinely out of frame; skip the HF round-trip.
       setFaceVisible(false);
       _drawBoundingBox(overlayCanvasRef.current, videoRef.current, null);
@@ -718,10 +718,10 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       const expressions = _ensembleScores(hfScoresFromList, detection.scores);
       const hasAnyScores = expressions && Object.keys(expressions).length > 0;
       if (!hasAnyScores) {
-        // Neither model produced usable scores — hold position but keep sampling.
+        // Neither model produced usable scores â€” hold position but keep sampling.
         setFaceVisible(true);
         _drawBoundingBox(overlayCanvasRef.current, videoRef.current, bbox);
-        _pushTip({ tip: 'Reading your expression… hold steady', type: 'info', icon: 'Eye' });
+        _pushTip({ tip: 'Reading your expressionâ€¦ hold steady', type: 'info', icon: 'Eye' });
         return;
       }
 
@@ -762,7 +762,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
         smoothed = getMedianEmotion(rollingBufferRef.current);
       }
 
-      // Confidence gate — only commit the smoothed emotion to UI + log
+      // Confidence gate â€” only commit the smoothed emotion to UI + log
       // when the median-voted score clears 0.55. Below the gate we keep
       // sampling silently (no badge flicker, no log noise).
       if (smoothed && smoothed.score > 0.55) {
@@ -799,16 +799,16 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       _drawBoundingBox(overlayCanvasRef.current, videoRef.current, bbox);
 
       if (smoothBufferRef.current.length < SMOOTH_MIN_FRAMES) {
-        _pushTip({ tip: 'Reading your expression… hold steady', type: 'info', icon: 'Eye' });
+        _pushTip({ tip: 'Reading your expressionâ€¦ hold steady', type: 'info', icon: 'Eye' });
       } else if (!baselineRef.current) {
-        _pushTip({ tip: 'Calibrating to your resting face…', type: 'info', icon: 'Eye' });
+        _pushTip({ tip: 'Calibrating to your resting faceâ€¦', type: 'info', icon: 'Eye' });
       } else {
         const smoothed = _averageDistribution(smoothBufferRef.current);
         const tip = _pickRealtimeTip(smoothed, baselineRef.current);
         if (tip.type === 'warning') {
           warningStreakRef.current += 1;
           if (warningStreakRef.current < HYSTERESIS_REPEATS) {
-            _pushTip({ tip: 'Hold your position — looking good', type: 'positive', icon: 'CheckCircle2' });
+            _pushTip({ tip: 'Hold your position â€” looking good', type: 'positive', icon: 'CheckCircle2' });
             return;
           }
         } else {
@@ -859,7 +859,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => { /* autoplay race — ignore */ });
+        await videoRef.current.play().catch(() => { /* autoplay race â€” ignore */ });
       }
       setCameraStarted(true);
       // Kick off the first capture quickly so the user sees a tip within ~1s.
@@ -868,7 +868,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       intervalRef.current = setInterval(captureAndAnalyze, SAMPLE_INTERVAL_MS);
     } catch (err) {
       const name = err?.name || '';
-      let msg = 'Camera access denied — please allow camera access in your browser settings and click Enable Camera again.';
+      let msg = 'Camera access denied â€” please allow camera access in your browser settings and click Enable Camera again.';
       if (name === 'NotFoundError' || name === 'OverconstrainedError') {
         msg = 'No webcam was detected. Connect a camera and try again.';
       } else if (name === 'NotReadableError') {
@@ -880,7 +880,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
 
   }, []);
 
-  // Parent flagged inactive → stop the camera.
+  // Parent flagged inactive â†’ stop the camera.
   useEffect(() => {
     if (!active && cameraStarted) {
       stopAll();
@@ -905,7 +905,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       lastTipKeyRef.current = '';
       lastTipAtRef.current = 0;
       setCalibrated(false);
-      _pushTip({ tip: 'Recalibrating to your resting face…', type: 'info', icon: 'Eye' });
+      _pushTip({ tip: 'Recalibrating to your resting faceâ€¦', type: 'info', icon: 'Eye' });
     },
   }));
 
@@ -914,7 +914,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
 
     // Score-averaged distribution (each frame contributes its full label
     // distribution, not just its argmax). Far more robust than counting
-    // dominant labels — single misclassifications no longer skew the result.
+    // dominant labels â€” single misclassifications no longer skew the result.
     const sumScores = {};
     for (const entry of log) {
       const scores = entry.scores || {};
@@ -958,13 +958,13 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   return (
     <div className="w-full space-y-3">
       {/* Webcam frame */}
-      <div className="relative w-full rounded-xl overflow-hidden bg-[#11152B] border border-purple-900/40">
-        {/* Hidden canvas — used for HF capture only */}
+      <div className="relative w-full rounded-xl overflow-hidden bg-section border border-purple-900/40">
+        {/* Hidden canvas â€” used for HF capture only */}
         <canvas ref={canvasRef} className="hidden" />
 
         {httpsWarning && (
           <div className="px-3 py-2 text-xs text-amber-300 bg-amber-950/40 border-b border-amber-900/40">
-             Camera requires HTTPS in production. On localhost this should work — check browser permissions.
+             Camera requires HTTPS in production. On localhost this should work â€” check browser permissions.
           </div>
         )}
 
@@ -1033,20 +1033,20 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
               />
               <span>
                 {faceApiState === 'ready'
-                  ? `Local + HF · ${Math.round(trackingScore * 100)}%`
+                  ? `Local + HF Â· ${Math.round(trackingScore * 100)}%`
                   : faceApiState === 'loading'
-                  ? 'Loading models…'
-                  : `HF only · ${Math.round(trackingScore * 100)}%`}
+                  ? 'Loading modelsâ€¦'
+                  : `HF only Â· ${Math.round(trackingScore * 100)}%`}
               </span>
               {calibrated && (
-                <span className="ml-1 text-emerald-300/90 normal-case">· calibrated</span>
+                <span className="ml-1 text-emerald-300/90 normal-case">Â· calibrated</span>
               )}
             </div>
             {/* Bottom-left: live median-smoothed emotion + confidence */}
             {liveEmotion && (
               <div
-                className="absolute bottom-3 left-3 flex items-center gap-2 text-xs bg-[#11152B]/80 text-purple-400 border border-purple-900/40 backdrop-blur-sm rounded-md px-2.5 py-1.5"
-                title={`Median-smoothed emotion · ${Math.round((liveEmotion.score || 0) * 100)}% confidence`}
+                className="absolute bottom-3 left-3 flex items-center gap-2 text-xs bg-section/80 text-purple-400 border border-purple-900/40 backdrop-blur-sm rounded-md px-2.5 py-1.5"
+                title={`Median-smoothed emotion Â· ${Math.round((liveEmotion.score || 0) * 100)}% confidence`}
               >
                 <span className="text-sm leading-none">
                   {EMOTION_META[liveEmotion.label]?.emoji || '\ud83d\ude10'}
@@ -1067,7 +1067,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
                 lastTipKeyRef.current = '';
                 lastTipAtRef.current = 0;
                 setCalibrated(false);
-                _pushTip({ tip: 'Recalibrating to your resting face…', type: 'info', icon: 'Eye' });
+                _pushTip({ tip: 'Recalibrating to your resting faceâ€¦', type: 'info', icon: 'Eye' });
               }}
               className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] uppercase tracking-wider text-purple-200/90 bg-black/40 hover:bg-purple-600/40 backdrop-blur-sm rounded-md px-2 py-1 transition-colors"
               title="Re-baseline against your current resting face"
@@ -1084,7 +1084,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
         )}
       </div>
 
-      {/* Tip queue — under the camera, NOT overlaid */}
+      {/* Tip queue â€” under the camera, NOT overlaid */}
       <AnimatePresence initial={false}>
         {tipQueue.map((t, idx) => {
           const Icon = _iconFor(t.icon);
@@ -1110,13 +1110,13 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       {tipQueue.length === 0 && cameraStarted && !camError && (
         <div className="text-[11px] italic px-1">
           {updating ? (
-            <span className="text-purple-300/80">Analysing your expression…</span>
+            <span className="text-purple-300/80">Analysing your expressionâ€¦</span>
           ) : hfError ? (
             <span className="text-amber-300/90">
-              Hugging Face is warming up the model — first tip can take up to 20s. ({hfError})
+              Hugging Face is warming up the model â€” first tip can take up to 20s. ({hfError})
             </span>
           ) : (
-            <span className="text-white/40">Waiting for the first frame…</span>
+            <span className="text-white/40">Waiting for the first frameâ€¦</span>
           )}
         </div>
       )}

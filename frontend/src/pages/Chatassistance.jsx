@@ -223,7 +223,7 @@ export default function Chatassistance() {
       const data = await response.json();
       const reply = data.response || data.reply || "I'm not sure how to answer that. Could you rephrase?";
 
-      // Feature 5 — attach RAG explainability to the model message so
+      // Feature 5 â€” attach RAG explainability to the model message so
       // ReasoningCard can render below it.
       const modelMsg = {
         role: "model",
@@ -356,14 +356,14 @@ export default function Chatassistance() {
                     {msg.sources.map((src) => (
                       <div key={src.id} className="text-xs text-purple-400 bg-white/5 rounded px-2 py-1">
                         <span className="capitalize">{src.type}</span>
-                        {" · "}
+                        {" Â· "}
                         <span className="text-[#B3B3C7]">{src.title}</span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Feature 5 — RAG explainability */}
+                {/* Feature 5 â€” RAG explainability */}
                 {msg.role === "model" && Array.isArray(msg.factors) && msg.factors.length > 0 && (
                   <ReasoningCard
                     title="Why this answer?"
@@ -450,26 +450,26 @@ const styles = {
     padding: "16px",
     background: "linear-gradient(135deg, rgba(26,27,46,0.8) 0%, rgba(19,20,31,0.9) 100%)",
     borderRadius: "16px",
-    border: "1px solid rgba(168,85,247,0.25)",
-    boxShadow: "0 4px 20px rgba(168,85,247,0.12)",
+    border: "1px solid rgb(var(--c-primary) / 0.25)",
+    boxShadow: "0 4px 20px rgb(var(--c-primary) / 0.12)",
     flexWrap: "wrap",
   },
   headerIcon: {
     width: "48px",
     height: "48px",
     borderRadius: "12px",
-    background: "linear-gradient(135deg, #A855F7, #D500F9)",
+    background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 0 20px rgba(168,85,247,0.4)",
+    boxShadow: "0 0 20px rgb(var(--c-primary) / 0.4)",
   },
   title: {
     color: "#FFFFFF",
     margin: 0,
     fontSize: "clamp(18px, 4vw, 24px)",
     fontWeight: "700",
-    background: "linear-gradient(90deg, #A855F7, #D500F9)",
+    background: "linear-gradient(90deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     backgroundClip: "text",
@@ -488,10 +488,10 @@ const styles = {
     padding: "24px",
     background: "rgba(17,21,43,0.5)",
     borderRadius: "16px",
-    border: "1px solid rgba(168,85,247,0.15)",
+    border: "1px solid rgb(var(--c-primary) / 0.15)",
     minHeight: "400px",
     scrollbarWidth: "thin",
-    scrollbarColor: "rgba(168,85,247,0.3) transparent",
+    scrollbarColor: "rgb(var(--c-primary) / 0.3) transparent",
   },
   messageRow: {
     display: "flex",
@@ -503,8 +503,8 @@ const styles = {
     width: "36px",
     height: "36px",
     borderRadius: "10px",
-    background: "rgba(168,85,247,0.15)",
-    border: "1px solid rgba(168,85,247,0.25)",
+    background: "rgb(var(--c-primary) / 0.15)",
+    border: "1px solid rgb(var(--c-primary) / 0.25)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -514,12 +514,12 @@ const styles = {
     width: "36px",
     height: "36px",
     borderRadius: "10px",
-    background: "linear-gradient(135deg, #A855F7, #D500F9)",
+    background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-    boxShadow: "0 0 15px rgba(168,85,247,0.3)",
+    boxShadow: "0 0 15px rgb(var(--c-primary) / 0.3)",
   },
   messageBubble: {
     maxWidth: "min(70%, 800px)",
@@ -531,15 +531,15 @@ const styles = {
     fontSize: "14px",
   },
   userBubble: {
-    background: "linear-gradient(135deg, #A855F7, #D500F9)",
+    background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
     color: "#FFFFFF",
     borderBottomRightRadius: "4px",
-    boxShadow: "0 4px 12px rgba(168,85,247,0.25)",
+    boxShadow: "0 4px 12px rgb(var(--c-primary) / 0.25)",
   },
   modelBubble: {
     background: "rgba(255,255,255,0.05)",
     color: "rgba(255,255,255,0.95)",
-    border: "1px solid rgba(168,85,247,0.15)",
+    border: "1px solid rgb(var(--c-primary) / 0.15)",
     borderBottomLeftRadius: "4px",
   },
   typingIndicator: {
@@ -552,7 +552,7 @@ const styles = {
     width: "8px",
     height: "8px",
     borderRadius: "50%",
-    background: "#A855F7",
+    background: "rgb(var(--c-primary))",
     display: "inline-block",
     animation: "typing 1.4s infinite ease-in-out",
   },
@@ -566,14 +566,14 @@ const styles = {
     padding: "16px 20px",
     background: "rgba(17,21,43,0.7)",
     borderRadius: "16px",
-    border: "1px solid rgba(168,85,247,0.2)",
+    border: "1px solid rgb(var(--c-primary) / 0.2)",
     boxShadow: "0 4px 20px rgba(10,8,30,0.3)",
   },
   textarea: {
     flex: 1,
     padding: "12px 16px",
     borderRadius: "12px",
-    border: "1px solid rgba(168,85,247,0.2)",
+    border: "1px solid rgb(var(--c-primary) / 0.2)",
     fontSize: "14px",
     fontFamily: "Poppins, Inter, system-ui, sans-serif",
     resize: "none",
@@ -589,7 +589,7 @@ const styles = {
   },
   button: {
     padding: "12px 16px",
-    background: "linear-gradient(135deg, #A855F7, #D500F9)",
+    background: "linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent-pink)))",
     color: "#FFFFFF",
     border: "none",
     borderRadius: "12px",
@@ -599,7 +599,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 4px 12px rgba(168,85,247,0.3)",
+    boxShadow: "0 4px 12px rgb(var(--c-primary) / 0.3)",
     transition: "all 0.2s",
     height: "44px",
     width: "44px",

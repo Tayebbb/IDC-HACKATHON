@@ -224,7 +224,7 @@ const Profile = () => {
         <div className="neon-card p-4 sm:p-8 mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#A855F7] to-[#D500F9] rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary to-accent-pink rounded-full flex items-center justify-center flex-shrink-0">
                 <User size={24} className="text-white sm:w-8 sm:h-8" />
               </div>
               <div className="min-w-0">
@@ -245,14 +245,14 @@ const Profile = () => {
           </div>
 
           {/* Profile Completion Bar */}
-          <div className="mb-6 p-4 bg-[#11152B] rounded-lg border border-primary/20">
+          <div className="mb-6 p-4 bg-section rounded-lg border border-primary/20">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-main">Profile Completion</span>
               <span className={`text-lg font-bold ${profileCompletion === 100 ? 'text-green-400' : 'text-primary'}`}>
                 {profileCompletion}%
               </span>
             </div>
-            <div className="h-3 bg-[#0B0E1C] rounded-full overflow-hidden">
+            <div className="h-3 bg-base rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${profileCompletion}%` }}
@@ -260,7 +260,7 @@ const Profile = () => {
                 className={`h-full rounded-full ${
                   profileCompletion === 100 
                     ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
-                    : 'bg-gradient-to-r from-[#A855F7] to-[#D500F9]'
+                    : 'bg-gradient-to-r from-primary to-accent-pink'
                 }`}
               />
             </div>
@@ -323,7 +323,7 @@ const Profile = () => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute z-50 w-full bg-[#11152B] border border-primary/30 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
+                        className="absolute z-50 w-full bg-section border border-primary/30 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
                       >
                         {skillSuggestions.map((suggestion, idx) => (
                           <button
@@ -352,7 +352,7 @@ const Profile = () => {
                           onClick={() => removeSkill(skill)}
                           className="hover:text-red-400 transition-colors"
                         >
-                          ×
+                          Ã—
                         </button>
                       </span>
                     ))}
@@ -414,7 +414,7 @@ const Profile = () => {
                           onClick={() => setFormData(prev => ({ ...prev, tools: prev.tools.filter(t => t !== tool) }))}
                           className="hover:text-red-400 transition-colors"
                         >
-                          ×
+                          Ã—
                         </button>
                       </span>
                     ))}

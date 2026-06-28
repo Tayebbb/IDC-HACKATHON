@@ -126,8 +126,8 @@ const AdminLogin = () => {
     <div className="min-h-screen bg-base flex items-center justify-center px-4 pt-20">
       {/* Background Glow Effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#A855F7] to-[#D500F9] rounded-full mix-blend-multiply filter blur-3xl opacity-5 animate-blob"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-[#D500F9] to-[#A855F7] rounded-full mix-blend-multiply filter blur-3xl opacity-5 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary to-accent-pink rounded-full mix-blend-multiply filter blur-3xl opacity-5 animate-blob"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-accent-pink to-primary rounded-full mix-blend-multiply filter blur-3xl opacity-5 animate-blob animation-delay-2000"></div>
       </div>
 
       <motion.div

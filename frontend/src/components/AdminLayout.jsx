@@ -97,7 +97,7 @@ const AdminLayout = ({ children }) => {
         variants={sidebarVariants}
         initial={isMobile ? 'closed' : 'open'}
         animate={sidebarOpen ? 'open' : 'closed'}
-        className="fixed lg:static top-20 left-0 h-[calc(100vh-5rem)] w-64 bg-gradient-to-b from-[#11152B] to-[#0B0E1C] border-r border-[rgba(168,85,247,0.1)] z-50 overflow-hidden flex flex-col"
+        className="fixed lg:static top-20 left-0 h-[calc(100vh-5rem)] w-64 bg-gradient-to-b from-section to-base border-r border-primary/10 z-50 overflow-hidden flex flex-col"
         style={{
           scrollbarWidth: 'none',
         }}
@@ -106,14 +106,14 @@ const AdminLayout = ({ children }) => {
         {isMobile && (
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden absolute top-4 right-4 p-2 hover:bg-[rgba(168,85,247,0.1)] rounded-lg transition-colors"
+            className="lg:hidden absolute top-4 right-4 p-2 hover:bg-primary/10 rounded-lg transition-colors"
           >
             <X size={20} className="text-primary" />
           </button>
         )}
 
         {/* Sidebar Header */}
-        <div className="p-6 border-b border-[rgba(168,85,247,0.1)]">
+        <div className="p-6 border-b border-primary/10">
           <Link to="/" className="flex items-center space-x-3 group">
             <div className="relative">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(90deg,#6A00F5,#D500F9)' }}>
@@ -148,8 +148,8 @@ const AdminLayout = ({ children }) => {
                   onClick={() => isMobile && setSidebarOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 group ${
                     isActive
-                      ? 'bg-gradient-to-r from-[#A855F7] to-[#D500F9] text-white'
-                      : 'text-muted hover:text-primary hover:bg-[rgba(168,85,247,0.06)]'
+                      ? 'bg-gradient-to-r from-primary to-accent-pink text-white'
+                      : 'text-muted hover:text-primary hover:bg-primary/10'
                   } ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   style={isActive ? { boxShadow: '0 0 20px rgba(168,85,247,0.3)' } : {}}
                 >
@@ -167,7 +167,7 @@ const AdminLayout = ({ children }) => {
         </nav>
 
         {/* Bottom Section */}
-        <div className="p-4 border-t border-[rgba(168,85,247,0.1)] space-y-2">
+        <div className="p-4 border-t border-primary/10 space-y-2">
           {/* Job Market Insights Button */}
           <a
             href="/job-market-insights"
@@ -194,10 +194,10 @@ const AdminLayout = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <div className="sticky top-0 z-30 bg-[#11152B]/95 backdrop-blur-md border-b border-[rgba(168,85,247,0.1)] px-6 py-4 flex items-center justify-between lg:hidden">
+        <div className="sticky top-0 z-30 bg-section/95 backdrop-blur-md border-b border-primary/10 px-6 py-4 flex items-center justify-between lg:hidden">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-[rgba(168,85,247,0.1)] rounded-lg transition-colors"
+            className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>

@@ -135,7 +135,7 @@ const LearningResources = () => {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-[#0B0E1C] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-base flex items-center justify-center px-4">
         <div className="neon-card p-8 max-w-md text-center">
           <AlertCircle size={48} className="mx-auto text-primary mb-4" />
           <h2 className="text-2xl font-bold text-main mb-2">Sign In Required</h2>
@@ -150,7 +150,7 @@ const LearningResources = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0E1C] flex items-center justify-center">
+      <div className="min-h-screen bg-base flex items-center justify-center">
         <div className="text-center">
           <Loader size={48} className="animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted text-lg">Loading learning resources...</p>
@@ -161,7 +161,7 @@ const LearningResources = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0B0E1C] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-base flex items-center justify-center px-4">
         <div className="neon-card p-8 max-w-md text-center">
           <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
           <h2 className="text-2xl font-bold text-main mb-2">Error</h2>
@@ -175,7 +175,7 @@ const LearningResources = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0E1C] py-24 px-4">
+    <div className="min-h-screen bg-base py-24 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div

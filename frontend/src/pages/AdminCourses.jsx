@@ -227,7 +227,7 @@ const AdminCourses = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#11152B] rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto neon-card"
+                className="bg-section rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto neon-card"
               >
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold glow-text">
@@ -235,7 +235,7 @@ const AdminCourses = () => {
                   </h2>
                   <button
                     onClick={() => setShowForm(false)}
-                    className="p-2 hover:bg-[rgba(168,85,247,0.1)] rounded-lg transition-colors"
+                    className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
                   >
                     <X size={24} className="text-primary" />
                   </button>
@@ -250,7 +250,7 @@ const AdminCourses = () => {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g., Artificial Intelligence & Machine Learning"
-                      className="w-full px-4 py-2 rounded-lg bg-[rgba(168,85,247,0.06)] border border-[rgba(168,85,247,0.2)] focus:outline-none focus:border-primary text-white placeholder-muted"
+                      className="w-full px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 focus:outline-none focus:border-primary text-white placeholder-muted"
                     />
                   </div>
 
@@ -262,7 +262,7 @@ const AdminCourses = () => {
                       onChange={(e) => setFormData({ ...formData, Overview: e.target.value })}
                       placeholder="Course overview and description"
                       rows="3"
-                      className="w-full px-4 py-2 rounded-lg bg-[rgba(168,85,247,0.06)] border border-[rgba(168,85,247,0.2)] focus:outline-none focus:border-primary text-white placeholder-muted"
+                      className="w-full px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 focus:outline-none focus:border-primary text-white placeholder-muted"
                     />
                   </div>
 
@@ -274,7 +274,7 @@ const AdminCourses = () => {
                       onChange={(e) => setFormData({ ...formData, Outline: e.target.value })}
                       placeholder="Course outline and topics"
                       rows="3"
-                      className="w-full px-4 py-2 rounded-lg bg-[rgba(168,85,247,0.06)] border border-[rgba(168,85,247,0.2)] focus:outline-none focus:border-primary text-white placeholder-muted"
+                      className="w-full px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 focus:outline-none focus:border-primary text-white placeholder-muted"
                     />
                   </div>
 
@@ -282,7 +282,7 @@ const AdminCourses = () => {
                   <div>
                     <label className="block text-sm font-medium mb-2">Course Image</label>
                     <div className="flex items-center space-x-2">
-                      <label className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-[rgba(168,85,247,0.06)] border border-[rgba(168,85,247,0.2)] cursor-pointer hover:bg-[rgba(168,85,247,0.1)] transition-colors">
+                      <label className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors">
                         <Upload size={20} className="text-primary" />
                         <span>{uploadingImage ? 'Uploading...' : 'Choose Image'}</span>
                         <input
@@ -309,7 +309,7 @@ const AdminCourses = () => {
 
                   {/* Enrollment Fields - Only show when editing */}
                   {editingCourse && (
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[rgba(168,85,247,0.1)]">
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-primary/10">
                       <div>
                         <label className="block text-sm font-medium mb-2">Enrolled Email 1</label>
                         <input
@@ -317,7 +317,7 @@ const AdminCourses = () => {
                           value={Enrollment.Enrollment_1}
                           disabled
                           placeholder="No enrollment yet"
-                          className="w-full px-4 py-2 rounded-lg bg-[rgba(168,85,247,0.06)] border border-[rgba(168,85,247,0.2)] text-muted cursor-not-allowed opacity-60"
+                          className="w-full px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 text-muted cursor-not-allowed opacity-60"
                         />
                       </div>
                       <div>
@@ -327,7 +327,7 @@ const AdminCourses = () => {
                           value={Enrollment.Enrollment_2}
                           disabled
                           placeholder="No enrollment yet"
-                          className="w-full px-4 py-2 rounded-lg bg-[rgba(168,85,247,0.06)] border border-[rgba(168,85,247,0.2)] text-muted cursor-not-allowed opacity-60"
+                          className="w-full px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 text-muted cursor-not-allowed opacity-60"
                         />
                       </div>
                     </div>
@@ -351,7 +351,7 @@ const AdminCourses = () => {
                     <button
                       type="button"
                       onClick={() => setShowForm(false)}
-                      className="px-4 py-2 rounded-lg font-semibold border border-[rgba(168,85,247,0.3)] text-primary hover:bg-[rgba(168,85,247,0.06)] transition-colors"
+                      className="px-4 py-2 rounded-lg font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
                     >
                       Cancel
                     </button>
@@ -388,7 +388,7 @@ const AdminCourses = () => {
               >
                 {/* Course Image */}
                 {course.Image_1 && (
-                  <div className="relative h-32 overflow-hidden bg-[rgba(168,85,247,0.1)]">
+                  <div className="relative h-32 overflow-hidden bg-primary/10">
                     <img
                       src={course.Image_1}
                       alt={course.name}

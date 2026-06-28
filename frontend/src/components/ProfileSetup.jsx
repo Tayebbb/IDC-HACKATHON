@@ -144,7 +144,7 @@ const ProfileSetup = ({ initialData = null, onUpdate = null }) => {
                   onClick={() => removeSkill(skill)}
                   className="hover:text-red-400 transition-colors"
                 >
-                  ×
+                  Ã—
                 </button>
               </span>
             ))}
@@ -166,7 +166,7 @@ const ProfileSetup = ({ initialData = null, onUpdate = null }) => {
                     setSkills([...skills, lower]);
                   }
                 }}
-                className="px-2 py-1 bg-[#11152B] border border-primary/20 rounded text-xs text-muted hover:text-primary hover:border-primary/40 transition-all"
+                className="px-2 py-1 bg-section border border-primary/20 rounded text-xs text-muted hover:text-primary hover:border-primary/40 transition-all"
               >
                 + {skill}
               </button>
@@ -188,7 +188,7 @@ const ProfileSetup = ({ initialData = null, onUpdate = null }) => {
               className={`p-4 rounded-lg border-2 transition-all ${
                 experienceLevel === level.value
                   ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-primary/20 bg-[#11152B] text-muted hover:border-primary/40'
+                  : 'border-primary/20 bg-section text-muted hover:border-primary/40'
               }`}
             >
               <div className="font-semibold">{level.label}</div>
@@ -229,7 +229,7 @@ const ProfileSetup = ({ initialData = null, onUpdate = null }) => {
       {/* Info Box */}
       <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
         <p className="text-sm text-blue-300">
-          ℹ <strong>Note:</strong> This information will be used to calculate job match scores on the Job Matches page. 
+          â„¹ <strong>Note:</strong> This information will be used to calculate job match scores on the Job Matches page. 
           The more accurate your profile, the better job recommendations you'll receive!
         </p>
       </div>

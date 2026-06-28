@@ -114,7 +114,7 @@ const Jobs = () => {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-[#0B0E1C] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-base flex items-center justify-center px-4">
         <div className="neon-card p-8 max-w-md text-center">
           <AlertCircle size={48} className="mx-auto text-primary mb-4" />
           <h2 className="text-2xl font-bold text-main mb-2">Sign In Required</h2>
@@ -129,7 +129,7 @@ const Jobs = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0E1C] flex items-center justify-center">
+      <div className="min-h-screen bg-base flex items-center justify-center">
         <div className="text-center">
           <Loader size={48} className="animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted text-lg">Loading your job matches...</p>
@@ -140,7 +140,7 @@ const Jobs = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0B0E1C] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-base flex items-center justify-center px-4">
         <div className="neon-card p-8 max-w-md text-center">
           <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
           <h2 className="text-2xl font-bold text-main mb-2">Error</h2>
@@ -154,7 +154,7 @@ const Jobs = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0E1C] py-24 px-4">
+    <div className="min-h-screen bg-base py-24 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -193,7 +193,7 @@ const Jobs = () => {
                 <p className="text-sm text-muted mb-2">Skills ({userProfile.skills?.length || 0})</p>
                 <div className="flex flex-wrap gap-2">
                   {userProfile.skills?.slice(0, 5).map((skill, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-[#11152B] border border-primary/30 rounded text-xs text-main">
+                    <span key={idx} className="px-2 py-1 bg-section border border-primary/30 rounded text-xs text-main">
                       {skill}
                     </span>
                   ))}
@@ -405,7 +405,7 @@ const JobCard = ({ job, index, learningResources, currentUser }) => {
         {/* Left: Match Score */}
         <div className="lg:w-32 flex lg:flex-col items-center lg:items-start gap-4">
           <div className={`relative w-24 h-24 rounded-full bg-gradient-to-br ${matchLevel.color} p-1 ${matchLevel.glow}`}>
-            <div className="w-full h-full rounded-full bg-[#11152B] flex flex-col items-center justify-center">
+            <div className="w-full h-full rounded-full bg-section flex flex-col items-center justify-center">
               <span className="text-3xl font-bold text-white">{job.matchScore}%</span>
             </div>
           </div>
@@ -478,7 +478,7 @@ const JobCard = ({ job, index, learningResources, currentUser }) => {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="mb-4 p-4 bg-[#11152B] rounded-lg border border-primary/20"
+              className="mb-4 p-4 bg-section rounded-lg border border-primary/20"
             >
               <p className="text-sm text-muted whitespace-pre-line">{job.description}</p>
             </motion.div>
@@ -599,7 +599,7 @@ const JobCard = ({ job, index, learningResources, currentUser }) => {
                 <span>Skills</span>
                 <span>{job.matchDetails.breakdown.skillScore}/60</span>
               </div>
-              <div className="h-2 bg-[#11152B] rounded-full overflow-hidden">
+              <div className="h-2 bg-section rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-primary to-accent-pink rounded-full transition-all duration-500"
                   style={{ width: `${(job.matchDetails.breakdown.skillScore / 60) * 100}%` }}
@@ -611,7 +611,7 @@ const JobCard = ({ job, index, learningResources, currentUser }) => {
                 <span>Experience</span>
                 <span>{job.matchDetails.breakdown.expScore}/20</span>
               </div>
-              <div className="h-2 bg-[#11152B] rounded-full overflow-hidden">
+              <div className="h-2 bg-section rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-primary to-accent-pink rounded-full transition-all duration-500"
                   style={{ width: `${(job.matchDetails.breakdown.expScore / 20) * 100}%` }}
@@ -623,7 +623,7 @@ const JobCard = ({ job, index, learningResources, currentUser }) => {
                 <span>Track</span>
                 <span>{job.matchDetails.breakdown.trackScore}/20</span>
               </div>
-              <div className="h-2 bg-[#11152B] rounded-full overflow-hidden">
+              <div className="h-2 bg-section rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-primary to-accent-pink rounded-full transition-all duration-500"
                   style={{ width: `${(job.matchDetails.breakdown.trackScore / 20) * 100}%` }}

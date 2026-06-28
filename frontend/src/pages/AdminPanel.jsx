@@ -271,7 +271,7 @@ const AdminPanel = () => {
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#1a1a2e] rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               >
-                <div className="sticky top-0 bg-gradient-to-r from-[#A855F7] to-[#D500F9] p-6 flex items-center justify-between">
+                <div className="sticky top-0 bg-gradient-to-r from-primary to-accent-pink p-6 flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                     <Briefcase size={28} />
                     {editingJob ? 'Edit Job' : 'Post New Job'}
@@ -415,7 +415,7 @@ const AdminPanel = () => {
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="absolute z-50 w-full bg-[#11152B] border border-primary/30 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
+                            className="absolute z-50 w-full bg-section border border-primary/30 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
                           >
                             {skillSuggestions.map((suggestion, idx) => (
                               <button
@@ -545,7 +545,7 @@ const AdminPanel = () => {
                       </span>
                       <span className="flex items-center gap-1">
                         <DollarSign size={16} />
-                        ৳{job.salary}
+                        à§³{job.salary}
                       </span>
                       <span className="flex items-center gap-1 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full">
                         <Users size={16} />
