@@ -10,7 +10,7 @@ FastAPI backend for CareerPath. Deploy this folder as the root of the Hugging Fa
 
 ## Deployment
 
-Required Space secret:
+ Space secret:
 
 ```text
 HF_TOKEN=<your Hugging Face read token>
