@@ -23,21 +23,17 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const signup = useCallback(async (email, password, name) => {
-    try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(result.user, { displayName: name });
-      
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', result.user.uid), {
-        name,
-        email,
-        createdAt: new Date().toISOString()
-      });
-      
-      return result;
-    } catch (error) {
-      throw error;
-    }
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(result.user, { displayName: name });
+
+    // Create user document in Firestore
+    await setDoc(doc(db, 'users', result.user.uid), {
+      name,
+      email,
+      createdAt: new Date().toISOString()
+    });
+
+    return result;
   }, []);
 
   const login = useCallback((email, password) => {

@@ -88,7 +88,7 @@ export default function WhatIfSimulator({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // Recompute the simulated DNA scores based on toggled skills.
