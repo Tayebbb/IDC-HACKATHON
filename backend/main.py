@@ -1380,7 +1380,8 @@ def _with_source_reasons(sources: List[Dict[str, Any]], query: str) -> List[Dict
     enriched = []
     for source in sources:
         item = dict(source)
-        item['why_this_source'] = _source_reason(item, query)
+        if not item.get('why_this_source'):
+            item['why_this_source'] = _source_reason(item, query)
         enriched.append(item)
     return enriched
 
@@ -1668,24 +1669,94 @@ def grade_sources(query: str, sources: list) -> bool:
 _WIKI_CACHE = {}
 _WIKI_CACHE_TTL_SECONDS = 1800
 
-def _is_informational_query(query: str) -> bool:
-    q = query.lower().strip()
-    informational_prefixes = [
-        "what is", "define", "explain", "how does", "what does",
-        "difference between", "how do", "meaning of", "what are"
-    ]
-    return any(q.startswith(p) for p in informational_prefixes) or "theorem" in q or "architecture" in q
 
-def _should_use_wikipedia_fallback(query: str, sources: list) -> bool:
-    if not _is_informational_query(query):
+_WIKI_BLOCK_TERMS = {
+    "apply", "career", "careers", "companies", "company", "cv", "hire",
+    "hired", "hiring", "interview", "interviews", "job", "jobs", "portfolio",
+    "resume", "roadmap", "salary", "salaries",
+}
+_WIKI_INFO_PATTERNS = (
+    "what is", "what are", "what does", "what's", "whats", "define",
+    "explain", "how does", "how do", "meaning of", "difference between",
+    "can you explain", "tell me about", "describe",
+)
+_WIKI_CONCEPT_HINTS = {
+    "acid", "architecture", "bm25", "cap", "ci/cd", "concurrency",
+    "consensus", "cors", "crdt", "database", "docker", "embedding",
+    "eventual", "fastapi", "graphql", "jwt", "kubernetes", "microservice",
+    "microservices", "nosql", "oauth", "paxos", "rag", "raft", "react",
+    "rest", "theorem", "transformer", "vector",
+}
+_WIKI_CONCEPT_STOPWORDS = {
+    "about", "are", "between", "can", "define", "describe", "difference",
+    "do", "does", "explain", "how", "is", "meaning", "me", "of", "tell",
+    "the", "what", "whats", "work", "works",
+}
+
+
+def _is_informational_query(raw_message: str) -> bool:
+    msg = raw_message.lower().strip()
+    tokens = set(_tokenize(msg))
+
+    # Career action queries should stay on CareerPath corpus / normal fallback.
+    if tokens & _WIKI_BLOCK_TERMS:
         return False
+
+    has_info_pattern = any(msg.startswith(pattern) for pattern in _WIKI_INFO_PATTERNS)
+    has_concept_hint = bool(tokens & _WIKI_CONCEPT_HINTS)
+    return has_info_pattern or has_concept_hint
+
+
+def _wiki_concept_terms(query: str) -> set:
+    return {
+        token for token in _tokenize(query or "")
+        if token and token not in _WIKI_CONCEPT_STOPWORDS
+    }
+
+
+def _sources_cover_concept(query: str, sources: list) -> bool:
+    terms = _wiki_concept_terms(query)
+    if not terms or not sources:
+        return False
+
+    combined = []
+    for source in (sources or [])[:5]:
+        if not isinstance(source, dict):
+            continue
+        meta = _source_meta(source)
+        skills = meta.get("skills") or source.get("skills") or []
+        combined.extend([
+            str(source.get("title", "")),
+            _source_text(source),
+            " ".join(str(skill) for skill in skills),
+        ])
+
+    source_tokens = set(_tokenize(" ".join(combined)))
+    if not source_tokens:
+        return False
+
+    overlap = terms & source_tokens
+    coverage = len(overlap) / max(len(terms), 1)
+    return coverage >= 0.67
+
+
+def _should_use_wikipedia_fallback(raw_message: str, query: str, sources: list) -> bool:
+    if not _is_informational_query(raw_message):
+        return False
+
+    # Let curated CareerPath sources win when they actually mention the concept.
+    if _sources_cover_concept(query, sources):
+        return False
+
     scores = [
         float(s.get("score", 0) or 0)
         for s in sources or []
     ]
     top_score = max(scores, default=0.0)
     meaningful_count = sum(1 for score in scores if score >= 0.40)
-    return top_score < 0.40 and meaningful_count < 2
+    corpus_is_weak = top_score < 0.40 and meaningful_count < 2
+
+    return corpus_is_weak or not grade_sources(query, sources)
 
 async def _wikipedia_search(query: str) -> 'str | None':
     import httpx
@@ -1704,27 +1775,27 @@ async def _wikipedia_search(query: str) -> 'str | None':
     return None
 
 async def _wikipedia_fetch_summary(title: str) -> 'dict | None':
-    import time, httpx
-    now = time.time()
-    if title in _WIKI_CACHE:
-        cached, ts = _WIKI_CACHE[title]
-        if now - ts < _WIKI_CACHE_TTL_SECONDS:
-            return cached
-
+    import httpx
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{title.replace(' ', '_')}"
     headers = {"User-Agent": "CareerPathBot/1.0 (contact@careerpath.com)"}
     try:
         async with httpx.AsyncClient(timeout=3.0, headers=headers) as client:
             resp = await client.get(url)
             if resp.status_code == 200:
-                data = resp.json()
-                _WIKI_CACHE[title] = (data, now)
-                return data
+                return resp.json()
     except Exception as e:
         log.warning(f"[WIKI] Fetch failed: {e}")
     return None
 
 async def _wikipedia_fallback(query: str) -> 'dict | None':
+    norm_query = query.lower().strip()
+    import time
+    now = time.time()
+    if norm_query in _WIKI_CACHE:
+        cached, ts = _WIKI_CACHE[norm_query]
+        if now - ts < _WIKI_CACHE_TTL_SECONDS:
+            return cached
+
     title = await _wikipedia_search(query)
     if not title:
         return None
@@ -1735,19 +1806,26 @@ async def _wikipedia_fallback(query: str) -> 'dict | None':
     extract = summary.get("extract", "")
     url = summary.get("content_urls", {}).get("desktop", {}).get("page", "")
     
-    return {
+    wiki_chunk = {
         "id": f"wiki:{title.lower().replace(' ', '-')}",
         "type": "wikipedia",
         "title": f"Wikipedia: {title} (external reference)",
         "description": extract,
         "text": extract,
         "url": url,
+        "why_this_source": (
+            f"Used external Wikipedia reference '{title}' because curated "
+            "CareerPath sources did not confidently cover this concept."
+        ),
         "track": "",
         "level": "",
         "skills": [],
-        "score": 0.5,
-        "_hybrid_score": 0.5
+        "score": 0.0,
+        "_hybrid_score": 0.0
     }
+    
+    _WIKI_CACHE[norm_query] = (wiki_chunk, now)
+    return wiki_chunk
 # --------------------------------
 
 # Chat answer builder
@@ -2053,7 +2131,7 @@ async def chat(body: ChatRequest):
                 sources = _with_source_reasons(fallback_sources, query)
                 retrieval_path = 'keyword'
                 
-        if _should_use_wikipedia_fallback(query, sources):
+        if _should_use_wikipedia_fallback(user_message, query, sources):
             wiki_chunk = await _wikipedia_fallback(query)
             if wiki_chunk:
                 top_chunks = [wiki_chunk]
