@@ -145,6 +145,7 @@ class SourceItem(BaseModel):
     snippet: str
     score: float
     why_this_source: str | None = None
+    url: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -1663,6 +1664,92 @@ def grade_sources(query: str, sources: list) -> bool:
     return False
 
 
+# --- WIKIPEDIA FALLBACK LOGIC ---
+_WIKI_CACHE = {}
+_WIKI_CACHE_TTL_SECONDS = 1800
+
+def _is_informational_query(query: str) -> bool:
+    q = query.lower().strip()
+    informational_prefixes = [
+        "what is", "define", "explain", "how does", "what does",
+        "difference between", "how do", "meaning of", "what are"
+    ]
+    return any(q.startswith(p) for p in informational_prefixes) or "theorem" in q or "architecture" in q
+
+def _should_use_wikipedia_fallback(query: str, sources: list) -> bool:
+    if not _is_informational_query(query):
+        return False
+    scores = [
+        float(s.get("score", 0) or 0)
+        for s in sources or []
+    ]
+    top_score = max(scores, default=0.0)
+    meaningful_count = sum(1 for score in scores if score >= 0.40)
+    return top_score < 0.40 and meaningful_count < 2
+
+async def _wikipedia_search(query: str) -> 'str | None':
+    import httpx
+    url = "https://en.wikipedia.org/w/api.php"
+    params = {"action": "opensearch", "search": query, "limit": 1, "namespace": 0, "format": "json"}
+    headers = {"User-Agent": "CareerPathBot/1.0 (contact@careerpath.com)"}
+    try:
+        async with httpx.AsyncClient(timeout=3.0, headers=headers) as client:
+            resp = await client.get(url, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                if len(data) > 1 and len(data[1]) > 0:
+                    return data[1][0]
+    except Exception as e:
+        log.warning(f"[WIKI] Search failed: {e}")
+    return None
+
+async def _wikipedia_fetch_summary(title: str) -> 'dict | None':
+    import time, httpx
+    now = time.time()
+    if title in _WIKI_CACHE:
+        cached, ts = _WIKI_CACHE[title]
+        if now - ts < _WIKI_CACHE_TTL_SECONDS:
+            return cached
+
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{title.replace(' ', '_')}"
+    headers = {"User-Agent": "CareerPathBot/1.0 (contact@careerpath.com)"}
+    try:
+        async with httpx.AsyncClient(timeout=3.0, headers=headers) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                _WIKI_CACHE[title] = (data, now)
+                return data
+    except Exception as e:
+        log.warning(f"[WIKI] Fetch failed: {e}")
+    return None
+
+async def _wikipedia_fallback(query: str) -> 'dict | None':
+    title = await _wikipedia_search(query)
+    if not title:
+        return None
+    summary = await _wikipedia_fetch_summary(title)
+    if not summary or "extract" not in summary:
+        return None
+        
+    extract = summary.get("extract", "")
+    url = summary.get("content_urls", {}).get("desktop", {}).get("page", "")
+    
+    return {
+        "id": f"wiki:{title.lower().replace(' ', '-')}",
+        "type": "wikipedia",
+        "title": f"Wikipedia: {title} (external reference)",
+        "description": extract,
+        "text": extract,
+        "url": url,
+        "track": "",
+        "level": "",
+        "skills": [],
+        "score": 0.5,
+        "_hybrid_score": 0.5
+    }
+# --------------------------------
+
 # Chat answer builder
 def _source_text(source: Dict[str, Any]) -> str:
     return str(source.get('text') or source.get('description') or source.get('snippet') or '')
@@ -1965,6 +2052,13 @@ async def chat(body: ChatRequest):
             if fallback_sources:
                 sources = _with_source_reasons(fallback_sources, query)
                 retrieval_path = 'keyword'
+                
+        if _should_use_wikipedia_fallback(query, sources):
+            wiki_chunk = await _wikipedia_fallback(query)
+            if wiki_chunk:
+                top_chunks = [wiki_chunk]
+                sources = _with_source_reasons([wiki_chunk], query)
+                retrieval_path = 'wikipedia'
 
         factors = [
             {
@@ -1998,6 +2092,9 @@ async def chat(body: ChatRequest):
         else:
             confidence = 'Low'
 
+        if retrieval_path == 'wikipedia':
+            confidence = 'Medium'
+
         response_sources = [
             {
                 'id': s.get('parent_id', s.get('chunk_id', s.get('id', ''))),
@@ -2006,6 +2103,7 @@ async def chat(body: ChatRequest):
                 'snippet': _source_text(s)[:120],
                 'score': float(s.get('score', 0.0) or 0.0),
                 'why_this_source': s.get('why_this_source'),
+                'url': s.get('url'),
             }
             for s in sources
         ]
