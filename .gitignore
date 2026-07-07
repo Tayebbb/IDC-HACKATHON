@@ -42,3 +42,7 @@ logs
 __pycache__/
 *.py[cod]
 frontend/public/corpus.json
+
+# Runtime-generated backend caches (do not commit)
+backend/data/interview_references.json
+
