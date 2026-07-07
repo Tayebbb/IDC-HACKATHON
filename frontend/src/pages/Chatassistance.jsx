@@ -74,6 +74,17 @@ export default function Chatassistance() {
     { role: "model", content: GREETING },
   ]);
 
+  // Intelligence context — loaded once from Firestore and re-used on every
+  // /chat call so the assistant can personalise replies. Everything is
+  // optional: an empty profile just gives generic guidance (backward compat).
+  const [profileCtx, setProfileCtx] = useState({
+    profile: null,       // users/{uid} doc: skills, tools, experienceLevel, preferredTrack, targetRole…
+    cv_analysis: null,   // latest CV analysis (keySkills, toolsTechnologies, rolesAndDomains)
+    career_dna: null,    // 5-category DNA scores
+    skill_gap: null,     // {targetRole, matchedSkills, missingSkills, matchScore}
+    target_role: null,
+  });
+
   // UI state
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -310,6 +321,49 @@ export default function Chatassistance() {
     }
   };
 
+  /* ----------- Load intelligence context (profile + CV + DNA) ----------- */
+  useEffect(() => {
+    let cancelled = false;
+    async function loadContext() {
+      if (!currentUser) {
+        setProfileCtx({
+          profile: null, cv_analysis: null, career_dna: null,
+          skill_gap: null, target_role: null,
+        });
+        return;
+      }
+      try {
+        const snap = await getDoc(doc(db, "users", currentUser.uid));
+        if (cancelled) return;
+        if (!snap.exists()) return;
+        const data = snap.data() || {};
+        // Extract a lightweight profile view (only fields the assistant needs)
+        const profile = {
+          name: data.name || currentUser.displayName || null,
+          skills: Array.isArray(data.skills) ? data.skills.slice(0, 40) : [],
+          tools: Array.isArray(data.tools) ? data.tools.slice(0, 40) : [],
+          experienceLevel: data.experienceLevel || null,
+          preferredTrack: data.preferredTrack || null,
+          targetRole: data.targetRole || null,
+          education: data.education || null,
+        };
+        const cv_analysis = data.cvAnalysis || (data.cvAnalyzed ? {
+          keySkills: Array.isArray(data.skills) ? data.skills : [],
+          toolsTechnologies: Array.isArray(data.tools) ? data.tools : [],
+          rolesAndDomains: data.rolesAndDomains || [],
+        } : null);
+        const career_dna = data.careerDNA || null;
+        const skill_gap = data.skillGap || null;
+        const target_role = data.targetRole || data.preferredTrack || null;
+        setProfileCtx({ profile, cv_analysis, career_dna, skill_gap, target_role });
+      } catch (e) {
+        console.warn("[chat] context load failed", e);
+      }
+    }
+    loadContext();
+    return () => { cancelled = true; };
+  }, [currentUser]);
+
   /* ----------- Chat send / stop ----------- */
 
   const sendMessage = async (overrideText) => {
@@ -325,18 +379,38 @@ export default function Chatassistance() {
 
     let controller = null;
     try {
+      // Keep the greeting out of history (it's always injected client-side)
       const history = messages
-        .map((m) => ({ role: m.role, content: m.content }))
+        .filter((m) => m.content !== GREETING)
+        .map((m) => ({
+          role: m.role === "model" ? "assistant" : m.role,
+          content: m.content,
+        }))
         .slice(-40);
 
       if (abortRef.current) abortRef.current.abort();
       controller = new AbortController();
       abortRef.current = controller;
 
+      const payload = {
+        message: userMessage,
+        history,
+        // Intelligence context — all optional. Backend gracefully degrades
+        // when any/all of these are missing (old clients keep working).
+        profile: profileCtx.profile || undefined,
+        cv_analysis: profileCtx.cv_analysis || undefined,
+        career_dna: profileCtx.career_dna || undefined,
+        skill_gap: profileCtx.skill_gap || undefined,
+        target_role: profileCtx.target_role || undefined,
+        // Convenience mirrors for legacy backend paths
+        preferredTrack: profileCtx.profile?.preferredTrack || undefined,
+        experienceLevel: profileCtx.profile?.experienceLevel || undefined,
+      };
+
       const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage, history }),
+        body: JSON.stringify(payload),
         signal: controller.signal,
       });
 
@@ -362,6 +436,11 @@ export default function Chatassistance() {
           (data.sources?.length
             ? `${data.sources.length} retrieved source(s) via ${data.retrieval_path || "backend RAG"}`
             : "no corpus sources retrieved"),
+        followUps: Array.isArray(data.follow_ups) ? data.follow_ups : [],
+        personalization: Array.isArray(data.personalization) ? data.personalization : [],
+        route: data.route || "general",
+        usedMemory: !!data.used_memory,
+        generationModel: data.generation_model || null,
       };
       const updated = [...newMessages, modelMsg];
       setMessages(updated);
@@ -425,6 +504,18 @@ export default function Chatassistance() {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
     }
   }, [messages, isAtBottom, loading]);
+
+  // Follow-up chip click bridge (MessageRow dispatches a window event so it
+  // does not need a direct reference to sendMessage).
+  useEffect(() => {
+    const handler = (e) => {
+      const q = typeof e.detail === "string" ? e.detail.trim() : "";
+      if (q) sendMessage(q);
+    };
+    window.addEventListener("cp-followup-pick", handler);
+    return () => window.removeEventListener("cp-followup-pick", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, profileCtx]);
 
   const scrollToBottom = () => {
     const el = chatBoxRef.current;
@@ -784,29 +875,116 @@ function MessageRow({ msg, idx, onCopy, copied }) {
             <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
 
+          {/* Meta row: confidence + memory + personalization */}
+          {!isUser && (msg.confidence || msg.usedMemory || msg.personalization?.length > 0) && (
+            <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+              {msg.confidence && (
+                <ConfidenceBadge value={msg.confidence} />
+              )}
+              {msg.usedMemory && (
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  memory
+                </span>
+              )}
+              {msg.personalization?.slice(0, 3).map((tag, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-accent-pink/10 text-accent-pink border border-accent-pink/20"
+                  title="Personalization signal used"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Follow-up question chips */}
+          {msg.followUps && msg.followUps.length > 0 && (
+            <div className="mt-3 grid gap-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-subtle">
+                Answer these to sharpen my advice
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {msg.followUps.map((q, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      const ev = new CustomEvent("cp-followup-pick", { detail: q });
+                      window.dispatchEvent(ev);
+                    }}
+                    className="text-[11.5px] px-2.5 py-1 rounded-full border border-primary/30 bg-primary/5 text-text-main hover:bg-primary/15 transition-colors"
+                    title="Send this question"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Sources */}
           {msg.sources && msg.sources.length > 0 && (
             <div className="mt-3 grid gap-1.5">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-subtle">
-                Sources
+                Evidence · {msg.sources.length} source{msg.sources.length > 1 ? "s" : ""}
               </p>
               {msg.sources.slice(0, 5).map((src, i) => (
-                <div
+                <details
                   key={src.id || i}
-                  className="text-[11.5px] text-text-muted bg-text-main/[0.04] border border-text-main/[0.08] rounded-md px-2.5 py-1.5 flex items-center gap-2"
+                  className="text-[11.5px] text-text-muted bg-text-main/[0.04] border border-text-main/[0.08] rounded-md px-2.5 py-1.5"
                 >
-                  <span className="text-primary font-semibold capitalize">
-                    {src.type}
-                  </span>
-                  <span className="opacity-50">·</span>
-                  <span className="flex-1 truncate">{src.title}</span>
-                </div>
+                  <summary className="flex items-center gap-2 cursor-pointer list-none">
+                    <span className="text-primary font-semibold">[S{i + 1}]</span>
+                    <span className="text-primary/80 font-semibold capitalize text-[10.5px]">
+                      {src.type}
+                    </span>
+                    <span className="opacity-50">·</span>
+                    <span className="flex-1 truncate">{src.title}</span>
+                    {typeof src.score === "number" && src.score > 0 && (
+                      <span className="text-[10px] text-text-subtle tabular-nums">
+                        {src.score.toFixed(2)}
+                      </span>
+                    )}
+                  </summary>
+                  {(src.snippet || src.why_this_source) && (
+                    <div className="mt-1.5 pl-6 space-y-1">
+                      {src.snippet && (
+                        <p className="text-[11px] text-text-main/80 leading-snug">
+                          {src.snippet}
+                        </p>
+                      )}
+                      {src.why_this_source && (
+                        <p className="text-[10.5px] italic text-text-subtle">
+                          Why: {src.why_this_source}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </details>
               ))}
             </div>
           )}
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function ConfidenceBadge({ value }) {
+  const map = {
+    High: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
+    Medium: "bg-amber-500/15 text-amber-500 border-amber-500/30",
+    Low: "bg-rose-500/15 text-rose-500 border-rose-500/30",
+  };
+  const cls = map[value] || "bg-text-main/10 text-text-muted border-text-main/20";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[10.5px] font-medium px-2 py-0.5 rounded-full border ${cls}`}
+      title={`Confidence: ${value}`}
+    >
+      {value.toLowerCase()} confidence
+    </span>
   );
 }
 

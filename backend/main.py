@@ -94,6 +94,48 @@ class ChatRequest(BaseModel):
     preferredTrack: str | None = Field(None, max_length=64)
     experienceLevel: str | None = Field(None, max_length=32)
     sourceType: str | None = Field(None, max_length=32)
+    # --- Intelligent context (all optional, all backward-compatible) --------
+    # The frontend can attach any subset of these to give the assistant a
+    # richer view of the user. Every field defaults to None/empty so old
+    # clients that only send `{message, history}` continue to work.
+    profile: dict | None = Field(
+        None,
+        description=(
+            "Free-form user profile from Firestore: name, skills, tools, "
+            "experienceLevel, preferredTrack, targetRole, education, etc."
+        ),
+    )
+    cv_analysis: dict | None = Field(
+        None,
+        description=(
+            "Latest CV analysis (keySkills, toolsTechnologies, "
+            "rolesAndDomains, rawTextSnippet)."
+        ),
+    )
+    career_dna: dict | None = Field(
+        None,
+        description="Latest Career DNA scores (5-category dict).",
+    )
+    skill_gap: dict | None = Field(
+        None,
+        description=(
+            "Latest skill-gap analysis "
+            "({targetRole, matchedSkills, missingSkills, matchScore})."
+        ),
+    )
+    target_role: str | None = Field(
+        None,
+        max_length=120,
+        description="The role the user is aiming for (overrides profile.targetRole).",
+    )
+    conversation_summary: str | None = Field(
+        None,
+        max_length=2000,
+        description=(
+            "Optional rolling summary of prior turns. If omitted the backend "
+            "will summarize `history` when it exceeds MEMORY_TURN_WINDOW."
+        ),
+    )
 
 
 class SourceItem(BaseModel):
@@ -116,6 +158,37 @@ class ChatResponse(BaseModel):
     signal_types_used: list[str]
     generation_model: str
     grounding_verification: dict | None = None
+    # --- New intelligence fields (all optional, default empty) --------------
+    # Every existing client keeps working because these are additive.
+    follow_ups: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Clarifying questions the assistant would like the user to answer "
+            "next (empty when the assistant already has enough context)."
+        ),
+    )
+    route: str = Field(
+        default="general",
+        description=(
+            "Tool/intent chosen for this turn (general | resume | skill_gap | "
+            "roadmap | interview | job_match | knowledge)."
+        ),
+    )
+    used_memory: bool = Field(
+        default=False,
+        description="True when prior conversation memory contributed to the answer.",
+    )
+    memory_summary: str | None = Field(
+        None,
+        description="Rolling summary of the conversation used for this turn.",
+    )
+    personalization: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Human-readable list of profile signals used "
+            "(e.g. 'Resume skill: React', 'Career DNA: Analytical 80/100')."
+        ),
+    )
 
 # Configure CORS middleware FIRST (before routes)
 # Defaults to wildcard for local dev / hackathon demos. In production set
@@ -1762,7 +1835,21 @@ async def options_chat():
     response_description="Answer, sources, explainability factors, confidence, and retrieval path",
 )
 async def chat(body: ChatRequest):
-    """Hybrid RAG career assistant."""
+    """Hybrid RAG career assistant — memory-aware, personalised, grounded.
+
+    Pipeline (v3):
+        1. Parse profile / CV / DNA / skill-gap context (all optional).
+        2. Intent-route the user message.
+        3. Build a rolling memory summary of older turns.
+        4. Retrieve top-K corpus chunks via hybrid BM25 + dense.
+        5. Detect missing context → generate follow-up questions.
+        6. Assemble OpenAI-style messages array (system + context + turns + user).
+        7. Call Llama-3.1-8B (HF router) with tuned params for natural, non-repetitive replies.
+        8. Fall back to the legacy template answer on any failure.
+
+    All new context fields are optional so older clients that send only
+    ``{message, history}`` continue to work unchanged.
+    """
     try:
         started_at = _time.perf_counter()
         user_message = (body.message or '').strip()
@@ -1772,11 +1859,38 @@ async def chat(body: ChatRequest):
         if not user_message:
             raise HTTPException(status_code=400, detail='message field is required')
 
+        # --- 1. Profile / DNA / CV context --------------------------------
+        profile = body.profile if isinstance(body.profile, dict) else None
+        cv_analysis = body.cv_analysis if isinstance(body.cv_analysis, dict) else None
+        career_dna = body.career_dna if isinstance(body.career_dna, dict) else None
+        skill_gap = body.skill_gap if isinstance(body.skill_gap, dict) else None
+        target_role = _extract_target_role(body.target_role, profile, skill_gap)
+
+        # Fall back to legacy `preferred_track` / `experience_level` when
+        # profile is not passed (keeps old clients working).
         preferred_track = body.preferred_track or body.preferredTrack
+        if not preferred_track and isinstance(profile, dict):
+            preferred_track = profile.get('preferredTrack') or profile.get('track')
         experience_level = body.experience_level or body.experienceLevel
+        if not experience_level and isinstance(profile, dict):
+            experience_level = profile.get('experienceLevel') or profile.get('level')
         source_type = body.source_type or body.sourceType
+
+        user_context_block, personalization_signals = _build_user_context_block(
+            profile=profile,
+            cv_analysis=cv_analysis,
+            career_dna=career_dna,
+            skill_gap=skill_gap,
+            target_role=target_role,
+        )
+
+        # --- 2. Intent routing --------------------------------------------
+        has_any_profile = bool(user_context_block)
+        route = _route_intent(user_message, has_any_profile)
+
+        # --- 3. Retrieval --------------------------------------------------
         query = extract_search_query(user_message)
-        expanded_query = _expand_query(query, preferred_track)
+        expanded_query = _expand_query(query, preferred_track or target_role or None)
 
         if _HYBRID_READY:
             filtered = _filter_corpus(
@@ -1812,10 +1926,9 @@ async def chat(body: ChatRequest):
         sources = _with_source_reasons(sources, query)
         if not grade_sources(query, sources):
             fallback_sources = _keyword_search(user_message, top_k=4)
-            fallback_path = 'keyword'
             if fallback_sources:
                 sources = _with_source_reasons(fallback_sources, query)
-                retrieval_path = fallback_path
+                retrieval_path = 'keyword'
 
         factors = [
             {
@@ -1826,14 +1939,23 @@ async def chat(body: ChatRequest):
             }
             for s in sources
         ]
+        # Extra factor signals so the frontend UI feels alive
+        if personalization_signals:
+            factors.insert(0, {
+                'label': f'Personalised with {len(personalization_signals)} profile signal(s)',
+                'positive': True,
+                'signal_type': 'personalization',
+                'value': ', '.join(personalization_signals[:4]),
+            })
 
-        response_text = build_rag_answer(query, sources)
         used_fallback = retrieval_path in ('keyword', 'none')
         has_strong = any(
             f['signal_type'] in ('rag_source', 'skill_match')
             for f in factors
         )
-        if len(factors) >= 3 and has_strong and not used_fallback:
+        if (len(factors) >= 3 and has_strong and not used_fallback) or (
+            has_strong and user_context_block and not used_fallback
+        ):
             confidence = 'High'
         elif len(factors) >= 1 and not used_fallback:
             confidence = 'Medium'
@@ -1852,27 +1974,101 @@ async def chat(body: ChatRequest):
             for s in sources
         ]
 
-        basis = f"RAG retrieval via {retrieval_path}. Query: '{query}'. Expanded: '{expanded_query}'"
+        basis_bits = [f"RAG retrieval via {retrieval_path}"]
+        if target_role:
+            basis_bits.append(f'target={target_role}')
+        if personalization_signals:
+            basis_bits.append(f'personalized={len(personalization_signals)}')
+        basis = '. '.join(basis_bits) + f". Query: '{query}'"
         context_window = _build_context_window(top_chunks) if _HYBRID_READY else ''
-        profile_hints = []
-        if preferred_track:
-            profile_hints.append(f"Target track: {preferred_track}")
-        if experience_level:
-            profile_hints.append(f"Experience: {experience_level}")
-        profile_summary = "; ".join(profile_hints)
 
-        answer_text = _generate_rag_answer(
-            query=query,
-            context_window=context_window,
-            profile_summary=profile_summary,
-            max_new_tokens=400,
-            sources=sources,
+        # --- 4. Memory summarisation + recent-turn window -----------------
+        provided_summary = (body.conversation_summary or '').strip()
+        memory_summary = provided_summary
+        if not memory_summary and len(history) > _MEMORY_SUMMARY_TRIGGER:
+            try:
+                memory_summary = await _summarize_history(history)
+            except Exception as e:
+                log.warning('[chat] memory summarise failed: %s', e)
+                memory_summary = ''
+        used_memory = bool(memory_summary) or len(history) > 1
+        recent_turns = history[-_MEMORY_TURN_WINDOW:]
+
+        prior_assistant_snippets: List[str] = []
+        for turn in history[-6:]:
+            role = (turn.get('role') or '').lower()
+            if role in ('assistant', 'model', 'ai'):
+                content = (turn.get('content') or '').strip()
+                if content:
+                    prior_assistant_snippets.append(content[:400])
+
+        # --- 5. Follow-up detection ---------------------------------------
+        follow_ups = _detect_missing_context(
+            user_message=user_message,
+            profile=profile,
+            cv_analysis=cv_analysis,
+            target_role=target_role,
+            route=route,
         )
+
+        # --- 6. Build messages array & call the LLM -----------------------
+        messages = _build_messages_for_chat(
+            user_message=user_message,
+            system_prompt=_INTELLIGENT_SYSTEM_PROMPT,
+            user_context_block=user_context_block,
+            retrieved_context_block=context_window,
+            memory_summary=memory_summary,
+            recent_turns=recent_turns,
+            follow_ups=follow_ups,
+            prior_assistant_snippets=prior_assistant_snippets,
+            route=route,
+        )
+
+        answer_text = ''
+        generation_model = 'template'
+        if _HF_TOKEN:
+            try:
+                answer_text = await _hf_chat_messages(
+                    messages,
+                    max_tokens=700,
+                    temperature=0.55,
+                    top_p=0.9,
+                    presence_penalty=0.4,
+                    frequency_penalty=0.3,
+                )
+                generation_model = _HF_CHAT_MODEL
+            except Exception as e:
+                log.warning('[chat] HF chat failed, falling back to template: %s', e)
+                answer_text = ''
+
+        if not answer_text:
+            # Fallback path: legacy template (preserves old behaviour)
+            answer_text = _generate_rag_answer(
+                query=query,
+                context_window=context_window,
+                profile_summary='; '.join(personalization_signals[:6]) if personalization_signals else '',
+                max_new_tokens=400,
+                sources=sources,
+            )
+            if answer_text:
+                generation_model = _GENERATOR_MODEL_NAME if _GENERATOR_READY else 'template'
+            if not answer_text:
+                answer_text = build_rag_answer(query, sources)
+                generation_model = 'template'
+
         grounding = _verify_grounding(answer_text, sources)
         trace = _retrieval_trace(retrieval_path, sources, started_at)
         log.info(
-            '[RAG] path=%s top_source_ids=%s scores=%s latency_ms=%s',
-            trace['retrieval_path'], trace['top_source_ids'], trace['scores'], trace['latency_ms'],
+            '[RAG] route=%s path=%s top_source_ids=%s scores=%s memory=%s '
+            'personalised=%s follow_ups=%s latency_ms=%s',
+            route,
+            trace['retrieval_path'],
+            trace['top_source_ids'],
+            trace['scores'],
+            used_memory,
+            len(personalization_signals),
+            len(follow_ups),
+            trace['latency_ms'],
         )
         return {
             'response': answer_text,
@@ -1882,9 +2078,18 @@ async def chat(body: ChatRequest):
             'confidence': confidence,
             'basis': basis,
             'retrieval_path': retrieval_path,
-            'signal_types_used': ['rag_source'] if factors else [],
-            'generation_model': _GENERATOR_MODEL_NAME if _GENERATOR_READY else 'template',
+            'signal_types_used': (
+                (['rag_source'] if any(f['signal_type'] == 'rag_source' for f in factors) else [])
+                + (['personalization'] if personalization_signals else [])
+            ),
+            'generation_model': generation_model,
             'grounding_verification': grounding,
+            # --- new intelligence fields -----------------------------------
+            'follow_ups': follow_ups,
+            'route': route,
+            'used_memory': used_memory,
+            'memory_summary': memory_summary or None,
+            'personalization': personalization_signals,
         }
 
     except HTTPException:
@@ -2083,6 +2288,485 @@ async def _hf_chat(
             last_err = e
             await _asyncio.sleep(1.0 * (2 ** attempt))
     raise RuntimeError(f'HF chat exhausted retries: {last_err}')
+
+
+# ---------------------------------------------------------------------------
+# Multi-turn HF chat — takes a pre-built messages array (system+turns+user).
+# Used by the intelligent /chat pipeline so we can inject rolling memory,
+# personalisation, RAG evidence and follow-up instructions as separate
+# message roles instead of one giant user string.
+# ---------------------------------------------------------------------------
+async def _hf_chat_messages(
+    messages: List[Dict[str, str]],
+    max_tokens: int = 700,
+    temperature: float = 0.55,
+    top_p: float = 0.9,
+    presence_penalty: float = 0.4,
+    frequency_penalty: float = 0.3,
+) -> str:
+    """Async HF chat call using the OpenAI-style messages array.
+
+    Tuned generation params:
+    - temperature 0.55  → natural but grounded
+    - top_p 0.9         → wide-enough sampling
+    - presence_penalty  → discourages repeating the same concept
+    - frequency_penalty → discourages verbatim phrase reuse
+    """
+    if not _HF_TOKEN:
+        raise RuntimeError('HF_TOKEN is not set on the backend.')
+
+    import httpx
+    import time as _time
+
+    body = {
+        'model': _HF_CHAT_MODEL,
+        'messages': messages,
+        'max_tokens': max_tokens,
+        'temperature': temperature,
+        'top_p': top_p,
+        'presence_penalty': presence_penalty,
+        'frequency_penalty': frequency_penalty,
+        'stream': False,
+    }
+
+    client = await _get_hf_client()
+    last_err: Exception | None = None
+    started = _time.perf_counter()
+    for attempt in range(_HF_CHAT_MAX_RETRIES):
+        try:
+            r = await client.post(_HF_CHAT_URL, json=body)
+            if r.status_code in (429, 503):
+                last_err = RuntimeError(f'HF rate-limited (HTTP {r.status_code})')
+                await _asyncio.sleep(min(4 * (2 ** attempt), 15))
+                continue
+            if r.status_code >= 400:
+                detail = (r.text or '')[:300]
+                raise RuntimeError(f'HF chat HTTP {r.status_code}: {detail}')
+            payload = r.json()
+            try:
+                text = (payload['choices'][0]['message']['content'] or '').strip()
+            except (KeyError, IndexError, TypeError):
+                raise RuntimeError(f'Unexpected HF chat payload: {payload}')
+            elapsed = (_time.perf_counter() - started) * 1000
+            log.info(
+                '[HF] chat_msgs ok in %.0fms (attempt=%d, msgs=%d, max_tokens=%d)',
+                elapsed, attempt + 1, len(messages), max_tokens,
+            )
+            return text
+        except (httpx.TimeoutException, httpx.TransportError) as e:
+            last_err = e
+            await _asyncio.sleep(1.0 * (2 ** attempt))
+    raise RuntimeError(f'HF chat exhausted retries: {last_err}')
+
+
+# ---------------------------------------------------------------------------
+# CONVERSATION MEMORY
+# ---------------------------------------------------------------------------
+# We treat the client (Chatassistance.jsx + Firestore) as the source of truth
+# for full transcripts. Server-side we keep two representations:
+#   1. `_MEMORY_TURN_WINDOW` most recent turns  → verbatim in messages array
+#   2. Everything older → collapsed into a text summary (LLM-generated once
+#      it grows large enough).
+# Summaries are cached in-memory per (uid|thread) hash for the process
+# lifetime so multi-turn threads don't re-summarise on every request.
+# ---------------------------------------------------------------------------
+_MEMORY_TURN_WINDOW = int(_clamped_env_float('CHAT_MEMORY_WINDOW', 8, 2, 20))
+_MEMORY_SUMMARY_TRIGGER = int(_clamped_env_float('CHAT_MEMORY_SUMMARY_TRIGGER', 12, 4, 40))
+_MEMORY_SUMMARY_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
+def _history_fingerprint(history: List[Dict[str, Any]]) -> str:
+    """Short deterministic key for the currently-summarised chunk."""
+    if not history:
+        return 'empty'
+    # Only fingerprint the part that will be summarised (older turns)
+    older = history[:-_MEMORY_TURN_WINDOW] if len(history) > _MEMORY_TURN_WINDOW else []
+    if not older:
+        return f'n{len(history)}:latest'
+    joined = '|'.join((m.get('content') or '')[:60] for m in older)
+    return f'n{len(older)}:' + str(hash(joined))
+
+
+async def _summarize_history(
+    history: List[Dict[str, Any]],
+    existing_summary: str | None = None,
+) -> str:
+    """Return a compact rolling summary of turns older than the sliding window.
+
+    Falls back to a template summary if HF is unavailable so the chat still
+    benefits from long-term context on token-less deployments.
+    """
+    if not history or len(history) <= _MEMORY_SUMMARY_TRIGGER:
+        return existing_summary or ''
+
+    older = history[:-_MEMORY_TURN_WINDOW]
+    fp = _history_fingerprint(history)
+    cached = _MEMORY_SUMMARY_CACHE.get(fp)
+    if cached:
+        return cached.get('summary', '')
+
+    # Template fallback (used when HF unavailable) ------------------------
+    user_topics: List[str] = []
+    for turn in older:
+        if (turn.get('role') or '') == 'user':
+            content = (turn.get('content') or '').strip()
+            if content:
+                user_topics.append(content[:120])
+    fallback_summary = (
+        'Earlier in this conversation the user asked about: '
+        + '; '.join(user_topics[-6:])
+    ) if user_topics else ''
+
+    if not _HF_TOKEN:
+        _MEMORY_SUMMARY_CACHE[fp] = {'summary': fallback_summary}
+        return fallback_summary
+
+    # LLM summarisation ---------------------------------------------------
+    transcript_lines: List[str] = []
+    for turn in older[-30:]:  # cap prompt size
+        role = 'User' if (turn.get('role') or '') == 'user' else 'Assistant'
+        content = (turn.get('content') or '').replace('\n', ' ')[:400]
+        transcript_lines.append(f'{role}: {content}')
+    transcript = '\n'.join(transcript_lines)
+
+    system = (
+        'You compress career-coaching conversations into a compact, factual '
+        'memory brief. Preserve: the user\'s target role, mentioned skills, '
+        'projects, concerns and any commitments the assistant made. '
+        'Do NOT include disclaimers or apologies. Return 4-8 short bullet lines.'
+    )
+    user_prompt = (
+        (f'PREVIOUS BRIEF (extend, do not repeat verbatim):\n{existing_summary}\n\n' if existing_summary else '')
+        + f'CONVERSATION EXCERPT:\n{transcript}\n\n'
+        'Return the updated brief only. No preamble.'
+    )
+    try:
+        summary = await _hf_chat_messages(
+            [
+                {'role': 'system', 'content': system},
+                {'role': 'user', 'content': user_prompt},
+            ],
+            max_tokens=260,
+            temperature=0.2,
+            presence_penalty=0.0,
+            frequency_penalty=0.0,
+        )
+        summary = (summary or '').strip()
+        if not summary:
+            summary = fallback_summary
+    except Exception as e:
+        log.warning('[memory] summarise failed, using template: %s', e)
+        summary = fallback_summary
+
+    _MEMORY_SUMMARY_CACHE[fp] = {'summary': summary}
+    # Keep cache bounded to avoid unbounded growth on long-lived processes
+    if len(_MEMORY_SUMMARY_CACHE) > 500:
+        # drop the oldest half (dict is insertion-ordered on 3.7+)
+        for k in list(_MEMORY_SUMMARY_CACHE.keys())[:250]:
+            _MEMORY_SUMMARY_CACHE.pop(k, None)
+    return summary
+
+
+# ---------------------------------------------------------------------------
+# INTENT ROUTING — very lightweight keyword classifier that picks a "tool"
+# label so the frontend can render specialised UIs and so the system prompt
+# can bias the assistant towards the right kind of answer.
+# ---------------------------------------------------------------------------
+_INTENT_KEYWORDS: Dict[str, Tuple[str, ...]] = {
+    'resume': ('resume', 'cv', 'curriculum', 'my cv', 'my resume'),
+    'skill_gap': ('gap', 'missing', 'lack', 'weakness', 'ready for', 'am i ready'),
+    'roadmap': ('roadmap', 'plan', 'learning path', 'how do i become', 'become a', 'timeline'),
+    'interview': ('interview', 'mock interview', 'behavioral', 'technical round', 'phone screen'),
+    'job_match': ('match', 'apply', 'good fit', 'suitable', 'should i apply', 'job for me'),
+    'knowledge': ('what is', 'explain', 'difference between', 'define', 'meaning of'),
+}
+
+
+def _route_intent(user_message: str, has_profile: bool) -> str:
+    text = (user_message or '').lower()
+    for label, kws in _INTENT_KEYWORDS.items():
+        if any(kw in text for kw in kws):
+            return label
+    # Personalised follow-ups (short questions when we already have profile)
+    if has_profile and len(text.split()) < 4:
+        return 'general'
+    return 'general'
+
+
+# ---------------------------------------------------------------------------
+# PROFILE + EVIDENCE FORMATTERS — turn the structured inputs into compact,
+# human-readable strings the LLM can reason over without wasting tokens.
+# ---------------------------------------------------------------------------
+def _fmt_list(items: Any, limit: int = 12) -> str:
+    if isinstance(items, str):
+        items = [items]
+    if not isinstance(items, list):
+        return ''
+    cleaned = [str(x).strip() for x in items if str(x).strip()]
+    if not cleaned:
+        return ''
+    if len(cleaned) > limit:
+        cleaned = cleaned[:limit] + [f'…({len(items) - limit} more)']
+    return ', '.join(cleaned)
+
+
+def _extract_target_role(
+    target_role: str | None,
+    profile: Dict[str, Any] | None,
+    skill_gap: Dict[str, Any] | None,
+) -> str:
+    if target_role:
+        return target_role.strip()[:120]
+    if isinstance(profile, dict):
+        for key in ('targetRole', 'preferredTrack', 'preferredRole', 'goal'):
+            v = profile.get(key)
+            if isinstance(v, str) and v.strip():
+                return v.strip()[:120]
+    if isinstance(skill_gap, dict):
+        v = skill_gap.get('targetRole')
+        if isinstance(v, str) and v.strip():
+            return v.strip()[:120]
+    return ''
+
+
+def _build_user_context_block(
+    profile: Dict[str, Any] | None,
+    cv_analysis: Dict[str, Any] | None,
+    career_dna: Dict[str, Any] | None,
+    skill_gap: Dict[str, Any] | None,
+    target_role: str,
+) -> Tuple[str, List[str]]:
+    """Return (compact text block, list of personalisation signals used)."""
+    lines: List[str] = []
+    signals: List[str] = []
+
+    if isinstance(profile, dict):
+        name = profile.get('name') or profile.get('displayName')
+        if isinstance(name, str) and name.strip():
+            lines.append(f'Name: {name.strip()[:60]}')
+        level = profile.get('experienceLevel') or profile.get('level')
+        if isinstance(level, str) and level.strip():
+            lines.append(f'Experience level: {level.strip()[:40]}')
+            signals.append(f'Experience: {level.strip()}')
+        track = profile.get('preferredTrack') or profile.get('track')
+        if isinstance(track, str) and track.strip():
+            lines.append(f'Preferred track: {track.strip()[:60]}')
+            signals.append(f'Track: {track.strip()}')
+        skills_s = _fmt_list(profile.get('skills'))
+        if skills_s:
+            lines.append(f'Profile skills: {skills_s}')
+            signals.append(f'Profile skills ({len(profile.get("skills") or [])})')
+        tools_s = _fmt_list(profile.get('tools') or profile.get('toolsTechnologies'))
+        if tools_s:
+            lines.append(f'Tools: {tools_s}')
+        edu = profile.get('education')
+        if isinstance(edu, str) and edu.strip():
+            lines.append(f'Education: {edu.strip()[:120]}')
+
+    if target_role:
+        lines.append(f'Target role: {target_role}')
+        signals.append(f'Target: {target_role}')
+
+    if isinstance(cv_analysis, dict):
+        cv_skills = _fmt_list(cv_analysis.get('keySkills'))
+        if cv_skills:
+            lines.append(f'Resume skills: {cv_skills}')
+            signals.append('Resume analysed')
+        cv_tools = _fmt_list(cv_analysis.get('toolsTechnologies'))
+        if cv_tools:
+            lines.append(f'Resume tools: {cv_tools}')
+        cv_roles = _fmt_list(cv_analysis.get('rolesAndDomains'), limit=6)
+        if cv_roles:
+            lines.append(f'Resume roles: {cv_roles}')
+        snippet = cv_analysis.get('rawTextSnippet') or cv_analysis.get('summary')
+        if isinstance(snippet, str) and snippet.strip():
+            lines.append(f'Resume summary: {snippet.strip()[:280]}')
+
+    if isinstance(career_dna, dict):
+        scores = career_dna.get('scores') or career_dna
+        if isinstance(scores, dict):
+            top = sorted(
+                ((k, v) for k, v in scores.items() if isinstance(v, (int, float))),
+                key=lambda kv: kv[1],
+                reverse=True,
+            )[:5]
+            if top:
+                pretty = ', '.join(f'{k}: {int(v)}' for k, v in top)
+                lines.append(f'Career DNA: {pretty}')
+                signals.append('Career DNA')
+
+    if isinstance(skill_gap, dict):
+        matched = _fmt_list(skill_gap.get('matchedSkills'), limit=8)
+        missing = _fmt_list(skill_gap.get('missingSkills'), limit=8)
+        score = skill_gap.get('matchScore') or skill_gap.get('score')
+        if matched:
+            lines.append(f'Matched skills: {matched}')
+        if missing:
+            lines.append(f'Missing skills: {missing}')
+            signals.append(f'Skill gaps ({len(skill_gap.get("missingSkills") or [])})')
+        if isinstance(score, (int, float)):
+            lines.append(f'Match score: {int(score)}%')
+
+    return ('\n'.join(lines).strip(), signals)
+
+
+def _detect_missing_context(
+    user_message: str,
+    profile: Dict[str, Any] | None,
+    cv_analysis: Dict[str, Any] | None,
+    target_role: str,
+    route: str,
+) -> List[str]:
+    """Return a list of follow-up questions when key context is missing.
+
+    Kept intentionally conservative: only asks when the answer would be
+    materially better with the extra info, and never asks more than 2 at once.
+    """
+    text = (user_message or '').lower()
+    questions: List[str] = []
+
+    has_target = bool(target_role) or any(
+        kw in text for kw in ('want to be', 'aiming for', 'targeting', 'become a')
+    )
+    has_resume = bool(cv_analysis and (
+        cv_analysis.get('keySkills') or cv_analysis.get('toolsTechnologies')
+    ))
+    has_skills = bool(profile and profile.get('skills'))
+
+    if route in ('resume',) and not has_resume:
+        questions.append(
+            'Could you upload your CV on the CV Upload page so I can tailor advice to your actual experience?'
+        )
+
+    if route in ('skill_gap', 'roadmap', 'job_match') and not has_target:
+        questions.append(
+            'Which specific role or track are you targeting (e.g. "Frontend Engineer", "Data Analyst")?'
+        )
+
+    if route in ('interview',) and not has_target:
+        questions.append(
+            'Which role and seniority level is this interview for? That lets me pick the right questions.'
+        )
+
+    if route in ('skill_gap',) and not has_skills and not has_resume:
+        questions.append(
+            'What are your 3-5 strongest skills right now? That helps me point at concrete gaps.'
+        )
+
+    # Very generic 1-word / 2-word queries with no context at all
+    if not questions and len((user_message or '').split()) <= 3 and not (
+        has_target or has_resume or has_skills
+    ):
+        questions.append('Are you asking about a specific role, skill or project?')
+
+    return questions[:2]
+
+
+def _build_evidence_items(sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """UI-friendly evidence cards derived from retrieval sources."""
+    items: List[Dict[str, Any]] = []
+    for idx, s in enumerate(sources[:6], start=1):
+        snippet = _source_text(s)[:220]
+        items.append({
+            'label': f'S{idx}',
+            'id': s.get('parent_id') or s.get('id') or s.get('title') or f'src-{idx}',
+            'type': s.get('type') or 'source',
+            'title': s.get('title') or 'Source',
+            'snippet': snippet,
+            'score': float(s.get('score') or 0.0),
+            'why_this_source': s.get('why_this_source'),
+        })
+    return items
+
+
+# ---------------------------------------------------------------------------
+# SYSTEM PROMPT — behaves like a senior career coach; personalised,
+# grounded in evidence, non-repetitive, willing to ask follow-ups.
+# ---------------------------------------------------------------------------
+_INTELLIGENT_SYSTEM_PROMPT = (
+    "You are CareerPath AI — a senior career coach and technical mentor for "
+    "students and early-career professionals. You combine the warmth of a "
+    "great mentor with the rigour of an interview panelist.\n\n"
+    "Behavioural rules (always follow):\n"
+    "1. Personalise every reply using the USER CONTEXT block. Reference the "
+    "user's actual skills, resume experience, career DNA and target role by "
+    "name. Never give generic advice like 'learn programming'.\n"
+    "2. Ground factual claims in the RETRIEVED CONTEXT and cite sources "
+    "inline as [S1], [S2] etc. When no source supports a claim, say so and "
+    "reason from first principles instead of inventing data.\n"
+    "3. Remember the conversation. If MEMORY / RECENT TURNS shows earlier "
+    "questions, reference them naturally ('Earlier you mentioned…') and "
+    "expand rather than repeat previous answers verbatim.\n"
+    "4. If the USER CONTEXT lacks something essential (target role, resume, "
+    "core skills) and the follow-up questions block is non-empty, ask 1-2 "
+    "of those clarifying questions BEFORE giving a full plan.\n"
+    "5. Structure answers for readability: a short opener, then bullet lines "
+    "or short paragraphs. Use headings only when they improve scanability.\n"
+    "6. Be specific and actionable — name libraries, courses, project ideas, "
+    "difficulty tiers. Explain the reasoning ('why this matters for your "
+    "target role') and expected impact.\n"
+    "7. Never repeat the same paragraph twice in one reply. Vary phrasing "
+    "across turns; if the user re-asks, summarise prior advice then extend.\n"
+    "8. Avoid disclaimers, over-hedging, or 'as an AI language model' phrasing. "
+    "Speak directly, like a mentor over coffee.\n"
+    "9. Keep answers under ~280 words unless the user explicitly asks for depth.\n"
+    "10. End with a single natural next-step suggestion when useful — do not "
+    "force it if the reply already contains one."
+)
+
+
+def _build_messages_for_chat(
+    user_message: str,
+    system_prompt: str,
+    user_context_block: str,
+    retrieved_context_block: str,
+    memory_summary: str,
+    recent_turns: List[Dict[str, Any]],
+    follow_ups: List[str],
+    prior_assistant_snippets: List[str],
+    route: str,
+) -> List[Dict[str, str]]:
+    """Assemble the final OpenAI-style messages array."""
+    messages: List[Dict[str, str]] = [
+        {'role': 'system', 'content': system_prompt},
+    ]
+
+    # Static context payload as a single system-side message so it survives
+    # even if the model trims history under length pressure.
+    ctx_parts: List[str] = []
+    if user_context_block:
+        ctx_parts.append('USER CONTEXT:\n' + user_context_block)
+    if memory_summary:
+        ctx_parts.append('CONVERSATION MEMORY (older turns):\n' + memory_summary)
+    if retrieved_context_block:
+        ctx_parts.append('RETRIEVED CONTEXT (career knowledge base):\n' + retrieved_context_block)
+    if follow_ups:
+        ctx_parts.append(
+            'IF ESSENTIAL CONTEXT IS MISSING, ask these clarifying questions before '
+            'proceeding (in your own words, natural tone):\n- '
+            + '\n- '.join(follow_ups)
+        )
+    if prior_assistant_snippets:
+        joined = '\n---\n'.join(prior_assistant_snippets[-3:])
+        ctx_parts.append(
+            'YOUR RECENT PRIOR ANSWERS (avoid repeating identical phrasing; '
+            'build on these instead):\n' + joined
+        )
+    ctx_parts.append(f'DETECTED INTENT / ROUTE: {route}')
+    if ctx_parts:
+        messages.append({'role': 'system', 'content': '\n\n'.join(ctx_parts)})
+
+    # Last few turns verbatim
+    for turn in recent_turns:
+        role_raw = (turn.get('role') or '').lower()
+        content = (turn.get('content') or '').strip()
+        if not content:
+            continue
+        role = 'assistant' if role_raw in ('assistant', 'model', 'ai') else 'user'
+        messages.append({'role': role, 'content': content[:1400]})
+
+    messages.append({'role': 'user', 'content': user_message})
+    return messages
 
 
 def _profile_summary(profile: 'Dict[str, Any] | None') -> str:
