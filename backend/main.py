@@ -454,70 +454,76 @@ async def root():
     response_description="Status of corpus, embeddings, HF token, optional ChromaDB dependency, and AI routes",
 )
 async def health_dependencies():
-    hf_token_set = bool(_os.getenv('HF_TOKEN', ''))
-    embeddings_loaded = False
-    if isinstance(_CORPUS_EMBEDDINGS, list):
-        embeddings_loaded = len([
-            c for c in _CORPUS_EMBEDDINGS if isinstance(c, dict) and c.get('embedding')
-        ]) > 0
-
-
-    hf_reachable = False
     try:
-        import urllib.request
-        urllib.request.urlopen(
-            'https://api-inference.huggingface.co',
-            timeout=3
-        )
-        hf_reachable = True
-    except Exception:
-        pass
+        hf_token_set = bool(_os.getenv('HF_TOKEN', ''))
+        embeddings_loaded = False
+        if isinstance(_CORPUS_EMBEDDINGS, list):
+            embeddings_loaded = len([
+                c for c in _CORPUS_EMBEDDINGS if isinstance(c, dict) and c.get('embedding')
+            ]) > 0
 
-    chroma_ok = _CHROMA_COLLECTION is not None
-    corpus_ok = len(_CORPUS_EMBEDDINGS) > 0
-
-    # AI routes (/roadmap, /interview/*, /face-expression) require a working
-    # HF token AND reachable inference endpoint. Report 'degraded' when either
-    # is absent so callers know AI-heavy endpoints will return 502.
-    ai_ready = hf_token_set and hf_reachable
-
-    if corpus_ok and embeddings_loaded and ai_ready:
-        overall = 'ok'
-    elif corpus_ok and embeddings_loaded:
-        # Core RAG / chat is functional; LLM-backed routes may 502
-        overall = 'degraded'
-    elif corpus_ok:
-        overall = 'degraded'
-    else:
-        overall = 'critical'
-
-    chroma_chunks = 0
-    if chroma_ok:
+        hf_reachable = False
         try:
-            chroma_chunks = _CHROMA_COLLECTION.count()
-        except Exception as e:
-            log.warning('Chroma count unavailable: %s', e)
-            chroma_ok = False
+            import urllib.request
+            urllib.request.urlopen(
+                'https://api-inference.huggingface.co',
+                timeout=3
+            )
+            hf_reachable = True
+        except Exception:
+            pass
 
-    return {
-        'seed_corpus_loaded': corpus_ok,
-        'embeddings_loaded': embeddings_loaded,
-        'hf_token': 'set' if hf_token_set else 'missing',
-        'hf_inference_reachable': hf_reachable,
-        'ai_routes_ready': ai_ready,
-        'chroma_connected': chroma_ok,
-        'chroma_chunks': chroma_chunks,
-        'chroma_role': 'dependency_only_not_primary_retrieval_path',
-        'use_local_embeddings': _USE_LOCAL_EMBEDDINGS,
-        'enable_reranker': _ENABLE_RERANKER,
-        'sentence_transformers_installed': _check_st_installed(),
-        'hybrid_ready': _HYBRID_READY,
-        'corpus_count': len(_HYBRID_CORPUS),
-        'reranker_ready': _RERANKER_READY,
-        'generator_ready': _GENERATOR_READY,
-        'hf_token_present': bool(_os.getenv('HF_TOKEN', '')),
-        'overall': overall
-    }
+        chroma_ok = _CHROMA_COLLECTION is not None
+        corpus_ok = len(_CORPUS_EMBEDDINGS) > 0
+
+        ai_ready = hf_token_set and hf_reachable
+
+        if corpus_ok and embeddings_loaded and ai_ready:
+            overall = 'ok'
+        elif corpus_ok and embeddings_loaded:
+            overall = 'degraded'
+        elif corpus_ok:
+            overall = 'degraded'
+        else:
+            overall = 'critical'
+
+        chroma_chunks = 0
+        if chroma_ok:
+            try:
+                chroma_chunks = _CHROMA_COLLECTION.count()
+            except Exception as e:
+                log.warning('Chroma count unavailable: %s', e)
+                chroma_ok = False
+
+        return {
+            'seed_corpus_loaded': corpus_ok,
+            'embeddings_loaded': embeddings_loaded,
+            'hf_token': 'set' if hf_token_set else 'missing',
+            'hf_inference_reachable': hf_reachable,
+            'ai_routes_ready': ai_ready,
+            'chroma_connected': chroma_ok,
+            'chroma_chunks': chroma_chunks,
+            'chroma_role': 'dependency_only_not_primary_retrieval_path',
+            'use_local_embeddings': globals().get('_USE_LOCAL_EMBEDDINGS', False),
+            'enable_reranker': globals().get('_ENABLE_RERANKER', False),
+            'sentence_transformers_installed': _check_st_installed(),
+            'hybrid_ready':     globals().get("_HYBRID_READY", False),
+            'corpus_count':     len(globals().get("_HYBRID_CORPUS", [])),
+            'reranker_ready':   globals().get("_RERANKER_READY", False),
+            'generator_ready':  globals().get("_GENERATOR_READY", False),
+            'hf_token_present': bool(_os.getenv("HF_TOKEN", "")),
+            'overall': overall
+        }
+    except Exception as e:
+        return {
+            "status": "degraded",
+            "error": str(e),
+            "hybrid_ready":     globals().get("_HYBRID_READY", False),
+            "corpus_count":     len(globals().get("_HYBRID_CORPUS", [])),
+            "reranker_ready":   globals().get("_RERANKER_READY", False),
+            "generator_ready":  globals().get("_GENERATOR_READY", False),
+            "hf_token_present": bool(_os.getenv("HF_TOKEN", "")),
+        }
 
 
 @app.options("/summarize-cv")
@@ -3550,6 +3556,152 @@ async def generate_interview_question_alias(request: Request):
     return await interview_question(await request.json())
 
 
+def _compute_delivery_score(delivery_metrics: Dict[str, Any] | None) -> Dict[str, Any] | None:
+    if not delivery_metrics or not isinstance(delivery_metrics, dict):
+        return None
+
+    source = delivery_metrics.get("source")
+    wpm = delivery_metrics.get("wpm")
+    fillers = delivery_metrics.get("fillerCount")
+    if fillers is None:
+        fillers = delivery_metrics.get("filler_count")
+    pauses = delivery_metrics.get("pauseSeconds")
+    if pauses is None:
+        pauses = delivery_metrics.get("pause_seconds")
+
+    if source == "typed" or wpm is None or pauses is None:
+        return None
+
+    try:
+        wpm_val = float(wpm)
+        fillers_val = int(fillers) if fillers is not None else 0
+        pauses_val = float(pauses)
+    except (TypeError, ValueError):
+        return None
+
+    # WPM: 40% (Target 110-160 WPM)
+    if 110.0 <= wpm_val <= 160.0:
+        wpm_score = 100.0
+    elif wpm_val < 110.0:
+        wpm_score = max(0.0, min(100.0, ((wpm_val - 40.0) / 70.0) * 100.0))
+    else:
+        wpm_score = max(0.0, min(100.0, ((240.0 - wpm_val) / 80.0) * 100.0))
+
+    # Fillers: 35% (Target <= 3 fillers)
+    if fillers_val <= 3:
+        fillers_score = 100.0
+    else:
+        fillers_score = max(0.0, min(100.0, 100.0 - (fillers_val - 3) * 10.0))
+
+    # Pauses: 25% (Target <= 6s)
+    if pauses_val <= 6.0:
+        pauses_score = 100.0
+    else:
+        pauses_score = max(0.0, min(100.0, ((16.0 - pauses_val) / 10.0) * 100.0))
+
+    # Clamp all component scores to 0-100 before weighting
+    wpm_score = max(0.0, min(100.0, wpm_score))
+    fillers_score = max(0.0, min(100.0, fillers_score))
+    pauses_score = max(0.0, min(100.0, pauses_score))
+
+    overall_score = (wpm_score * 0.40) + (fillers_score * 0.35) + (pauses_score * 0.25)
+    overall_score = max(0.0, min(100.0, overall_score))
+
+    return {
+        "score": int(round(overall_score)),
+        "components": {
+            "wpm": {"value": wpm_val, "score": int(round(wpm_score))},
+            "fillers": {"value": fillers_val, "score": int(round(fillers_score))},
+            "pauses": {"value": pauses_val, "score": int(round(pauses_score))}
+        }
+    }
+
+
+def _fuse_interview_scores(content_score, delivery_metrics=None, expression_snapshot=None) -> dict:
+    # Resolve delivery score
+    delivery_score = None
+    delivery_res = _compute_delivery_score(delivery_metrics)
+    if delivery_res is not None:
+        delivery_score = delivery_res.get("score")
+
+    # Resolve expression score
+    expression_score = None
+    if isinstance(expression_snapshot, dict):
+        expression_score = expression_snapshot.get("composureScore")
+
+    # Determine streams active
+    streams_active = 1
+    if delivery_score is not None:
+        streams_active += 1
+    if expression_score is not None:
+        streams_active += 1
+
+    # Default weights
+    w_content = 0.60
+    w_delivery = 0.25 if delivery_score is not None else 0.0
+    w_expression = 0.15 if expression_score is not None else 0.0
+
+    notes = []
+
+    # Cross-modal rules (only apply when both delivery and expression streams are active)
+    if delivery_score is not None and expression_score is not None:
+        if delivery_score >= 75 and expression_score <= 45:
+            w_expression = 0.05
+            w_delivery = 0.35
+            w_content = 0.60
+            notes.append("Expression tension was downweighted because speech delivery remained fluent, suggesting cognitive effort rather than anxiety.")
+        elif abs(delivery_score - expression_score) <= 15:
+            notes.append("Expression and delivery signals agreed, increasing composite confidence.")
+
+    # Normalization: ensure weights sum to 1.0 (handles Rule 1/2 and missing streams cases)
+    total_active_w = w_content + w_delivery + w_expression
+    if total_active_w > 0:
+        w_content = w_content / total_active_w
+        w_delivery = w_delivery / total_active_w
+        w_expression = w_expression / total_active_w
+
+    # Compute final score
+    score_sum = content_score * w_content
+    if delivery_score is not None:
+        score_sum += delivery_score * w_delivery
+    if expression_score is not None:
+        score_sum += expression_score * w_expression
+
+    final_score = int(round(score_sum))
+    final_score = max(0, min(100, final_score))
+
+    # Additional warnings/coaching notes
+    if content_score >= 80 and delivery_score is not None and delivery_score <= 50:
+        notes.append("Answer quality was strong; coaching should focus on pacing, filler words, and pause management.")
+    if expression_score is not None and expression_score >= 70 and delivery_score is not None and delivery_score <= 45:
+        notes.append("Expression showed composure; coaching should focus on speech delivery improvements.")
+
+    cross_modal_note = " ".join(notes) if notes else None
+
+    # Confidence calculation
+    if streams_active == 3 and abs(delivery_score - expression_score) <= 15:
+        confidence = "High"
+    elif streams_active >= 2:
+        confidence = "Medium"
+    else:
+        confidence = "Low"
+
+    return {
+        "finalScore": final_score,
+        "contentScore": int(content_score),
+        "deliveryScore": delivery_score,
+        "expressionScore": expression_score,
+        "weightsUsed": {
+            "content": round(w_content, 4),
+            "delivery": round(w_delivery, 4),
+            "expression": round(w_expression, 4)
+        },
+        "streamsActive": streams_active,
+        "crossModalNote": cross_modal_note,
+        "confidence": confidence
+    }
+
+
 # ---------------------------------------------------------------------------
 # POST /interview/evaluate — replaces frontend evaluateInterviewAnswer()
 # ---------------------------------------------------------------------------
@@ -3577,6 +3729,10 @@ async def interview_evaluate(req: Dict[str, Any]):
     role = (req.get('role') or '').strip()
     difficulty = (req.get('difficulty') or 'intermediate').strip()
     profile = req.get('profile') or {}
+
+    delivery_metrics = req.get('deliveryMetrics') or req.get('delivery_metrics')
+    delivery_score = _compute_delivery_score(delivery_metrics)
+    expression_snapshot = req.get("expressionSnapshot") or req.get("expression_snapshot")
 
     # Optional multimodal signals from FaceExpressionOverlay. All four are
     # optional — when absent the route behaves exactly as before.
@@ -3648,6 +3804,13 @@ async def interview_evaluate(req: Dict[str, Any]):
     gap = _semantic_gap_analysis(answer, reference_answer, skills_tested)
     has_example = _has_practical_example(answer)
     rubric = _compute_rubric_score(answer, gap, has_example)
+
+    fusion_result = _fuse_interview_scores(
+        content_score=rubric["score"],
+        delivery_metrics=delivery_metrics,
+        expression_snapshot=expression_snapshot
+    )
+
     user_prompt = _build_evaluation_prompt(
         question,
         answer,
@@ -3692,6 +3855,10 @@ async def interview_evaluate(req: Dict[str, Any]):
                 if missing else 'No major rubric concepts missing.'
             ),
         }
+        out['fusion'] = fusion_result
+        if delivery_score is not None:
+            out['deliveryScore'] = delivery_score
+            out['delivery_score'] = delivery_score
         if has_emotion:
             out['expression_feedback'] = _build_expression_feedback(
                 negative_pct, dominant_emotion, presence_score,
@@ -3722,6 +3889,10 @@ async def interview_evaluate(req: Dict[str, Any]):
             if missing else 'No major rubric concepts missing.'
         ),
     }
+    out['fusion'] = fusion_result
+    if delivery_score is not None:
+        out['deliveryScore'] = delivery_score
+        out['delivery_score'] = delivery_score
     if has_emotion:
         out['expression_feedback'] = _build_expression_feedback(
             negative_pct, dominant_emotion, presence_score,

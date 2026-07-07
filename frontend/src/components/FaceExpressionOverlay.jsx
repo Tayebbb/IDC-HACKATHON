@@ -633,6 +633,18 @@ function getMedianEmotion(buffer) {
   return { label: topLabel, score: avgScore };
 }
 
+export const COMPOSURE_LABELS = {
+  happy: "engaging",
+  neutral: "composed",
+  surprise: "highly engaged",
+  fear: "cognitive load elevated",
+  sad: "searching for words",
+  angry: "high emphasis",
+  disgust: "uncertainty signal",
+  fearful: "cognitive load elevated",
+  surprised: "highly engaged"
+};
+
 // Emoji + colour map for the live-emotion overlay badge.
 const EMOTION_META = {
   happy:    { emoji: '' },
@@ -658,6 +670,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const intervalRef      = useRef(null);
   const inFlightRef      = useRef(false);
   const emotionLogRef    = useRef([]);     // every accepted frame's full score map
+  const lastSnapshotIndexRef = useRef(0);  // index of the last frame processed by snapshotQuestion
   const rollingBufferRef = useRef([]);     // last 5 {label, score} samples for median vote
   const smoothBufferRef  = useRef([]);     // last SMOOTH_WINDOW frames for rolling avg
   const baselineRef      = useRef(null);   // averaged resting expression
@@ -936,6 +949,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   const startCamera = useCallback(async () => {
     setCamError(null);
     emotionLogRef.current = [];
+    lastSnapshotIndexRef.current = 0;
     rollingBufferRef.current = [];
     smoothBufferRef.current = [];
     baselineRef.current = null;
@@ -991,7 +1005,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
 
   }, [localOnlyMode, privacyAccepted]);
 
-  // Parent flagged inactive â†’ stop the camera.
+  // Parent flagged inactive — stop the camera.
   useEffect(() => {
     if (!active && cameraStarted) {
       stopAll();
@@ -1006,6 +1020,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
     finalize() {
       stopAll();
       setCameraStarted(false);
+      lastSnapshotIndexRef.current = 0;
       return _computeSummary(emotionLogRef.current);
     },
     recalibrate() {
@@ -1015,8 +1030,123 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       smoothBufferRef.current = [];
       lastTipKeyRef.current = '';
       lastTipAtRef.current = 0;
+      lastSnapshotIndexRef.current = 0;
       setCalibrated(false);
-      _pushTip({ tip: 'Recalibrating to your resting faceâ€¦', type: 'info', icon: 'Eye' });
+      _pushTip({ tip: 'Recalibrating to your resting face…', type: 'info', icon: 'Eye' });
+    },
+    snapshotQuestion(questionIndex) {
+      // Aggregate only frames collected since the previous snapshotQuestion call
+      const frames = emotionLogRef.current.slice(lastSnapshotIndexRef.current);
+      lastSnapshotIndexRef.current = emotionLogRef.current.length;
+
+      // Filter and guard frame shape checks (ensure label, score, and scores exist)
+      // and ignore low-confidence frames below threshold 0.68
+      const usableFrames = frames.filter(f => 
+        f && 
+        typeof f.label === 'string' && 
+        typeof f.score === 'number' && 
+        f.score >= 0.68 &&
+        f.scores &&
+        typeof f.scores === 'object'
+      );
+
+      if (usableFrames.length === 0) return null;
+
+      // Dominant emotion count frequency and sum of confidence
+      const counts = {};
+      const confidenceSums = {};
+      let totalConfidence = 0;
+
+      usableFrames.forEach(f => {
+        counts[f.label] = (counts[f.label] || 0) + 1;
+        confidenceSums[f.label] = (confidenceSums[f.label] || 0) + f.score;
+        totalConfidence += f.score;
+      });
+
+      let rawDominantEmotion = null;
+      let maxCount = 0;
+      let maxConfidenceSum = 0;
+
+      Object.entries(counts).forEach(([emotion, count]) => {
+        const confSum = confidenceSums[emotion] || 0;
+        if (count > maxCount) {
+          maxCount = count;
+          maxConfidenceSum = confSum;
+          rawDominantEmotion = emotion;
+        } else if (count === maxCount) {
+          // Tie-break by highest summed confidence
+          if (confSum > maxConfidenceSum) {
+            maxConfidenceSum = confSum;
+            rawDominantEmotion = emotion;
+          }
+        }
+      });
+
+      const averageConfidence = parseFloat((totalConfidence / usableFrames.length).toFixed(4));
+
+      // Semantic mapping
+      let composureScore = 100;
+      let cognitiveLoadLevel = "low";
+
+      if (rawDominantEmotion === 'happy') {
+        composureScore = 100;
+        cognitiveLoadLevel = "low";
+      } else if (rawDominantEmotion === 'neutral') {
+        composureScore = 95;
+        cognitiveLoadLevel = "low";
+      } else if (rawDominantEmotion === 'sad') {
+        composureScore = 65;
+        cognitiveLoadLevel = "medium";
+      } else if (rawDominantEmotion === 'fear') {
+        composureScore = 55;
+        cognitiveLoadLevel = "high";
+      } else if (rawDominantEmotion === 'disgust') {
+        composureScore = 50;
+        cognitiveLoadLevel = "high";
+      } else if (rawDominantEmotion === 'angry') {
+        composureScore = 35;
+        cognitiveLoadLevel = "high";
+      } else if (rawDominantEmotion === 'surprise') {
+        composureScore = 80;
+        cognitiveLoadLevel = "low";
+      }
+
+      // Engagement trend analysis
+      let engagementTrend = "stable";
+      if (rawDominantEmotion === 'surprise') {
+        engagementTrend = "increasing";
+      } else if (usableFrames.length >= 2) {
+        const half = Math.floor(usableFrames.length / 2);
+        const firstHalf = usableFrames.slice(0, half);
+        const secondHalf = usableFrames.slice(half);
+
+        const getFrameEngagement = (f) => {
+          const s = f.scores || {};
+          const happy = s.happy || 0;
+          const surprise = s.surprise || 0;
+          const neutral = s.neutral || 0;
+          return happy + surprise + neutral * 0.5;
+        };
+
+        const firstHalfEngagementAvg = firstHalf.reduce((acc, f) => acc + getFrameEngagement(f), 0) / firstHalf.length;
+        const secondHalfEngagementAvg = secondHalf.reduce((acc, f) => acc + getFrameEngagement(f), 0) / secondHalf.length;
+
+        if (secondHalfEngagementAvg > firstHalfEngagementAvg + 0.08) {
+          engagementTrend = "increasing";
+        } else if (secondHalfEngagementAvg < firstHalfEngagementAvg - 0.08) {
+          engagementTrend = "decreasing";
+        }
+      }
+
+      return {
+        composureScore,
+        cognitiveLoadLevel,
+        engagementTrend,
+        frameCount: usableFrames.length,
+        averageConfidence,
+        rawDominantEmotion,
+        questionIndex
+      };
     },
   }));
 
@@ -1181,12 +1311,12 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
             {liveEmotion && (
               <div
                 className="absolute bottom-3 left-3 flex items-center gap-2 text-xs bg-section/80 text-purple-400 border border-purple-900/40 backdrop-blur-sm rounded-md px-2.5 py-1.5"
-                title={`Smoothed emotion · ${Math.round((liveEmotion.score || 0) * 100)}% confidence`}
+                title={`Smoothed composure · ${Math.round((liveEmotion.score || 0) * 100)}% confidence`}
               >
                 <span className="text-sm leading-none">
                   {EMOTION_META[liveEmotion.label]?.emoji || '\ud83d\ude10'}
                 </span>
-                <span className="capitalize font-medium">{liveEmotion.label}</span>
+                <span className="font-medium">{COMPOSURE_LABELS[liveEmotion.label] || liveEmotion.label}</span>
                 <span className="text-[10px] opacity-70">
                   {Math.round((liveEmotion.score || 0) * 100)}%
                 </span>

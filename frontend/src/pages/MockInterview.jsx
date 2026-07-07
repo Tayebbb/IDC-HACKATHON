@@ -54,8 +54,13 @@ import {
 import { db } from '../firebase';
 import ReasoningCard from '../components/ReasoningCard';
 import { buildEnvelope } from '../utils/explainability';
-import FaceExpressionOverlay, { getExpressionCoaching } from '../components/FaceExpressionOverlay';
+import FaceExpressionOverlay, { getExpressionCoaching, COMPOSURE_LABELS } from '../components/FaceExpressionOverlay';
 import API_URL from '../config';
+
+function getFriendlyEmotionLabel(label) {
+  if (!label) return '';
+  return COMPOSURE_LABELS[label] || label;
+}
 import {
   GlassCard,
   PageContainer,
@@ -373,7 +378,13 @@ const MockInterview = () => {
   }, [currentUser, showHistory, loadInterviewHistory]);
 
   // ── Generate question ─────────────────────────────────────────────────────
-  const generateQuestion = useCallback(async () => {
+  // Accepts explicit questionIndex and profileOverride to avoid stale closures
+  // when called from startInterview (where questionNumber is 0 and profile
+  // was just fetched into a local variable).
+  const generateQuestion = useCallback(async (questionIndex, profileOverride) => {
+    // Fall back to current state when called without explicit args (e.g. "New Question" button)
+    const qIdx = typeof questionIndex === 'number' ? questionIndex : questionNumber;
+    const profile = profileOverride !== undefined ? profileOverride : (interviewProfile || {});
     setLoading(true);
     try {
       const apiUrl = API_URL.replace(/\/+$/, '');
@@ -383,10 +394,10 @@ const MockInterview = () => {
         body: JSON.stringify({
           role: selectedRole,
           difficulty,
-          questionNumber: questionNumber + 1,
+          questionNumber: qIdx + 1,
           sessionId: sessionIdRef.current || sessionId,
           previousQuestions: sessionQuestions,
-          profile: interviewProfile || {},
+          profile,
         }),
       });
       if (!res.ok) {
@@ -408,36 +419,67 @@ const MockInterview = () => {
     }
   }, [selectedRole, difficulty, questionNumber, sessionQuestions, interviewProfile, sessionId]);
 
-  // ── Evaluate answer ───────────────────────────────────────────────────────
-  const computeMetricsEnvelope = useCallback((transcript) => {
-    const text = (transcript || '').trim();
+  // ── Compute delivery metrics ──────────────────────────────────────────────
+  const computeDeliveryMetrics = useCallback((answerText) => {
+    const text = (answerText || '').trim();
     if (!text) return null;
     const words = text.split(/\s+/).filter(Boolean);
-    const durationMs = (speechEndRef.current || Date.now()) - (speechStartRef.current || Date.now());
-    const minutes = Math.max(durationMs / 60000, 1 / 60);
-    const wpm = Math.round(words.length / minutes);
+    const wordCount = words.length;
 
     const lower = ` ${text.toLowerCase()} `;
-    let fillers = 0;
+    let fillerCount = 0;
     FILLER_WORDS.forEach((f) => {
       const re = new RegExp(`\\b${f.replace(/ /g, '\\s+')}\\b`, 'g');
       const m = lower.match(re);
-      if (m) fillers += m.length;
+      if (m) fillerCount += m.length;
     });
-    const pauseSecs = Math.round((pauseAccumRef.current || 0) / 100) / 10;
+
+    const fillerRate = wordCount > 0 ? parseFloat((fillerCount / wordCount).toFixed(4)) : 0;
+
+    const isSpoken = speechStartRef.current !== null;
+    const source = isSpoken ? 'voice' : 'typed';
+
+    let wpm = null;
+    let pauseSeconds = null;
+    let speakingDurationSeconds = null;
+
+    if (isSpoken) {
+      const endMs = speechEndRef.current || Date.now();
+      const durationMs = endMs - speechStartRef.current;
+      speakingDurationSeconds = parseFloat((durationMs / 1000).toFixed(2));
+      const minutes = Math.max(durationMs / 60000, 1 / 60);
+      wpm = Math.round(wordCount / minutes);
+      pauseSeconds = parseFloat((Math.round((pauseAccumRef.current || 0) / 100) / 10).toFixed(2));
+    }
+
+    return {
+      wpm,
+      fillerCount,
+      fillerRate,
+      pauseSeconds,
+      wordCount,
+      speakingDurationSeconds,
+      source,
+    };
+  }, []);
+
+  // ── Evaluate answer ───────────────────────────────────────────────────────
+  const computeMetricsEnvelope = useCallback((transcript) => {
+    const metrics = computeDeliveryMetrics(transcript);
+    if (!metrics || metrics.source === 'typed') return null;
 
     const factors = [
-      { label: `Speaking rate: ${wpm} WPM (interview_metric)`, positive: wpm >= 110 && wpm <= 160, signal_type: 'interview_metric', value: wpm },
-      { label: `Filler words used: ${fillers} (interview_metric)`, positive: fillers <= 3, signal_type: 'interview_metric', value: fillers },
-      { label: `Total pause time: ${pauseSecs}s (interview_metric)`, positive: pauseSecs <= 6, signal_type: 'interview_metric', value: pauseSecs },
+      { label: `Speaking rate: ${metrics.wpm} WPM (interview_metric)`, positive: metrics.wpm >= 110 && metrics.wpm <= 160, signal_type: 'interview_metric', value: metrics.wpm },
+      { label: `Filler words used: ${metrics.fillerCount} (interview_metric)`, positive: metrics.fillerCount <= 3, signal_type: 'interview_metric', value: metrics.fillerCount },
+      { label: `Total pause time: ${metrics.pauseSeconds}s (interview_metric)`, positive: metrics.pauseSeconds <= 6, signal_type: 'interview_metric', value: metrics.pauseSeconds },
     ];
 
     return buildEnvelope(
-      `${words.length} words spoken`,
+      `${metrics.wordCount} words spoken`,
       factors,
-      `Voice analysis · ${Math.round(durationMs / 1000)}s recorded`,
+      `Voice analysis · ${Math.round(metrics.speakingDurationSeconds || 0)}s recorded`,
     );
-  }, []);
+  }, [computeDeliveryMetrics]);
 
   const evaluateAnswer = useCallback(async () => {
     if (!userAnswer.trim()) {
@@ -446,9 +488,21 @@ const MockInterview = () => {
     }
     setInterviewPhase('transition');
     setLoading(true);
+
+    // Stop recording immediately if active
+    if (isRecording) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsRecording(false);
+    }
+
     try {
       const apiUrl = API_URL.replace(/\/+$/, '');
       const curQTrend = (questionTrends && questionTrends[questionNumber]) || null;
+      const deliveryMetrics = computeDeliveryMetrics(userAnswer);
+      const expressionSnapshot = faceOverlayRef.current?.snapshotQuestion?.(questionNumber) ?? null;
+
       const res = await fetch(`${apiUrl}/interview/evaluate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -460,6 +514,8 @@ const MockInterview = () => {
           sessionId: sessionIdRef.current,
           questionNumber: questionNumber + 1,
           profile: interviewProfile || {},
+          deliveryMetrics,
+          expressionSnapshot,
           emotionSummary: emotionSummary
             ? {
                 dominantEmotion: emotionSummary.dominant,
@@ -497,9 +553,12 @@ const MockInterview = () => {
           const fillers = fillerFactor?.value ?? 0;
           const pauseSecs = pauseFactor?.value ?? 0;
           setVoiceCoaching(getVoiceCoaching(wpm, fillers, pauseSecs));
+        } else {
+          setVoiceCoaching([]);
         }
       } catch {
         setMetricsEnvelope(null);
+        setVoiceCoaching([]);
       }
 
       setSessionScore((prev) => prev + (data.score || 0));
@@ -535,6 +594,8 @@ const MockInterview = () => {
     emotionSummary,
     presenceData,
     computeMetricsEnvelope,
+    computeDeliveryMetrics,
+    isRecording,
   ]);
 
   // ── Start / Next / End ────────────────────────────────────────────────────
@@ -570,16 +631,28 @@ const MockInterview = () => {
     currentQuestionIndexRef.current = 0;
     setInterviewPhase('listening');
 
+    // Reset speech timing refs
+    speechStartRef.current = null;
+    speechEndRef.current = null;
+    pauseAccumRef.current = 0;
+
+    // Fetch profile into a local variable so we can pass it directly
+    // to generateQuestion without waiting for setInterviewProfile to flush.
+    let fetchedProfile = {};
     if (currentUser?.uid) {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        if (snap.exists()) setInterviewProfile(snap.data());
+        if (snap.exists()) {
+          fetchedProfile = snap.data();
+          setInterviewProfile(fetchedProfile);
+        }
       } catch (err) {
         console.warn('Profile fetch failed:', err?.message || err);
       }
     }
 
-    generateQuestion();
+    // Pass explicit questionIndex=0 and the just-fetched profile
+    generateQuestion(0, fetchedProfile);
   }, [selectedRole, currentUser, generateQuestion]);
 
   const nextQuestion = useCallback(() => {
@@ -597,6 +670,12 @@ const MockInterview = () => {
     setCoveragePct(null);
     setMissingConceptsFeedback('');
     setInterviewPhase('listening');
+
+    // Reset speech timing refs
+    speechStartRef.current = null;
+    speechEndRef.current = null;
+    pauseAccumRef.current = 0;
+
     generateQuestion();
   }, [generateQuestion]);
 
@@ -635,14 +714,14 @@ const MockInterview = () => {
           totalQuestions,
           averageScore: parseFloat(avgScore.toFixed(2)),
           highestScore: Math.max(...sessionFeedbacks.map((f) => f.score || 0)),
-          lowestScore: Math.min(...sessionFeedbacks.map((f) => f.score || 10)),
-          passRate: ((sessionFeedbacks.filter((f) => f.score >= 6).length / totalQuestions) * 100).toFixed(1),
+          lowestScore: Math.min(...sessionFeedbacks.map((f) => f.score || 100)),
+          passRate: ((sessionFeedbacks.filter((f) => f.score >= 60).length / totalQuestions) * 100).toFixed(1),
         },
       };
 
       const docRef = await addDoc(collection(db, 'interviewHistory'), sessionData);
       console.log('Interview session saved with ID:', docRef.id);
-      toast.success(`Interview completed! Average score: ${avgScore.toFixed(1)}/10`);
+      toast.success(`Interview completed! Average score: ${avgScore.toFixed(1)}/100`);
 
       setInterviewStarted(false);
       setInterviewEnded(true);
@@ -822,7 +901,7 @@ const MockInterview = () => {
             <div className="flex-1 min-w-0">
               <p className="text-xs text-text-muted">Avg score</p>
               <p className="text-sm font-semibold text-text-main">
-                {sessionStats.avg}<span className="text-text-muted font-normal">/10</span>
+                {sessionStats.avg}<span className="text-text-muted font-normal">/100</span>
                 <span className="text-text-muted font-normal"> · best {sessionStats.best}</span>
               </p>
             </div>
@@ -1014,9 +1093,9 @@ const MockInterview = () => {
 
         <div className="space-y-2">
           {[
-            { label: 'Avg Score', value: `${sessionStats.avg}/10`, Icon: TrendingUp },
+            { label: 'Avg Score', value: `${sessionStats.avg}/100`, Icon: TrendingUp },
             { label: 'Answered', value: sessionStats.answered, Icon: MessageSquare },
-            { label: 'Best Score', value: `${sessionStats.best}/10`, Icon: Star },
+            { label: 'Best Score', value: `${sessionStats.best}/100`, Icon: Star },
           ].map((c) => (
             <div
               key={c.label}
@@ -1162,10 +1241,59 @@ const MockInterview = () => {
               transition={{ duration: 0.35 }}
               className="glass-card p-6 space-y-5"
             >
+              {feedback.fusion && (
+                <ReasoningCard
+                  title="Multimodal Interview Score"
+                  score={feedback.fusion.finalScore}
+                  factors={[
+                    {
+                      label: `Final Interview Score: ${feedback.fusion.finalScore}/100`,
+                      positive: feedback.fusion.finalScore >= 60,
+                      signal_type: "interview_metric",
+                      value: feedback.fusion.finalScore
+                    },
+                    {
+                      label: `Content quality: ${feedback.fusion.contentScore}/100`,
+                      positive: feedback.fusion.contentScore >= 60,
+                      signal_type: "interview_metric",
+                      value: feedback.fusion.contentScore
+                    },
+                    ...(feedback.fusion.deliveryScore !== null && feedback.fusion.deliveryScore !== undefined
+                      ? [{
+                          label: `Speech delivery: ${feedback.fusion.deliveryScore}/100`,
+                          positive: feedback.fusion.deliveryScore >= 60,
+                          signal_type: "interview_metric",
+                          value: feedback.fusion.deliveryScore
+                        }]
+                      : []),
+                    ...(feedback.fusion.expressionScore !== null && feedback.fusion.expressionScore !== undefined
+                      ? [{
+                          label: `Composure trend: ${feedback.fusion.expressionScore}/100`,
+                          positive: feedback.fusion.expressionScore >= 60,
+                          signal_type: "interview_metric",
+                          value: feedback.fusion.expressionScore
+                        }]
+                      : []),
+                    {
+                      label: `Active signals: ${feedback.fusion.streamsActive} stream(s) (content${
+                        feedback.fusion.deliveryScore !== null ? ', delivery' : ''
+                      }${
+                        feedback.fusion.expressionScore !== null ? ', composure' : ''
+                      })`,
+                      positive: true,
+                      signal_type: "interview_metric",
+                      value: feedback.fusion.streamsActive
+                    }
+                  ]}
+                  basis={feedback.fusion.crossModalNote || `Score fused from ${feedback.fusion.streamsActive} active signal streams.`}
+                  confidence={feedback.fusion.confidence}
+                />
+              )}
+
               {/* Score ring + summary */}
               <div className="flex items-center gap-6 flex-wrap sm:flex-nowrap">
                 {(() => {
-                  const pct = Math.max(0, Math.min(100, Math.round((feedback.score || 0) * 10)));
+                  const pct = Math.max(0, Math.min(100, Math.round((feedback.fusion ? feedback.fusion.finalScore : feedback.score) || 0)));
                   const R = 42;
                   const C = 2 * Math.PI * R;
                   return (
@@ -1193,7 +1321,7 @@ const MockInterview = () => {
                   <p className="text-sm text-text-main leading-relaxed">{feedback.feedback}</p>
                   {feedback.expression_feedback && (
                     <div className="mt-3 glass-card p-3 ring-1 ring-primary/25 bg-primary/8">
-                      <p className="text-xs font-semibold text-primary-light mb-1">Expression insight</p>
+                      <p className="text-xs font-semibold text-primary-light mb-1">Composure insight</p>
                       <p className="text-sm text-text-muted leading-relaxed">{feedback.expression_feedback}</p>
                     </div>
                   )}
@@ -1243,9 +1371,9 @@ const MockInterview = () => {
                   <div className="grid sm:grid-cols-2 gap-4">
                     {[
                       ['Core concepts', scoreBreakdown.core_concepts, 40],
-                      ['Technical depth', scoreBreakdown.technical_depth, 30],
+                      ['Technical accuracy', scoreBreakdown.technical_accuracy, 30],
                       ['Practical example', scoreBreakdown.practical_example, 20],
-                      ['Clarity', scoreBreakdown.clarity, 10],
+                      ['Communication', scoreBreakdown.communication, 10],
                     ].map(([label, value, max]) => (
                       <ProgressBar
                         key={label}
@@ -1322,7 +1450,7 @@ const MockInterview = () => {
         )}
       </motion.section>
 
-      {/* RIGHT: live face/expression analysis */}
+      {/* RIGHT: live face composure analysis */}
       <motion.aside
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
@@ -1332,7 +1460,7 @@ const MockInterview = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Camera size={16} className="text-primary-light" />
-            <h3 className="text-sm font-semibold text-text-main">Expression Coach</h3>
+            <h3 className="text-sm font-semibold text-text-main">Composure Coach</h3>
           </div>
           <StatusBadge tone="success" pulse>live</StatusBadge>
         </div>
@@ -1421,13 +1549,13 @@ const MockInterview = () => {
               ...(emotionSummary
                 ? [
                     {
-                      label: `Dominant expression: ${emotionSummary.dominant} (interview_metric)`,
+                      label: `Dominant composure: ${getFriendlyEmotionLabel(emotionSummary.dominant)} (interview_metric)`,
                       positive: !['fear', 'sad', 'angry', 'disgust'].includes(emotionSummary.dominant),
                       signal_type: 'interview_metric',
                       value: emotionSummary.dominantPct,
                     },
                     {
-                      label: `Negative expression rate: ${emotionSummary.negativePct}% (interview_metric)`,
+                      label: `Negative composure rate: ${emotionSummary.negativePct}% (interview_metric)`,
                       positive: emotionSummary.negativePct <= 20,
                       signal_type: 'interview_metric',
                       value: emotionSummary.negativePct,
@@ -1444,22 +1572,22 @@ const MockInterview = () => {
       {!metricsEnvelope && emotionSummary && (
         <div className="lg:col-span-6">
           <ReasoningCard
-            title="Expression analysis"
+            title="Composure & Delivery Analysis"
             factors={[
               {
-                label: `Dominant expression: ${emotionSummary.dominant} (interview_metric)`,
+                label: `Dominant composure: ${getFriendlyEmotionLabel(emotionSummary.dominant)} (interview_metric)`,
                 positive: !['fear', 'sad', 'angry', 'disgust'].includes(emotionSummary.dominant),
                 signal_type: 'interview_metric',
                 value: emotionSummary.dominantPct,
               },
               {
-                label: `Negative expression rate: ${emotionSummary.negativePct}% (interview_metric)`,
+                label: `Negative composure rate: ${emotionSummary.negativePct}% (interview_metric)`,
                 positive: emotionSummary.negativePct <= 20,
                 signal_type: 'interview_metric',
                 value: emotionSummary.negativePct,
               },
             ]}
-            basis={`Expression sampled across ${emotionSummary.totalFrames} frame(s) during interview`}
+            basis={`Composure trend sampled across ${emotionSummary.totalFrames} frame(s) during interview`}
             confidence={
               emotionSummary.totalFrames >= 3 ? 'High'
               : emotionSummary.totalFrames >= 1 ? 'Medium' : 'Low'
@@ -1468,21 +1596,21 @@ const MockInterview = () => {
         </div>
       )}
 
-      {/* Expression breakdown */}
+      {/* Composure breakdown */}
       {emotionSummary && (
         <GlassCard padding="lg" className="lg:col-span-6" animate>
           <p className="eyebrow mb-3 flex items-center gap-2">
-            <Camera size={12} /> Expression breakdown
+            <Camera size={12} /> Composure breakdown
           </p>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-text-muted">Dominant expression</span>
+            <span className="text-sm text-text-muted">Dominant composure</span>
             <span className="text-sm font-semibold text-text-main capitalize">
-              {emotionSummary.dominant}
+              {getFriendlyEmotionLabel(emotionSummary.dominant)}
               <span className="text-primary-light ml-1 text-sm">{emotionSummary.dominantPct}%</span>
             </span>
           </div>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-text-muted">Negative rate</span>
+            <span className="text-sm text-text-muted">Uncertainty / Emphasis rate</span>
             <span className={`font-semibold text-sm ${emotionSummary.negativePct > 30 ? 'text-error' : 'text-success'}`}>
               {emotionSummary.negativePct}%
             </span>
@@ -1495,7 +1623,7 @@ const MockInterview = () => {
                   ? 'error' : label === 'happy' ? 'success' : 'primary';
                 return (
                   <div key={label} className="flex items-center gap-3">
-                    <span className="text-text-muted text-xs w-16 capitalize flex-shrink-0">{label}</span>
+                    <span className="text-text-muted text-xs w-24 flex-shrink-0">{getFriendlyEmotionLabel(label)}</span>
                     <ProgressBar
                       value={pct}
                       max={100}
@@ -1516,7 +1644,7 @@ const MockInterview = () => {
       {/* Per-question trends */}
       {questionTrends.length > 0 && (
         <GlassCard padding="lg" className="lg:col-span-12" animate>
-          <p className="eyebrow mb-4 flex items-center gap-2"><ListChecks size={12} /> Emotional journey per question</p>
+          <p className="eyebrow mb-4 flex items-center gap-2"><ListChecks size={12} /> Composure journey per question</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {questionTrends.map((trend, i) =>
               trend && (
@@ -1526,7 +1654,7 @@ const MockInterview = () => {
                     <span className="text-xs text-text-subtle">{trend.frameCount} frame{trend.frameCount !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="text-text-main text-sm capitalize">{trend.dominant}</span>
+                    <span className="text-text-main text-sm">{getFriendlyEmotionLabel(trend.dominant)}</span>
                     <StatusBadge
                       tone={trend.negPct >= 40 ? 'error' : trend.negPct >= 20 ? 'warning' : 'success'}
                     >
@@ -1541,10 +1669,10 @@ const MockInterview = () => {
         </GlassCard>
       )}
 
-      {/* Expression coaching */}
+      {/* Composure coaching */}
       {expressionCoaching.length > 0 && (
         <GlassCard padding="lg" className="lg:col-span-6" animate>
-          <p className="eyebrow mb-3 flex items-center gap-2"><Camera size={12} /> Expression coaching</p>
+          <p className="eyebrow mb-3 flex items-center gap-2"><Camera size={12} /> Composure coaching</p>
           <div className="space-y-2">
             {expressionCoaching.map((item, i) => (
               <div
@@ -1765,7 +1893,7 @@ const MockInterview = () => {
                   <div className="text-right">
                     <p className="text-2xl font-bold text-primary-light tabular-nums">
                       {item.averageScore?.toFixed?.(1) || '0.0'}
-                      <span className="text-text-muted text-sm font-normal">/10</span>
+                      <span className="text-text-muted text-sm font-normal">/100</span>
                     </p>
                     <StatusBadge tone={DIFFICULTY_LEVELS.find((d) => d.value === item.difficulty)?.tone || 'default'}>
                       {item.difficulty}
