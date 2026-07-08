@@ -22,7 +22,6 @@ const Home = lazy(() => import("./pages/Home"));
 const About = lazy(() => import("./pages/About"));
 const Jobs = lazy(() => import("./pages/Jobs"));
 const JobDetails = lazy(() => import("./pages/JobDetails"));
-const Resources = lazy(() => import("./pages/Resources"));
 const LearningResources = lazy(() => import("./pages/LearningResources"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Login = lazy(() => import("./pages/Login"));
@@ -107,7 +106,6 @@ function AppContent() {
             <Route path="/about" element={<About />} />
             <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
             <Route path="/jobs/:id" element={<JobDetails />} />
-            <Route path="/resources" element={<Resources />} />
             <Route path="/learning-resources" element={
               <ProtectedRoute>
                 <LearningResources />

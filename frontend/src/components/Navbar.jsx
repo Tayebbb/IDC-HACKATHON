@@ -40,14 +40,12 @@ import { ThemeToggle } from './ui';
 const navLinksForAuth = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Jobs', href: '/jobs' },
-  { name: 'Resources', href: '/resources' },
   { name: 'Contact', href: '/contact' },
 ];
 
 const navLinksForPublic = [
   { name: 'Home', href: '/' },
   { name: 'Jobs', href: '/jobs' },
-  { name: 'Resources', href: '/resources' },
   { name: 'Contact', href: '/contact' },
 ];
 
