@@ -1,5 +1,5 @@
 /**
- * KnowledgeGraph — Feature 9
+ * KnowledgeGraph â€” Feature 9
  *
  * Static, non-interactive react-flow graph showing the relationship:
  *   User \u2192 Skills \u2192 Missing Skills \u2192 Target Job \u2192 Recommended Courses
@@ -27,6 +27,7 @@ import {
   getMissingCareerIntelligenceFields,
   hasCareerIntelligenceProfile,
 } from '../utils/profileCompletion';
+import { AIMark } from '../components/branding';
 import { Network, CheckCircle2, AlertTriangle, Briefcase, GraduationCap, Sparkles, Lock, ArrowRight } from 'lucide-react';
 
 // Theme colors (must match the rest of the app)
@@ -72,10 +73,10 @@ function normalizeResource(resource) {
 
 function makeNode(id, label, color, x, y, kind = 'skill') {
   const kindIcon = {
-    matched: '✓',
+    matched: 'âœ“',
     missing: '!',
-    job: '★',
-    course: '▶',
+    job: 'â˜…',
+    course: 'â–¶',
   }[kind];
   return {
     id,
@@ -126,23 +127,19 @@ function makeNode(id, label, color, x, y, kind = 'skill') {
   };
 }
 
-// Mindsparks Intelligence Core — the central node that ties the user's
-// skills to the recommended job and learning path. Uses the Mindsparks
+// CareerPath Intelligence Core â€” the central node that ties the user's
+// skills to the recommended job and learning path. Uses the CareerPath
 // brand mark to visually represent the intelligence layer powering the
-// graph (per competition brief).
+// graph.
 function makeCoreNode(id, userLabel, x, y) {
-  const coreColor = '#F59E0B'; // Mindsparks accent
+  const coreColor = '#F59E0B'; // CareerPath accent
   return {
     id,
     position: { x, y },
     data: {
       label: (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 2px' }}>
-          <img
-            src="/code-front/Mindsparks 26 Logo.png"
-            alt="Mindsparks Intelligence Core"
-            style={{ height: 22, width: 'auto' }}
-          />
+          <AIMark height={24} showRing={false} title="CareerPath Intelligence Core" />
           <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#FCD34D' }}>
             Intelligence Core
           </div>
@@ -292,7 +289,7 @@ export default function KnowledgeGraph() {
     const skillTotalHeight = (totalSkills - 1) * skillSpacing;
     const userY = skillTotalHeight / 2;
 
-    // User node — promoted to the Mindsparks Intelligence Core, the central
+    // User node â€” promoted to the CareerPath Intelligence Core, the central
     // node that ties the user's skills to job matches + recommended courses.
     nodes.push(makeCoreNode('user', userLabel, COL.user, userY));
 
@@ -551,9 +548,11 @@ export default function KnowledgeGraph() {
 
       {loading && (
         <div className="relative text-center text-text-muted text-xs pb-6">
-          Loading live data… (graph is showing placeholders meanwhile)
+          Loading live dataâ€¦ (graph is showing placeholders meanwhile)
         </div>
       )}
     </div>
   );
 }
+
+

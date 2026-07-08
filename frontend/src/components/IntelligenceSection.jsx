@@ -1,14 +1,14 @@
 /**
- * IntelligenceSection — Dashboard hero block for Features 2 and 3.
+ * IntelligenceSection â€” Dashboard hero block for Features 2 and 3.
  *
  * Renders:
  *   - Career DNA radar chart (5 categories) + ReasoningCard
- *   - Career Readiness Score (0–100) + ReasoningCard with all three
+ *   - Career Readiness Score (0â€“100) + ReasoningCard with all three
  *     weight_component / profile_field / interview_metric factors
  *
  * Talks to backend POST /career-dna and POST /readiness-score.
  * If the backend is unreachable, renders nothing (primary dashboard
- * still works — per the "degrade gracefully" rule).
+ * still works â€” per the "degrade gracefully" rule).
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Radar } from 'react-chartjs-2';
@@ -24,7 +24,7 @@ import {
 import { motion } from 'framer-motion';
 import { Sparkles, Gauge } from 'lucide-react';
 import ReasoningCard from './ReasoningCard';
-import MindsparksCredential from './MindsparksCredential';
+import AchievementCredential from './AchievementCredential';
 import API_URL from '../config';
 
 ChartJS.register(
@@ -205,8 +205,8 @@ export default function IntelligenceSection({
             confidence={readiness.confidence}
           />
 
-          {/* Feature 8 — Mindsparks Badge + Certificate (renders only when score ≥ 80) */}
-          <MindsparksCredential
+          {/* Feature 8 â€” Achievement Badge + Certificate (renders only when score >= 80) */}
+          <AchievementCredential
             score={readiness.score}
             userName={userName}
             confidence={readiness.confidence}
@@ -216,3 +216,5 @@ export default function IntelligenceSection({
     </motion.section>
   );
 }
+
+

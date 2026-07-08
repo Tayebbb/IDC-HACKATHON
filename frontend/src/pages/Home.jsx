@@ -221,7 +221,7 @@ const Home = () => {
       icon: BarChart3,
       number: '6+',
       label: 'AI-Powered Tools',
-      description: 'From CV analysis and mock interviews to career roadmaps â€” all powered by the Mindsparks intelligence layer.',
+      description: 'From CV analysis and mock interviews to career roadmaps - all powered by the CareerPath intelligence layer.',
       color: '#A855F7',
       glow: 'rgba(168,85,247,0.35)',
     },

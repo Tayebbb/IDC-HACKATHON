@@ -2,9 +2,9 @@
 
 **Project Name:** CareerPath: AI-Powered Career Intelligence Platform
 
-**Team Name:** CareerPath Team
+**Project Owner:** Personal Project
 
-**Hackathon:** IIUC National Hackathon / DS2CS Hackathon
+**Project Type:** Independent AI career platform
 
 **Tagline:** Personalized career guidance, interview practice, and job-readiness intelligence for students and fresh graduates.
 
@@ -16,7 +16,7 @@ CareerPath is a full-stack AI career guidance platform for students and fresh gr
 
 Students and fresh graduates in Bangladesh often face a gap between academic preparation and the expectations of software, data, AI, and technology employers. Many learners know individual tools or courses but struggle to connect those skills to concrete career tracks, interview expectations, job descriptions, and application materials. Access to personalized career mentors is limited, and generic online advice rarely reflects a student's actual CV, experience level, target role, or communication readiness.
 
-CareerPath addresses this gap by turning fragmented preparation into a single guided workflow. It reads a learner profile and CV, retrieves relevant jobs and courses from a curated corpus, generates career roadmaps and application letters, and simulates technical interviews. The platform also adds live expression coaching so candidates can practice delivery, confidence, and interview presence alongside technical answers. The system is designed for low-cost deployment, making it realistic for student communities and hackathon-scale production.
+CareerPath addresses this gap by turning fragmented preparation into a single guided workflow. It reads a learner profile and CV, retrieves relevant jobs and courses from a curated corpus, generates career roadmaps and application letters, and simulates technical interviews. The platform also adds live expression coaching so candidates can practice delivery, confidence, and interview presence alongside technical answers. The system is designed for low-cost deployment, making it realistic for student communities, personal learning, and early pilot use.
 
 # 4. Objectives
 
@@ -142,11 +142,11 @@ Expression coaching signal quality is improved through local face detection, fra
 
 HuggingFace Spaces free hosting is CPU-only and may have cold starts, limited memory, and ephemeral filesystem behavior. The file-backed interview reference store is better than an in-memory dictionary, but it is still not as durable as Firestore, Supabase, or another managed database during redeployments.
 
-The RAG pipeline is strong for a hackathon project but lacks a formal retrieval evaluation set. ChromaDB is present as a dependency and legacy/health path, while `/chat` primarily uses the custom hybrid BM25 plus dense retriever. Some documentation appears stale, including README statements that still describe interview references as in-memory.
+The RAG pipeline is strong for a personal project but lacks a formal retrieval evaluation set. ChromaDB is present as a dependency and legacy/health path, while `/chat` primarily uses the custom hybrid BM25 plus dense retriever. Some documentation appears stale, including README statements that still describe interview references as in-memory.
 
 Computer-vision coaching has natural accuracy caveats. Lighting, camera quality, occlusion, model bias, and cultural differences in expression can affect predictions. The app mitigates this with local-only mode, privacy notice, cropped frames, and graceful degradation, but it should not claim emotion certainty.
 
-There are deployment consistency issues to clean up before judging. The root backend Dockerfile uses Python 3.11 while the Spaces mirror uses Python 3.12, and the mirror appears to lag some backend RAG improvements such as tunable alpha usage. Supabase was mentioned in the project context, but no Supabase implementation was found in the inspected code; Firebase/Firestore is the actual implemented persistence layer.
+There are deployment consistency issues to clean up before release. The root backend Dockerfile uses Python 3.11 while the Spaces mirror uses Python 3.12, and the mirror appears to lag some backend RAG improvements such as tunable alpha usage. Supabase was mentioned in older project context, but no Supabase implementation was found in the inspected code; Firebase/Firestore is the actual implemented persistence layer.
 
 # 11. Future Scope
 

@@ -5,7 +5,7 @@
  * a checkbox list of common missing skills and recomputes readiness
  * CLIENT-SIDE in real time using the SAME 40/30/30 weights as Feature 3.
  *
- * Rules toggled skills follow (documented for judges):
+ * Rules toggled skills follow:
  *   - Each toggled skill increments its mapped DNA category by +8,
  *     capped at 100. (Mapping mirrors backend CAREER_DNA_CATEGORIES.)
  *   - Readiness = dnaAvg*0.40 + profileCompletion*0.30 + interview*0.30

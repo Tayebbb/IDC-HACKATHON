@@ -12,6 +12,9 @@ import { useAuth } from '../contexts/AuthContext';
 import AdminLayout from '../components/AdminLayout';
 import toast from 'react-hot-toast';
 
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dnzjg9lq8';
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || '';
+
 const AdminCourses = () => {
   const { currentUser } = useAuth();
   const [courses, setCourses] = useState([]);
@@ -61,13 +64,17 @@ const AdminCourses = () => {
 
   const uploadImageToCloudinary = async (file) => {
     try {
+      if (!CLOUDINARY_UPLOAD_PRESET) {
+        toast.error('Cloudinary upload preset is not configured');
+        return null;
+      }
       setUploadingImage(true);
       const formDataUpload = new FormData();
       formDataUpload.append('file', file);
-      formDataUpload.append('upload_preset', 'hackathon'); // Cloudinary upload preset
+      formDataUpload.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
       const response = await fetch(
-        'https://api.cloudinary.com/v1_1/dnzjg9lq8/image/upload',
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
         {
           method: 'POST',
           body: formDataUpload

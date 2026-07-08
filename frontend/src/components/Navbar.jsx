@@ -37,7 +37,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { hasCareerIntelligenceProfile } from '../utils/profileCompletion';
 import NotificationButton from './NotificationButton';
-import { MINDSPARKS_LOGO } from './branding';
+import { AIMark } from './branding';
 import { ThemeToggle } from './ui';
 
 const navLinksForAuth = [
@@ -192,11 +192,7 @@ const Navbar = () => {
                   height: 40,
                 }}
               >
-                <img
-                  src={MINDSPARKS_LOGO}
-                  alt="Mindsparks IDC"
-                  style={{ height: 24, width: 'auto', display: 'block' }}
-                />
+                <AIMark height={28} showRing={false} title="CareerPath" />
                 <div
                   className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                   style={{

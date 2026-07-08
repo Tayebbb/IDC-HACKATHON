@@ -19,11 +19,11 @@ from pydantic import BaseModel, Field
 from PyPDF2 import PdfReader
 
 # ---------------------------------------------------------------------------
-# Logging — structured, timestamped, visible in HF Space build logs
+# Logging â€” structured, timestamped, visible in HF Space build logs
 # ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    format="%(asctime)s [%(levelname)s] %(name)s â€” %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%SZ",
 )
 log = logging.getLogger("careerpath")
@@ -42,36 +42,36 @@ def _check_st_installed() -> bool:
         return False
 
 # ---------------------------------------------------------------------------
-# FastAPI app — rich OpenAPI metadata for Swagger UI and judge review
+# FastAPI app - rich OpenAPI metadata for Swagger UI and API review
 # ---------------------------------------------------------------------------
 app = FastAPI(
-    title="CareerPath AI — Backend API",
+    title="CareerPath AI â€” Backend API",
     description=(
         "**CareerPath AI** is a full-stack career guidance platform for "
         "students and fresh graduates.\n\n"
         "This backend powers:\n"
-        "- 🤖 **Hybrid RAG Chatbot** — BM25 + dense cosine retrieval, "
+        "- ðŸ¤– **Hybrid RAG Chatbot** â€” BM25 + dense cosine retrieval, "
         "cross-encoder re-ranking, Phi-3-mini generation\n"
-        "- 📄 **CV Analysis** — PDF parsing, skill extraction, LLM structuring\n"
-        "- 🗺️ **Career Roadmaps** — LLM-generated, RAG-grounded markdown roadmaps\n"
-        "- 🎤 **Mock Interviews** — question generation + answer evaluation via Llama-3.1-8B\n"
-        "- 😊 **Face Expression Analysis** — ViT-based emotion classification per frame\n"
-        "- 🧬 **Career DNA Scoring** — 5-category interpretable skill scoring\n"
-        "- 📊 **Readiness Score** — weighted aggregate: DNA 40% + Profile 30% + Interview 30%\n\n"
+        "- ðŸ“„ **CV Analysis** â€” PDF parsing, skill extraction, LLM structuring\n"
+        "- ðŸ—ºï¸ **Career Roadmaps** â€” LLM-generated, RAG-grounded markdown roadmaps\n"
+        "- ðŸŽ¤ **Mock Interviews** â€” question generation + answer evaluation via Llama-3.1-8B\n"
+        "- ðŸ˜Š **Face Expression Analysis** â€” ViT-based emotion classification per frame\n"
+        "- ðŸ§¬ **Career DNA Scoring** â€” 5-category interpretable skill scoring\n"
+        "- ðŸ“Š **Readiness Score** â€” weighted aggregate: DNA 40% + Profile 30% + Interview 30%\n\n"
         "All AI outputs carry an **ExplainabilityEnvelope** with factors, "
         "confidence level, and signal types for full transparency."
     ),
     version="2.0.0",
     contact={
-        "name": "CareerPath Team",
-        "url": "https://github.com/Tayebbb/IDC-HACKATHON",
+        "name": "CareerPath Maintainer",
+        "url": "https://github.com/",
     },
     license_info={
         "name": "MIT",
     },
     openapi_tags=[
         {"name": "health",    "description": "Liveness and dependency status endpoints"},
-        {"name": "cv",        "description": "CV / résumé upload, parsing and analysis"},
+        {"name": "cv",        "description": "CV / rÃ©sumÃ© upload, parsing and analysis"},
         {"name": "chat",      "description": "Hybrid RAG career Q&A chatbot"},
         {"name": "roadmap",   "description": "LLM-generated personalised career roadmaps"},
         {"name": "interview", "description": "Mock interview question generation and evaluation"},
@@ -84,7 +84,7 @@ app = FastAPI(
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
-    # No hard cap on history length — old Firestore conversations can be very
+    # No hard cap on history length â€” old Firestore conversations can be very
     # long; we clip to the most recent 50 turns inside the /chat handler
     # instead of rejecting the request with 422.
     history: list[dict] = Field(default_factory=list)
@@ -192,7 +192,7 @@ class ChatResponse(BaseModel):
     )
 
 # Configure CORS middleware FIRST (before routes)
-# Defaults to wildcard for local dev / hackathon demos. In production set
+# Defaults to wildcard for local dev demos. In production set
 # `CORS_ORIGINS` to a comma-separated allowlist (e.g.
 #   CORS_ORIGINS="https://careerpath.vercel.app,https://www.careerpath.app").
 # allow_credentials stays False because we do not send cookies cross-origin;
@@ -212,7 +212,7 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
-# CV analysis helpers (no LLM — pure text extraction)
+# CV analysis helpers (no LLM â€” pure text extraction)
 # ---------------------------------------------------------------------------
 
 def _extract_skills_from_text(text: str) -> List[str]:
@@ -276,7 +276,7 @@ def _summarize_cv_no_llm(full_text: str) -> dict:
 # ---------------------------------------------------------------------------
 # Explainability Layer (additive)
 # ---------------------------------------------------------------------------
-# Data contract — every AI output produced by this backend MUST be wrappable
+# Data contract â€” every AI output produced by this backend MUST be wrappable
 # in this envelope shape (see README + frontend ReasoningCard):
 #
 #   ExplainabilityEnvelope = {
@@ -335,7 +335,7 @@ def _build_envelope(output: Any, factors: List[Dict[str, Any]], basis: str,
 
 
 # ---------------------------------------------------------------------------
-# Career DNA category mapping (Feature 2 — documented for judges)
+# Career DNA category mapping (Feature 2 - documented for maintainers)
 # ---------------------------------------------------------------------------
 # Each category lists the skills that map to it. Detection is a simple
 # case-insensitive substring match against the user's declared skills.
@@ -458,7 +458,7 @@ async def health_dependencies():
     try:
         hf_token_set = bool(_os.getenv('HF_TOKEN', ''))
 
-        # ── Hybrid corpus (primary retrieval path) ──────────────────────────
+        # â”€â”€ Hybrid corpus (primary retrieval path) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         hybrid_ready   = globals().get("_HYBRID_READY", False)
         hybrid_corpus  = globals().get("_HYBRID_CORPUS", [])
         corpus_count   = len(hybrid_corpus)
@@ -467,7 +467,7 @@ async def health_dependencies():
         # is initialised and holds at least one document.
         core_ready = hybrid_ready and corpus_count > 0
 
-        # ── Legacy flat-file embeddings (optional; may be empty on HF) ─────
+        # â”€â”€ Legacy flat-file embeddings (optional; may be empty on HF) â”€â”€â”€â”€â”€
         legacy_embeddings_loaded = False
         if isinstance(_CORPUS_EMBEDDINGS, list):
             legacy_embeddings_loaded = len([
@@ -477,7 +477,7 @@ async def health_dependencies():
         # legacy flat file, so it accurately reflects retrieval readiness.
         seed_corpus_loaded = core_ready
 
-        # ── HF inference reachability (generation / LLM routes) ────────────
+        # â”€â”€ HF inference reachability (generation / LLM routes) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         hf_reachable = False
         try:
             import urllib.request
@@ -491,7 +491,7 @@ async def health_dependencies():
 
         generation_ready = globals().get("_GENERATOR_READY", False)
 
-        # ── Optional services ───────────────────────────────────────────────
+        # â”€â”€ Optional services â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         chroma_ok      = _CHROMA_COLLECTION is not None
         reranker_ready = globals().get("_RERANKER_READY", False)
         optional_services_ready = reranker_ready  # extend list here if needed
@@ -504,11 +504,11 @@ async def health_dependencies():
                 log.warning('Chroma count unavailable: %s', e)
                 chroma_ok = False
 
-        # ── Overall status semantics ────────────────────────────────────────
-        # "healthy"  — core retrieval AND generation both confirmed ready.
-        # "degraded" — core retrieval is ready; generation or optional services
+        # â”€â”€ Overall status semantics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # "healthy"  â€” core retrieval AND generation both confirmed ready.
+        # "degraded" â€” core retrieval is ready; generation or optional services
         #              are unavailable (still demo-able for chat/interview).
-        # "critical" — core retrieval corpus is missing; system cannot serve
+        # "critical" â€” core retrieval corpus is missing; system cannot serve
         #              meaningful answers.
         if core_ready and generation_ready:
             overall = 'healthy'
@@ -518,20 +518,20 @@ async def health_dependencies():
             overall = 'critical'   # no corpus loaded at all
 
         return {
-            # ── Primary readiness (judges look here first) ──────────────────
+            # â”€â”€ Primary readiness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             'overall':               overall,
             'core_ready':            core_ready,
             'generation_ready':      generation_ready,
-            # ── Corpus / retrieval ──────────────────────────────────────────
+            # â”€â”€ Corpus / retrieval â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             'hybrid_ready':          hybrid_ready,
             'corpus_count':          corpus_count,
             'seed_corpus_loaded':    seed_corpus_loaded,
-            # ── Generation / AI ────────────────────────────────────────────
+            # â”€â”€ Generation / AI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             'hf_token':              'set' if hf_token_set else 'missing',
             'hf_token_present':      hf_token_set,
             'hf_inference_reachable': hf_reachable,
             'ai_routes_ready':       hf_token_set and hf_reachable,
-            # ── Optional / legacy ───────────────────────────────────────────
+            # â”€â”€ Optional / legacy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             'reranker_ready':        reranker_ready,
             'optional_services_ready': optional_services_ready,
             'chroma_connected':      chroma_ok,
@@ -544,7 +544,7 @@ async def health_dependencies():
             'embeddings_loaded':     legacy_embeddings_loaded,
         }
     except Exception as exc:
-        # Absolute fallback — must never 500
+        # Absolute fallback â€” must never 500
         return {
             'overall':          'degraded',
             'error':            str(exc),
@@ -609,7 +609,7 @@ async def summarize_cv(file: UploadFile = File(...)):
 
         # Step 2: best-effort LLM structuring server-side (additive). Falls
         # back silently to keyword-only output if HF_TOKEN is missing or HF
-        # request fails — the frontend never sees a partial failure here.
+        # request fails â€” the frontend never sees a partial failure here.
         try:
             llm_struct = await _llm_structure_cv(full_text)
             for key in ('keySkills', 'toolsTechnologies', 'rolesAndDomains'):
@@ -646,7 +646,7 @@ async def summarize_cv(file: UploadFile = File(...)):
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# Feature 2 — Career DNA
+# Feature 2 â€” Career DNA
 # ---------------------------------------------------------------------------
 @app.options("/career-dna")
 async def options_career_dna():
@@ -662,7 +662,7 @@ async def options_career_dna():
 async def career_dna(req: Dict[str, Any]):
     """Score the user across 5 DNA categories and return a full envelope.
 
-    Accepted request shape (loose — accepts both raw lists and the
+    Accepted request shape (loose â€” accepts both raw lists and the
     shape returned by /summarize-cv):
       {
         "keySkills":          ["Python", ...],     # optional
@@ -685,7 +685,7 @@ async def career_dna(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Feature 3 — Career Readiness Score
+# Feature 3 â€” Career Readiness Score
 # ---------------------------------------------------------------------------
 # Weighted aggregate (0-100). Weights are documented and MUST appear as
 # weight_component / profile_field / interview_metric factors:
@@ -703,7 +703,7 @@ async def options_readiness_score():
 @app.post(
     "/readiness-score",
     tags=["analytics"],
-    summary="Compute a 0–100 career readiness score",
+    summary="Compute a 0â€“100 career readiness score",
     response_description="Weighted aggregate score: DNA 40% + Profile 30% + Interview 30%",
 )
 async def readiness_score(req: Dict[str, Any]):
@@ -786,9 +786,9 @@ async def readiness_score(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Feature 4 — Explainability wrapper for skill gap + job match
+# Feature 4 â€” Explainability wrapper for skill gap + job match
 # ---------------------------------------------------------------------------
-# These endpoints DO NOT recompute scores — the frontend already does so
+# These endpoints DO NOT recompute scores â€” the frontend already does so
 # in matchScore.js. They simply take a precomputed match result and wrap
 # it into a valid ExplainabilityEnvelope so the same ReasoningCard can
 # render it.
@@ -867,7 +867,7 @@ async def explain_match(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Feature 7 — Facial Expression Analysis: DELETED.
+# Feature 7 â€” Facial Expression Analysis: DELETED.
 # Camera capture + emotion classification runs in the browser. Frontend
 # calls trpakov/vit-face-expression on Hugging Face directly from
 # frontend/src/components/FaceExpressionOverlay.jsx.
@@ -875,7 +875,7 @@ async def explain_match(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Feature 5 — Career Advice Q&A
+# Feature 5 â€” Career Advice Q&A
 # ---------------------------------------------------------------------------
 @app.options("/career-advice")
 async def options_career_advice():
@@ -935,7 +935,7 @@ async def career_advice(q: str = "", tag: str = "", limit: int = 5):
 
 @app.post("/career-advice")
 async def career_advice_post(req: Dict[str, Any]):
-    """POST alias for /career-advice — accepts {q, tag, limit} JSON body."""
+    """POST alias for /career-advice â€” accepts {q, tag, limit} JSON body."""
     q = req.get("q", "")
     tag = req.get("tag", "")
     limit = int(req.get("limit", 5))
@@ -943,7 +943,7 @@ async def career_advice_post(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# Feature 6 — Skill Roadmaps
+# Feature 6 â€” Skill Roadmaps
 # ---------------------------------------------------------------------------
 @app.options("/skill-roadmap")
 async def options_skill_roadmap():
@@ -979,19 +979,19 @@ async def skill_roadmap(track: str = ""):
 
 @app.post("/skill-roadmap")
 async def skill_roadmap_post(req: Dict[str, Any]):
-    """POST alias for /skill-roadmap — accepts {track} JSON body."""
+    """POST alias for /skill-roadmap â€” accepts {track} JSON body."""
     track = req.get("track", "")
     return await skill_roadmap(track=track)
 
 
 # ---------------------------------------------------------------------------
 # Legacy /generate-interview-question and /evaluate-interview-answer routes
-# (keyword-based heuristic stubs) were removed during the RAG → backend
+# (keyword-based heuristic stubs) were removed during the RAG â†’ backend
 # migration. The replacements are LLM-backed: see /interview/question and
 # /interview/evaluate further down in this file.
 # ---------------------------------------------------------------------------
 
-# ── RAG GLOBALS ──────────────────────────────────────────────
+# â”€â”€ RAG GLOBALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # (stdlib imports: asyncio, math, os, re are all hoisted to top of file)
 
 _CORPUS_EMBEDDINGS = []          # flat file fallback (kept for /health/dependencies)
@@ -1023,7 +1023,7 @@ _ROLE_QUERY_EXPANSIONS: Dict[str, List[str]] = {
     'communication': ['product', 'leadership', 'writing', 'presentation', 'stakeholders'],
 }
 
-# ── Hybrid Search Globals (Tasks 1-5) ────────────────────────
+# â”€â”€ Hybrid Search Globals (Tasks 1-5) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _HYBRID_CORPUS: List[Dict] = []      # 157 raw items from seed_corpus.json
 _HYBRID_READY: bool = False
 _DF_CACHE: Dict[str, int] = {}       # token -> document frequency
@@ -1036,7 +1036,7 @@ _GENERATOR_PIPELINE = None
 _GENERATOR_READY: bool = False
 _GENERATOR_MODEL_NAME = "microsoft/Phi-3-mini-4k-instruct"
 
-# ── Track filter skill sets (closed, not imported) ───────────
+# â”€â”€ Track filter skill sets (closed, not imported) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 FRONTEND_SKILLS = {
     "react", "vue", "angular", "html", "css", "javascript",
     "typescript", "tailwind", "nextjs", "vite", "svelte",
@@ -1055,7 +1055,7 @@ AIML_SKILLS = {
     "ml", "ai", "langchain", "rag", "embeddings",
 }
 
-# ── Load corpus embeddings on startup (kept for /health/dependencies) ───
+# â”€â”€ Load corpus embeddings on startup (kept for /health/dependencies) â”€â”€â”€
 def _load_corpus():
     global _CORPUS_EMBEDDINGS, _CORPUS_CHUNKS
     try:
@@ -1077,7 +1077,7 @@ def _load_corpus():
         log.error('Corpus load error: %s', e)
 
 
-# ── TASK 1 — Hybrid corpus loader ────────────────────────────
+# â”€â”€ TASK 1 â€” Hybrid corpus loader â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def _tokenize(text: str) -> List[str]:
     """Shared tokenizer: lowercase, strip non-alphanum, split."""
     return re.sub(r'[^a-z0-9 ]', ' ', text.lower()).split()
@@ -1133,7 +1133,7 @@ def _load_hybrid_corpus():
         _HYBRID_READY = False
 
 
-# ── Local embedding model ─────────────────────────────────────
+# â”€â”€ Local embedding model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def _get_local_model():
     global _LOCAL_EMBED_MODEL
     if _LOCAL_EMBED_MODEL is None:
@@ -1193,7 +1193,7 @@ def _rerank(query: str, candidates: list[dict], top_n: int = 5) -> list[dict]:
         return candidates[:top_n]
 
 
-# ── Warm the dense embedding cache (background thread at startup) ─
+# â”€â”€ Warm the dense embedding cache (background thread at startup) â”€
 def _warm_embed_cache():
     """Embed all corpus items once and cache by item id. Non-blocking."""
     if not _HYBRID_CORPUS:
@@ -1220,7 +1220,7 @@ def _warm_embed_cache():
     log.info('[RAG] Embedding cache warmed: %d items', warmed)
 
 
-# ── Cosine similarity (pure Python, no numpy) ─────────────────
+# â”€â”€ Cosine similarity (pure Python, no numpy) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def _cosine(a, b):
     if not a or not b or len(a) != len(b):
         return 0.0
@@ -1232,7 +1232,7 @@ def _cosine(a, b):
     return dot / (mag_a * mag_b)
 
 
-# LEGACY: _keyword_search — still used as a last-resort fallback in /chat
+# LEGACY: _keyword_search â€” still used as a last-resort fallback in /chat
 def _keyword_search(query: str, top_k: int = 3):
     query_words = set(query.lower().split())
     scored = []
@@ -1254,7 +1254,7 @@ def _keyword_search(query: str, top_k: int = 3):
     return results
 
 
-# ── TASK 2 — Profile-aware metadata filter ───────────────────
+# â”€â”€ TASK 2 â€” Profile-aware metadata filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def _skill_overlaps(item_skills: List[str], skill_set: set) -> bool:
     """Case-insensitive skill overlap against a track skill set."""
     for skill in item_skills:
@@ -1405,7 +1405,7 @@ def _retrieval_trace(
     }
 
 
-# ── TASK 3 — Pure-Python BM25 scorer ─────────────────────────
+# â”€â”€ TASK 3 â€” Pure-Python BM25 scorer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def _bm25_score(
     query_tokens: 'set[str]',
     item: Dict,
@@ -1435,7 +1435,7 @@ def _bm25_score(
     return score
 
 
-# ── TASK 4 — Neutral dense scorer for fast corpus-only chat ───
+# â”€â”€ TASK 4 â€” Neutral dense scorer for fast corpus-only chat â”€â”€â”€
 async def _dense_score_all(
     query: str,
     corpus: List[Dict],
@@ -1506,7 +1506,7 @@ async def _dense_score_all(
     return scores
 
 
-# ── TASK 5 — Hybrid scorer with alpha weighting ───────────────
+# â”€â”€ TASK 5 â€” Hybrid scorer with alpha weighting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def _hybrid_retrieve(
     query: str,
     corpus: List[Dict],
@@ -1552,7 +1552,7 @@ async def _hybrid_retrieve(
     return reranked
 
 
-# ── TASK 6 — Lost-in-the-middle context window layout ─────────
+# â”€â”€ TASK 6 â€” Lost-in-the-middle context window layout â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def _build_context_window(chunks: List[Dict]) -> str:
     """Reorder chunks to place highest-scored items at top and bottom."""
     if not chunks:
@@ -1586,7 +1586,7 @@ def _build_context_window(chunks: List[Dict]) -> str:
     return '\n\n'.join(parts)
 
 
-# ── ChromaDB init (kept — used by /health/dependencies) ──────
+# â”€â”€ ChromaDB init (kept â€” used by /health/dependencies) â”€â”€â”€â”€â”€â”€
 def _init_chroma():
     global _CHROMA_CLIENT, _CHROMA_COLLECTION
     try:
@@ -1635,7 +1635,7 @@ def _populate_chroma():
     log.info('ChromaDB populated: %d chunks', len(ids))
 
 
-# LEGACY: extract_search_query — kept for compatibility
+# LEGACY: extract_search_query â€” kept for compatibility
 def extract_search_query(message: str) -> str:
     stop_words = {
         'i', 'me', 'my', 'we', 'you', 'the', 'a', 'an', 'is', 'are', 'was', 'were',
@@ -1651,7 +1651,7 @@ def extract_search_query(message: str) -> str:
     return result if result else message
 
 
-# LEGACY: grade_sources — kept for compatibility
+# LEGACY: grade_sources â€” kept for compatibility
 def grade_sources(query: str, sources: list) -> bool:
     if not sources:
         return False
@@ -2036,14 +2036,14 @@ async def options_chat():
     response_description="Answer, sources, explainability factors, confidence, and retrieval path",
 )
 async def chat(body: ChatRequest):
-    """Hybrid RAG career assistant — memory-aware, personalised, grounded.
+    """Hybrid RAG career assistant â€” memory-aware, personalised, grounded.
 
     Pipeline (v3):
         1. Parse profile / CV / DNA / skill-gap context (all optional).
         2. Intent-route the user message.
         3. Build a rolling memory summary of older turns.
         4. Retrieve top-K corpus chunks via hybrid BM25 + dense.
-        5. Detect missing context → generate follow-up questions.
+        5. Detect missing context â†’ generate follow-up questions.
         6. Assemble OpenAI-style messages array (system + context + turns + user).
         7. Call Llama-3.1-8B (HF router) with tuned params for natural, non-repetitive replies.
         8. Fall back to the legacy template answer on any failure.
@@ -2389,7 +2389,7 @@ def _generate_rag_answer(
 
 
 # ===========================================================================
-# RAG → BACKEND MIGRATION (server-side HF LLM endpoints)
+# RAG â†’ BACKEND MIGRATION (server-side HF LLM endpoints)
 # ---------------------------------------------------------------------------
 # These routes replace the browser-direct HF calls that previously lived in
 # frontend/src/services/{ragPipeline,interviewAI,corpusLoader}.js.
@@ -2404,14 +2404,14 @@ _HF_CHAT_TIMEOUT = 30
 _HF_CHAT_MAX_RETRIES = 3
 
 _LLM_SYSTEM_PROMPT = (
-    'You are CareerPath Assistant — a highly professional, objective career consultant '
+    'You are CareerPath Assistant â€” a highly professional, objective career consultant '
     'and technical interview expert. Maintain a formal, authoritative, and direct tone. '
     'Provide actionable, high-impact advice without unnecessary colloquialisms. '
     'Always ground your answers in the candidate context when provided.'
 )
 
-# Pooled HTTP client — created lazily, reused for the process lifetime.
-# Saves the TCP + TLS handshake on every HF chat call (~50–200ms each)
+# Pooled HTTP client â€” created lazily, reused for the process lifetime.
+# Saves the TCP + TLS handshake on every HF chat call (~50â€“200ms each)
 # and lets us run truly async without an extra worker thread per request.
 _HF_HTTP_CLIENT = None        # type: ignore[assignment]
 _HF_CLIENT_LOCK = _asyncio.Lock()
@@ -2503,7 +2503,7 @@ async def _hf_chat(
 
 
 # ---------------------------------------------------------------------------
-# Multi-turn HF chat — takes a pre-built messages array (system+turns+user).
+# Multi-turn HF chat â€” takes a pre-built messages array (system+turns+user).
 # Used by the intelligent /chat pipeline so we can inject rolling memory,
 # personalisation, RAG evidence and follow-up instructions as separate
 # message roles instead of one giant user string.
@@ -2519,10 +2519,10 @@ async def _hf_chat_messages(
     """Async HF chat call using the OpenAI-style messages array.
 
     Tuned generation params:
-    - temperature 0.55  → natural but grounded
-    - top_p 0.9         → wide-enough sampling
-    - presence_penalty  → discourages repeating the same concept
-    - frequency_penalty → discourages verbatim phrase reuse
+    - temperature 0.55  â†’ natural but grounded
+    - top_p 0.9         â†’ wide-enough sampling
+    - presence_penalty  â†’ discourages repeating the same concept
+    - frequency_penalty â†’ discourages verbatim phrase reuse
     """
     if not _HF_TOKEN:
         raise RuntimeError('HF_TOKEN is not set on the backend.')
@@ -2576,8 +2576,8 @@ async def _hf_chat_messages(
 # ---------------------------------------------------------------------------
 # We treat the client (Chatassistance.jsx + Firestore) as the source of truth
 # for full transcripts. Server-side we keep two representations:
-#   1. `_MEMORY_TURN_WINDOW` most recent turns  → verbatim in messages array
-#   2. Everything older → collapsed into a text summary (LLM-generated once
+#   1. `_MEMORY_TURN_WINDOW` most recent turns  â†’ verbatim in messages array
+#   2. Everything older â†’ collapsed into a text summary (LLM-generated once
 #      it grows large enough).
 # Summaries are cached in-memory per (uid|thread) hash for the process
 # lifetime so multi-turn threads don't re-summarise on every request.
@@ -2680,7 +2680,7 @@ async def _summarize_history(
 
 
 # ---------------------------------------------------------------------------
-# INTENT ROUTING — very lightweight keyword classifier that picks a "tool"
+# INTENT ROUTING â€” very lightweight keyword classifier that picks a "tool"
 # label so the frontend can render specialised UIs and so the system prompt
 # can bias the assistant towards the right kind of answer.
 # ---------------------------------------------------------------------------
@@ -2706,7 +2706,7 @@ def _route_intent(user_message: str, has_profile: bool) -> str:
 
 
 # ---------------------------------------------------------------------------
-# PROFILE + EVIDENCE FORMATTERS — turn the structured inputs into compact,
+# PROFILE + EVIDENCE FORMATTERS â€” turn the structured inputs into compact,
 # human-readable strings the LLM can reason over without wasting tokens.
 # ---------------------------------------------------------------------------
 def _fmt_list(items: Any, limit: int = 12) -> str:
@@ -2718,7 +2718,7 @@ def _fmt_list(items: Any, limit: int = 12) -> str:
     if not cleaned:
         return ''
     if len(cleaned) > limit:
-        cleaned = cleaned[:limit] + [f'…({len(items) - limit} more)']
+        cleaned = cleaned[:limit] + [f'â€¦({len(items) - limit} more)']
     return ', '.join(cleaned)
 
 
@@ -2892,11 +2892,11 @@ def _build_evidence_items(sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]
 
 
 # ---------------------------------------------------------------------------
-# SYSTEM PROMPT — behaves like a senior career coach; personalised,
+# SYSTEM PROMPT â€” behaves like a senior career coach; personalised,
 # grounded in evidence, non-repetitive, willing to ask follow-ups.
 # ---------------------------------------------------------------------------
 _INTELLIGENT_SYSTEM_PROMPT = (
-    "You are CareerPath AI — a senior career coach and technical mentor for "
+    "You are CareerPath AI â€” a senior career coach and technical mentor for "
     "students and early-career professionals. You combine the warmth of a "
     "great mentor with the rigour of an interview panelist.\n\n"
     "Behavioural rules (always follow):\n"
@@ -2907,14 +2907,14 @@ _INTELLIGENT_SYSTEM_PROMPT = (
     "inline as [S1], [S2] etc. When no source supports a claim, say so and "
     "reason from first principles instead of inventing data.\n"
     "3. Remember the conversation. If MEMORY / RECENT TURNS shows earlier "
-    "questions, reference them naturally ('Earlier you mentioned…') and "
+    "questions, reference them naturally ('Earlier you mentionedâ€¦') and "
     "expand rather than repeat previous answers verbatim.\n"
     "4. If the USER CONTEXT lacks something essential (target role, resume, "
     "core skills) and the follow-up questions block is non-empty, ask 1-2 "
     "of those clarifying questions BEFORE giving a full plan.\n"
     "5. Structure answers for readability: a short opener, then bullet lines "
     "or short paragraphs. Use headings only when they improve scanability.\n"
-    "6. Be specific and actionable — name libraries, courses, project ideas, "
+    "6. Be specific and actionable â€” name libraries, courses, project ideas, "
     "difficulty tiers. Explain the reasoning ('why this matters for your "
     "target role') and expected impact.\n"
     "7. Never repeat the same paragraph twice in one reply. Vary phrasing "
@@ -2922,7 +2922,7 @@ _INTELLIGENT_SYSTEM_PROMPT = (
     "8. Avoid disclaimers, over-hedging, or 'as an AI language model' phrasing. "
     "Speak directly, like a mentor over coffee.\n"
     "9. Keep answers under ~280 words unless the user explicitly asks for depth.\n"
-    "10. End with a single natural next-step suggestion when useful — do not "
+    "10. End with a single natural next-step suggestion when useful â€” do not "
     "force it if the reply already contains one."
 )
 
@@ -3132,7 +3132,7 @@ def _safe_json_parse(text: str):
 
 
 # ---------------------------------------------------------------------------
-# POST /roadmap — replaces frontend generateCareerRoadmap()
+# POST /roadmap â€” replaces frontend generateCareerRoadmap()
 # ---------------------------------------------------------------------------
 @app.options('/roadmap')
 async def options_roadmap():
@@ -3183,14 +3183,14 @@ async def roadmap(req: Dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
-# POST /interview/question — replaces frontend generateInterviewQuestion()
+# POST /interview/question â€” replaces frontend generateInterviewQuestion()
 # ---------------------------------------------------------------------------
 _REFERENCE_STORE: Dict[str, Dict[str, Any]] = {}
 
 # Session-scoped RAG context cache. RAG result is determined by
 # (role, difficulty, track, top_k, sorted profile skills). Caching this
 # across questions in the same session saves a full BM25+dense pass per
-# question (~150–400ms). TTL keeps stale data from lingering across
+# question (~150â€“400ms). TTL keeps stale data from lingering across
 # unrelated sessions.
 _INTERVIEW_RAG_CACHE: Dict[str, tuple] = {}
 _INTERVIEW_RAG_CACHE_TTL = 600          # seconds (10 min)
@@ -3198,7 +3198,7 @@ _INTERVIEW_RAG_CACHE_MAX = 128
 
 # In-flight reference-answer generation tasks. /interview/question now fires
 # the reference LLM call as a background asyncio.Task so the endpoint can
-# return immediately after the first LLM call (≈2× faster TTFB). The
+# return immediately after the first LLM call (â‰ˆ2Ã— faster TTFB). The
 # subsequent /interview/evaluate awaits the task if it isn't done yet.
 _REFERENCE_TASKS: Dict[str, "_asyncio.Task"] = {}
 
@@ -3683,7 +3683,7 @@ async def interview_question(req: Dict[str, Any]):
         + 'Personalize the question to the candidate background when possible.'
         + skill_block
         + previous_block + '\n\n'
-        + 'Respond with the question text ONLY — no preamble, no numbering, '
+        + 'Respond with the question text ONLY â€” no preamble, no numbering, '
         + 'no markdown.'
     )
 
@@ -3740,7 +3740,7 @@ async def interview_question(req: Dict[str, Any]):
             )
         )
     else:
-        # No session id — compute inline so /evaluate still has a reference.
+        # No session id â€” compute inline so /evaluate still has a reference.
         reference = await _generate_reference_answer(
             cleaned, role, difficulty, skills_tested, context,
         )
@@ -3758,7 +3758,7 @@ async def interview_question(req: Dict[str, Any]):
 
 @app.post("/generate-interview-question")
 async def generate_interview_question_alias(request: Request):
-    """Alias for /interview/question — contract compatibility."""
+    """Alias for /interview/question â€” contract compatibility."""
     return await interview_question(await request.json())
 
 
@@ -3909,7 +3909,7 @@ def _fuse_interview_scores(content_score, delivery_metrics=None, expression_snap
 
 
 # ---------------------------------------------------------------------------
-# POST /interview/evaluate — replaces frontend evaluateInterviewAnswer()
+# POST /interview/evaluate â€” replaces frontend evaluateInterviewAnswer()
 # ---------------------------------------------------------------------------
 @app.options('/interview/evaluate')
 async def options_interview_evaluate():
@@ -3920,7 +3920,7 @@ async def options_interview_evaluate():
     '/interview/evaluate',
     tags=["interview"],
     summary="Evaluate a mock interview answer",
-    response_description="Score 1–10, feedback, strengths, improvements, and optional expression feedback",
+    response_description="Score 1â€“10, feedback, strengths, improvements, and optional expression feedback",
 )
 async def interview_evaluate(req: Dict[str, Any]):
     question = (req.get('question') or '').strip()
@@ -3941,7 +3941,7 @@ async def interview_evaluate(req: Dict[str, Any]):
     expression_snapshot = req.get("expressionSnapshot") or req.get("expression_snapshot")
 
     # Optional multimodal signals from FaceExpressionOverlay. All four are
-    # optional — when absent the route behaves exactly as before.
+    # optional â€” when absent the route behaves exactly as before.
     emotion_summary  = req.get('emotionSummary')  or req.get('emotion_summary')
     presence_score   = req.get('presenceScore')   or req.get('presence_score')
     dominant_emotion = req.get('dominantEmotion') or req.get('dominant_emotion')
@@ -4071,7 +4071,7 @@ async def interview_evaluate(req: Dict[str, Any]):
             )
         return out
 
-    # Model failed to return parseable JSON — degrade gracefully.
+    # Model failed to return parseable JSON â€” degrade gracefully.
     missing = gap.get('concepts_missing') or []
     out = {
         'score': int(rubric['score']),
@@ -4151,7 +4151,7 @@ def _build_expression_feedback(
 
 @app.post("/evaluate-interview-answer")
 async def evaluate_interview_answer_alias(request: Request):
-    """Alias for /interview/evaluate — contract compatibility."""
+    """Alias for /interview/evaluate â€” contract compatibility."""
     return await interview_evaluate(await request.json())
 
 
@@ -4203,7 +4203,7 @@ async def _llm_hot_skills(cv_analysis: Dict[str, List[str]]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# POST /face-expression — proxy for trpakov/vit-face-expression
+# POST /face-expression â€” proxy for trpakov/vit-face-expression
 # ---------------------------------------------------------------------------
 # Receives cropped proxy calls from FaceExpressionOverlay.jsx.
 # Browser POSTs a cropped face JPEG as multipart; backend forwards the bytes
@@ -4345,7 +4345,7 @@ async def face_expression(file: UploadFile = File(...)):
 
 @app.post("/analyze-expression")
 async def analyze_expression_alias(file: UploadFile = File(...)):
-    """Alias for /face-expression — contract compatibility."""
+    """Alias for /face-expression â€” contract compatibility."""
     return await face_expression(file)
 
 
@@ -4415,3 +4415,4 @@ async def shutdown_event():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(_os.getenv("PORT", "7860")))
+

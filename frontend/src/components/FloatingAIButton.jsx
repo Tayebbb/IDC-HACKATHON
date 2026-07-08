@@ -20,7 +20,7 @@ const FloatingAIButton = () => {
       transition={{ delay: 0.5, type: 'spring', stiffness: 260, damping: 20 }}
       className="fixed bottom-24 right-6 sm:right-8 z-50"
     >
-      <Link to="/chatassistance" aria-label="Open Mindsparks AI Assistant">
+      <Link to="/chatassistance" aria-label="Open CareerPath AI Assistant">
         <motion.div
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.96 }}
@@ -28,7 +28,7 @@ const FloatingAIButton = () => {
         >
           {/* Soft purple glow halo */}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-50 group-hover:opacity-90 transition-opacity" />
-          {/* Pill button — real Mindsparks logo + label */}
+          {/* Pill button with CareerPath AI mark and label */}
           <div
             className="relative flex items-center gap-3 pl-3 pr-5 py-2.5 rounded-full shadow-2xl shadow-purple-500/40 group-hover:shadow-purple-500/70 transition-all"
             style={{
@@ -39,7 +39,7 @@ const FloatingAIButton = () => {
             <AIMark height={26} showRing={false} />
             <div className="flex flex-col leading-tight">
               <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-amber-200/90">
-                Mindsparks AI
+                CareerPath AI
               </span>
               <span className="text-sm font-semibold text-white">
                 Ask Assistant

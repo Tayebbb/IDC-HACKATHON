@@ -5,7 +5,7 @@
 
 import { motion } from 'framer-motion';
 import { Target, Heart, Zap, Globe } from 'lucide-react';
-import { CompetitionCredits } from '../components/branding';
+import { ProjectCredits } from '../components/branding';
 
 const About = () => {
   const missions = [
@@ -114,7 +114,7 @@ const About = () => {
           </div>
         </div>
 
-        {/* Competition credits — official Mindsparks / CodeFront / AUST IDC attribution */}
+        {/* Project identity and transparency notes */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -122,7 +122,7 @@ const About = () => {
           transition={{ duration: 0.5 }}
           className="mt-16"
         >
-          <CompetitionCredits />
+          <ProjectCredits />
         </motion.div>
       </div>
     </div>

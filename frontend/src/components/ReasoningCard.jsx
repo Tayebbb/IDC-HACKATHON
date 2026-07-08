@@ -46,7 +46,7 @@ export default function ReasoningCard({
 
   return (
     <div className="neon-card mt-4">
-      {/* Mindsparks AI attribution — marks this card as AI-generated */}
+      {/* CareerPath AI attribution marks this card as AI-generated */}
       <AIReasoningHeader title={title ? `Why: ${title}` : 'AI Reasoning'} />
 
       {/* Header: title + optional score + confidence badge */}

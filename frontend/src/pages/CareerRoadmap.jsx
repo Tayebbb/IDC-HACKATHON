@@ -312,7 +312,7 @@ export default function CareerRoadmap() {
             <div style={styles.loadingContent}>
               <AILoading
                 size={72}
-                label="Mindsparks AI is generating your roadmap…"
+                label="CareerPath AI is generating your roadmap..."
               />
               <p style={styles.loadingSubtext}>Analyzing your profile and creating your personalized plan</p>
             </div>
