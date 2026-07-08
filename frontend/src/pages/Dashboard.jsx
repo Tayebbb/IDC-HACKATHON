@@ -8,7 +8,8 @@ import { calculateMatchScore } from '../utils/matchScore';
 import { getLearningSuggestions } from '../utils/getLearningSuggestions';
 import { calculateProfileCompletion, hasCareerIntelligenceProfile } from '../utils/profileCompletion';
 import IntelligenceSection from '../components/IntelligenceSection';
-
+import { calculateSkillGapROI } from '../utils/skillGapROI';
+import SkillGapPriorityQueue from '../components/SkillGapPriorityQueue';
 const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
@@ -18,6 +19,8 @@ const Dashboard = () => {
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [userProfile, setUserProfile] = useState(null);
   const [skillGapResources, setSkillGapResources] = useState([]);
+  const [jobCorpus, setJobCorpus] = useState([]);
+  const [skillPriorities, setSkillPriorities] = useState([]);
   const [interviewScore, setInterviewScore] = useState(0);
   const careerIntelligenceUnlocked = useMemo(
     () => hasCareerIntelligenceProfile(userProfile || {}),
@@ -100,6 +103,7 @@ const Dashboard = () => {
         id: doc.id,
         ...doc.data()
       }));
+      setJobCorpus(jobs);
 
       // Get learning resources
       const resourcesSnapshot = await getDocs(collection(db, 'learningResources'));
@@ -151,6 +155,13 @@ const Dashboard = () => {
       console.error('Error fetching skill gap resources:', error);
     }
   }, []);
+
+  useEffect(() => {
+    if (userProfile && jobCorpus.length > 0) {
+      const priorities = calculateSkillGapROI(userProfile, jobCorpus);
+      setSkillPriorities(priorities);
+    }
+  }, [userProfile, jobCorpus]);
 
   // Fetch recommended courses based on user interests
   const fetchRecommendedCourses = useCallback(async (userEmail) => {
@@ -525,6 +536,10 @@ const Dashboard = () => {
             </motion.div>
           )}
         </section>
+
+        {careerIntelligenceUnlocked && skillPriorities.length > 0 && (
+          <SkillGapPriorityQueue priorities={skillPriorities} />
+        )}
 
         {/* Recommended Resources */}
         <section>
