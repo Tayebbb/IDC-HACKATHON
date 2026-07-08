@@ -353,6 +353,42 @@ const Dashboard = () => {
           </p>
         </motion.div>
 
+        {profileCompletion < 100 && (
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="neon-card p-5 sm:p-6 mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"
+          >
+            <div className="flex items-start gap-4">
+              <span className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/12 text-primary-light ring-1 ring-primary/25 flex-shrink-0">
+                <User size={22} />
+              </span>
+              <div>
+                <h2 className="text-xl font-bold text-text-main mb-1">
+                  Complete your full profile for the full experience
+                </h2>
+                <p className="text-text-muted text-sm leading-relaxed max-w-2xl">
+                  Your profile is {profileCompletion}% complete. Fill in the remaining details to improve recommendations, career intelligence, job matching, and learning priorities.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 lg:flex-shrink-0">
+              <div className="min-w-[160px]">
+                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-primary to-accent-pink"
+                    style={{ width: `${profileCompletion}%` }}
+                  />
+                </div>
+              </div>
+              <a href="/profile" className="btn-primary inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                Complete Profile
+                <ArrowRight size={16} />
+              </a>
+            </div>
+          </motion.div>
+        )}
+
         {/* Career Intelligence unlocks after the required profile fields are complete. */}
         {careerIntelligenceUnlocked && (
           <IntelligenceSection
