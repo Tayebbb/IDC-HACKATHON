@@ -6,6 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { calculateMatchScore } from '../utils/matchScore';
 import { getLearningSuggestions } from '../utils/getLearningSuggestions';
+import { calculateProfileCompletion, hasCareerIntelligenceProfile } from '../utils/profileCompletion';
 import IntelligenceSection from '../components/IntelligenceSection';
 
 const Dashboard = () => {
@@ -18,33 +19,10 @@ const Dashboard = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [skillGapResources, setSkillGapResources] = useState([]);
   const [interviewScore, setInterviewScore] = useState(0);
-
-  // Memoize profile completion calculation
-  const calculateCompletion = useCallback((data) => {
-    const fields = [
-      { key: 'bio', weight: 10 },
-      { key: 'skills', weight: 20, check: (val) => val && val.length > 0 },
-      { key: 'tools', weight: 20, check: (val) => val && val.length > 0 },
-      { key: 'experienceLevel', weight: 15 },
-      { key: 'preferredTrack', weight: 15 },
-      { key: 'location', weight: 10 },
-      { key: 'education', weight: 10 }
-    ];
-    
-    let completed = 0;
-    fields.forEach(field => {
-      const value = data[field.key];
-      const isComplete = field.check 
-        ? field.check(value) 
-        : value && value.toString().trim() !== '';
-      
-      if (isComplete) {
-        completed += field.weight;
-      }
-    });
-    
-    return completed;
-  }, []);
+  const careerIntelligenceUnlocked = useMemo(
+    () => hasCareerIntelligenceProfile(userProfile || {}),
+    [userProfile]
+  );
 
   // Load user profile and calculate completion
   const loadUserProfile = useCallback(async (userId) => {
@@ -55,7 +33,7 @@ const Dashboard = () => {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         setUserProfile(userData);
-        setProfileCompletion(calculateCompletion(userData));
+        setProfileCompletion(calculateProfileCompletion(userData));
       } else {
         setProfileCompletion(0);
       }
@@ -63,7 +41,7 @@ const Dashboard = () => {
       console.error('Error loading user profile:', error);
       setProfileCompletion(0);
     }
-  }, [calculateCompletion]);
+  }, []);
 
   // Fetch courses where user is enrolled
   const fetchEnrolledCourses = useCallback(async (userEmail) => {
@@ -364,13 +342,15 @@ const Dashboard = () => {
           </p>
         </motion.div>
 
-        {/* Career Intelligence â€” Features 2 & 3 */}
-        <IntelligenceSection
-          skills={userProfile?.skills || []}
-          profileCompletion={profileCompletion}
-          interviewScore={interviewScore}
-          userName={currentUser?.displayName || userProfile?.name || currentUser?.email}
-        />
+        {/* Career Intelligence unlocks after the required profile fields are complete. */}
+        {careerIntelligenceUnlocked && (
+          <IntelligenceSection
+            skills={userProfile?.skills || []}
+            profileCompletion={profileCompletion}
+            interviewScore={interviewScore}
+            userName={currentUser?.displayName || userProfile?.name || currentUser?.email}
+          />
+        )}
 
         {/* Profile Summary Cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

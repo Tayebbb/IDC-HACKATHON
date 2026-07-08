@@ -10,10 +10,11 @@
  * scoring + course suggestions reuse existing utilities so this page
  * cannot drift from the rest of the app.
  *
- * If anything is missing (no user, no jobs, no matches) the graph still
- * renders with safe placeholder nodes \u2014 the graph is always demonstrable.
+ * The graph unlocks after Skills, Tools/Technologies, Experience Level,
+ * and Preferred Career Track are complete.
  */
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ReactFlow, Background, BackgroundVariant, Controls, MiniMap, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
@@ -21,7 +22,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { calculateMatchScore } from '../utils/matchScore';
 import { getLearningSuggestions } from '../utils/getLearningSuggestions';
-import { Network, CheckCircle2, AlertTriangle, Briefcase, GraduationCap, Sparkles } from 'lucide-react';
+import {
+  calculateProfileCompletion,
+  getMissingCareerIntelligenceFields,
+  hasCareerIntelligenceProfile,
+} from '../utils/profileCompletion';
+import { Network, CheckCircle2, AlertTriangle, Briefcase, GraduationCap, Sparkles, Lock, ArrowRight } from 'lucide-react';
 
 // Theme colors (must match the rest of the app)
 const COLOR_USER = '#A855F7';
@@ -221,6 +227,19 @@ export default function KnowledgeGraph() {
     };
   }, [currentUser]);
 
+  const profileCompletion = useMemo(
+    () => calculateProfileCompletion(userProfile || {}),
+    [userProfile]
+  );
+  const careerIntelligenceUnlocked = useMemo(
+    () => hasCareerIntelligenceProfile(userProfile || {}),
+    [userProfile]
+  );
+  const missingUnlockFields = useMemo(
+    () => getMissingCareerIntelligenceFields(userProfile || {}),
+    [userProfile]
+  );
+
   // Build nodes + edges from real data, with placeholder fallback.
   const { nodes, edges } = useMemo(() => {
     const userLabel =
@@ -323,6 +342,42 @@ export default function KnowledgeGraph() {
 
     return { nodes, edges };
   }, [currentUser, userProfile, jobs, resources]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base px-4">
+        <div className="neon-card p-6 text-center max-w-md">
+          <Network className="mx-auto mb-4 text-primary glow-icon" size={36} />
+          <h1 className="text-2xl font-bold glow-text mb-2">Checking profile completion</h1>
+          <p className="text-text-muted text-sm">
+            CareerPath is verifying whether your profile is ready for the Knowledge Graph.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!careerIntelligenceUnlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base px-4">
+        <div className="neon-card p-6 sm:p-8 text-center max-w-lg">
+          <span className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/12 text-primary-light ring-1 ring-primary/25 mb-4">
+            <Lock size={26} />
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-bold glow-text mb-3">
+            Complete your profile to unlock Knowledge Graph
+          </h1>
+          <p className="text-text-muted mb-5">
+            Your profile is {profileCompletion}% complete. Add {missingUnlockFields.join(', ')} to unlock the graph.
+          </p>
+          <Link to="/profile" className="btn-primary inline-flex items-center gap-2">
+            Complete Profile
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: BG }}>

@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { CAREER_TRACKS, EXPERIENCE_LEVELS, LOCATIONS } from '../constants/jobConstants';
 import { searchSkills } from '../constants/skillsDictionary';
 import ProfilePDFDownload from '../components/ProfilePDFDownload';
+import { calculateProfileCompletion } from '../utils/profileCompletion';
 
 const Profile = () => {
   const { currentUser } = useAuth();
@@ -87,29 +88,7 @@ const Profile = () => {
   };
 
   const calculateCompletion = (data) => {
-    const fields = [
-      { key: 'bio', weight: 10 },
-      { key: 'skills', weight: 20, check: (val) => val && val.length > 0 },
-      { key: 'tools', weight: 20, check: (val) => val && val.length > 0 },
-      { key: 'experienceLevel', weight: 15 },
-      { key: 'preferredTrack', weight: 15 },
-      { key: 'location', weight: 10 },
-      { key: 'education', weight: 10 }
-    ];
-    
-    let completed = 0;
-    fields.forEach(field => {
-      const value = data[field.key];
-      const isComplete = field.check 
-        ? field.check(value) 
-        : value && value.toString().trim() !== '';
-      
-      if (isComplete) {
-        completed += field.weight;
-      }
-    });
-    
-    setProfileCompletion(completed);
+    setProfileCompletion(calculateProfileCompletion(data));
   };
 
   const handleUpdateProfile = async (updatedData) => {

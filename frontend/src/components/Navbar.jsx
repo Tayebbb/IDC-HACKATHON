@@ -32,7 +32,10 @@ import {
   PenLine,
   Network,
 } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+import { hasCareerIntelligenceProfile } from '../utils/profileCompletion';
 import NotificationButton from './NotificationButton';
 import { MINDSPARKS_LOGO } from './branding';
 import { ThemeToggle } from './ui';
@@ -63,6 +66,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAIMenu, setShowAIMenu] = useState(false);
+  const [careerIntelligenceUnlocked, setCareerIntelligenceUnlocked] = useState(false);
   const aiMenuRef = useRef(null);
   const location = useLocation();
   const { currentUser, logout } = useAuth();
@@ -111,6 +115,33 @@ const Navbar = () => {
     setShowAIMenu(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfileCompletion() {
+      if (!currentUser?.uid) {
+        setCareerIntelligenceUnlocked(false);
+        return;
+      }
+
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        const unlocked = snap.exists()
+          ? hasCareerIntelligenceProfile(snap.data())
+          : false;
+        if (!cancelled) setCareerIntelligenceUnlocked(unlocked);
+      } catch (error) {
+        console.error('Profile completion check failed:', error);
+        if (!cancelled) setCareerIntelligenceUnlocked(false);
+      }
+    }
+
+    loadProfileCompletion();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.uid, location.pathname]);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -122,6 +153,9 @@ const Navbar = () => {
 
   const isActive = (href) => location.pathname === href;
   const links = currentUser ? navLinksForAuth : navLinksForPublic;
+  const visibleAiFeatures = aiFeatures.filter(
+    (feature) => feature.href !== '/knowledge-graph' || careerIntelligenceUnlocked
+  );
 
   return (
     <motion.nav
@@ -231,7 +265,7 @@ const Navbar = () => {
                       role="menu"
                     >
                       <div className="rounded-2xl glass-panel py-2">
-                      {aiFeatures.map((feature) => {
+                      {visibleAiFeatures.map((feature) => {
                         const Icon = feature.icon;
                         const active = isActive(feature.href);
                         return (
@@ -437,7 +471,7 @@ const Navbar = () => {
                       <Sparkles size={12} />
                       AI Tools
                     </div>
-                    {aiFeatures.map((feature) => {
+                    {visibleAiFeatures.map((feature) => {
                       const Icon = feature.icon;
                       return (
                         <Link
