@@ -6316,6 +6316,4191 @@
     "text": "Most comprehensive Java course covering OOP collections generics streams and concurrency. Build real projects and prepare for Java certification. Includes Spring Boot introduction."
   },
   {
+    "parent_id": "job_158",
+    "type": "job",
+    "title": "Accessibility Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_158_chunk_2",
+    "text": "Accessibility Specialist. Skills: Web Accessibility Guidelines, HTML, CSS, JavaScript, User Experience Design. Ensures digital products meet accessibility standards, enhancing usability for all users."
+  },
+  {
+    "parent_id": "job_159",
+    "type": "job",
+    "title": "Admin Big Data",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_159_chunk_2",
+    "text": "Admin Big Data. Skills: Big Data Management, Hadoop, Spark, Data Warehousing, SQL. Administers and manages large datasets, ensuring data integrity and accessibility."
+  },
+  {
+    "parent_id": "job_160",
+    "type": "job",
+    "title": "Agile Project Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_160_chunk_2",
+    "text": "Agile Project Manager. Skills: Agile Methodologies, Scrum, Kanban, Project Management Tools, Leadership. Leads projects using agile frameworks, focusing on iterative development and team collaboration."
+  },
+  {
+    "parent_id": "job_161",
+    "type": "job",
+    "title": "Android Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_161_chunk_2",
+    "text": "Android Developer. Skills: Java, Kotlin, Android SDK, Mobile App Development, UI/UX Design. Develops mobile applications for Android devices, integrating features and ensuring user experience."
+  },
+  {
+    "parent_id": "job_162",
+    "type": "job",
+    "title": "Ansible Automation Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_162_chunk_2",
+    "text": "Ansible Automation Engineer. Skills: Ansible, Automation Scripts, Linux, Networking, Cloud Computing. Designs and implements automation solutions using Ansible, streamlining IT processes."
+  },
+  {
+    "parent_id": "job_163",
+    "type": "job",
+    "title": "Application Security Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_163_chunk_2",
+    "text": "Application Security Engineer. Skills: Security Protocols, Penetration Testing, Secure Coding Practices, Compliance. Develops secure applications by integrating security measures and testing vulnerabilities."
+  },
+  {
+    "parent_id": "job_164",
+    "type": "job",
+    "title": "Artifactory Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_164_chunk_2",
+    "text": "Artifactory Administrator. Skills: Artifactory, Repository Management, DevOps Tools, CI/CD Pipelines. Manages artifact repositories, ensuring efficient deployment and version control."
+  },
+  {
+    "parent_id": "job_165",
+    "type": "job",
+    "title": "Artifactory Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_165_chunk_2",
+    "text": "Artifactory Engineer. Skills: Artifactory, DevOps Practices, Continuous Integration, Software Packaging. Configures and optimizes Artifactory for efficient software deployment and management."
+  },
+  {
+    "parent_id": "job_166",
+    "type": "job",
+    "title": "Artificial Intelligence / Machine Learning Leader",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_166_chunk_2",
+    "text": "Artificial Intelligence / Machine Learning Leader. Skills: AI/ML Frameworks, Leadership, Strategic Planning, Data Science. Leads AI/ML projects, developing strategies and overseeing teams to integrate AI solutions."
+  },
+  {
+    "parent_id": "job_167",
+    "type": "job",
+    "title": "Artificial Intelligence / Machine Learning Sr.Leader",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_167_chunk_2",
+    "text": "Artificial Intelligence / Machine Learning Sr.Leader. Skills: Advanced AI/ML, Leadership, Strategic Vision, Team Management. Leads senior AI/ML projects, sets strategic direction, and manages teams."
+  },
+  {
+    "parent_id": "job_168",
+    "type": "job",
+    "title": "Artificial Intelligence Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_168_chunk_2",
+    "text": "Artificial Intelligence Architect. Skills: AI/ML Frameworks, System Architecture, Cloud Computing, Data Modeling. Designs and implements AI systems architecture, ensuring scalability and efficiency."
+  },
+  {
+    "parent_id": "job_169",
+    "type": "job",
+    "title": "Artificial Intelligence Researcher",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_169_chunk_2",
+    "text": "Artificial Intelligence Researcher. Skills: Research Methodologies, AI/ML Algorithms, Python, Data Analysis. Conducts research to advance AI technologies, develops new algorithms, and publishes findings."
+  },
+  {
+    "parent_id": "job_170",
+    "type": "job",
+    "title": "Aws Devops Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_170_chunk_2",
+    "text": "Aws Devops Engineer. Skills: AWS Services, DevOps Practices, CI/CD Pipelines, Automation. Implements DevOps practices on AWS, automating processes and ensuring system reliability."
+  },
+  {
+    "parent_id": "job_171",
+    "type": "job",
+    "title": "Aws Solutions Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_171_chunk_2",
+    "text": "Aws Solutions Architect. Skills: AWS Services, Cloud Architecture, Solution Design, Cost Optimization. Designs scalable and cost-effective solutions on AWS, ensuring alignment with business needs."
+  },
+  {
+    "parent_id": "job_172",
+    "type": "job",
+    "title": "Azure Devops Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_172_chunk_2",
+    "text": "Azure Devops Engineer. Skills: Azure Services, DevOps Practices, CI/CD Pipelines, Automation. Implements DevOps practices on Azure, automating processes and ensuring system reliability."
+  },
+  {
+    "parent_id": "job_173",
+    "type": "job",
+    "title": "Bamboo Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_173_chunk_2",
+    "text": "Bamboo Engineer. Skills: Bamboo, CI/CD Pipelines, Build Automation, Software Configuration Management. Configures and manages Bamboo for continuous integration and delivery."
+  },
+  {
+    "parent_id": "job_174",
+    "type": "job",
+    "title": "Big Data Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_174_chunk_2",
+    "text": "Big Data Architect. Skills: Big Data Technologies, Hadoop, Spark, Data Warehousing, System Design. Designs and oversees big data solutions, ensuring scalability and performance."
+  },
+  {
+    "parent_id": "job_175",
+    "type": "job",
+    "title": "Big Data Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_175_chunk_2",
+    "text": "Big Data Engineer. Skills: Hadoop, Spark, ETL Processes, Data Processing, Database Management. Develops and maintains big data infrastructure, ensuring data quality and accessibility."
+  },
+  {
+    "parent_id": "job_176",
+    "type": "job",
+    "title": "Big Data Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_176_chunk_2",
+    "text": "Big Data Specialist. Skills: Big Data Technologies, Data Analysis, SQL, Data Mining. Analyzes and interprets large datasets to provide insights and support decision-making."
+  },
+  {
+    "parent_id": "job_177",
+    "type": "job",
+    "title": "Bitbucket Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_177_chunk_2",
+    "text": "Bitbucket Engineer. Skills: Bitbucket, Git, Version Control, CI/CD Integration. Manages and configures Bitbucket for efficient version control and collaboration."
+  },
+  {
+    "parent_id": "job_178",
+    "type": "job",
+    "title": "Blockchain Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_178_chunk_2",
+    "text": "Blockchain Developer. Skills: Blockchain Technologies, Solidity, Cryptography, Smart Contracts. Develops blockchain applications and smart contracts, ensuring security and functionality."
+  },
+  {
+    "parent_id": "job_179",
+    "type": "job",
+    "title": "Build And Release Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_179_chunk_2",
+    "text": "Build And Release Engineer. Skills: CI/CD Pipelines, Build Systems, Automation, Configuration Management. Manages build and release processes, ensuring smooth and reliable software deployments."
+  },
+  {
+    "parent_id": "job_180",
+    "type": "job",
+    "title": "Build Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_180_chunk_2",
+    "text": "Build Engineer. Skills: Build Systems, Scripting, Automation, Software Configuration Management. Develops and maintains build systems, automating software compilation and testing."
+  },
+  {
+    "parent_id": "job_181",
+    "type": "job",
+    "title": "Business Systems Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_181_chunk_2",
+    "text": "Business Systems Analyst. Skills: Requirements Gathering, Process Analysis, System Design, Documentation. Analyzes business processes and system requirements, providing solutions to improve efficiency."
+  },
+  {
+    "parent_id": "job_182",
+    "type": "job",
+    "title": "C# Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_182_chunk_2",
+    "text": "C# Developer. Skills: C#, .NET Framework, ASP.NET, Software Development, Object-Oriented Programming. Develops applications using C# and the .NET framework, focusing on functionality and performance."
+  },
+  {
+    "parent_id": "job_183",
+    "type": "job",
+    "title": "Chef Inspec Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_183_chunk_2",
+    "text": "Chef Inspec Engineer. Skills: Chef Inspec, Compliance Automation, Infrastructure Testing, Ruby. Automates compliance and infrastructure testing using Chef Inspec."
+  },
+  {
+    "parent_id": "job_184",
+    "type": "job",
+    "title": "Chef Operations Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_184_chunk_2",
+    "text": "Chef Operations Engineer. Skills: Chef, Automation, Infrastructure Management, Ruby. Manages infrastructure and automates processes using Chef."
+  },
+  {
+    "parent_id": "job_185",
+    "type": "job",
+    "title": "Cloud Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_185_chunk_2",
+    "text": "Cloud Administrator. Skills: Cloud Platforms, System Administration, Virtualization, Networking. Manages and maintains cloud infrastructure, ensuring availability and performance."
+  },
+  {
+    "parent_id": "job_186",
+    "type": "job",
+    "title": "Cloud Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_186_chunk_2",
+    "text": "Cloud Architect. Skills: Cloud Platforms, System Architecture, Cloud Security, DevOps. Designs and oversees the implementation of cloud computing strategies."
+  },
+  {
+    "parent_id": "job_187",
+    "type": "job",
+    "title": "Cloud Automation Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_187_chunk_2",
+    "text": "Cloud Automation Engineer. Skills: Cloud Automation Tools, Scripting, Configuration Management, DevOps. Automates cloud infrastructure and deployment processes."
+  },
+  {
+    "parent_id": "job_188",
+    "type": "job",
+    "title": "Cloud Network Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_188_chunk_2",
+    "text": "Cloud Network Engineer. Skills: Cloud Networking, Virtual Networks, Network Security, Cloud Platforms. Designs and manages cloud network infrastructure."
+  },
+  {
+    "parent_id": "job_189",
+    "type": "job",
+    "title": "Cloud Security Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_189_chunk_2",
+    "text": "Cloud Security Engineer. Skills: Cloud Security, Security Protocols, Compliance, Cloud Platforms. Implements and manages security measures for cloud environments."
+  },
+  {
+    "parent_id": "job_190",
+    "type": "job",
+    "title": "Cnc Programmer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_190_chunk_2",
+    "text": "Cnc Programmer. Skills: CNC Machines, CAD/CAM Software, G-Code, Manufacturing Processes. Develops programs for CNC machines used in manufacturing."
+  },
+  {
+    "parent_id": "job_191",
+    "type": "job",
+    "title": "Coder",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_191_chunk_2",
+    "text": "Coder. Skills: Programming Languages, Scripting, Problem Solving, Software Development. Writes and tests code for software applications."
+  },
+  {
+    "parent_id": "job_192",
+    "type": "job",
+    "title": "Computer Graphics Animator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_192_chunk_2",
+    "text": "Computer Graphics Animator. Skills: Animation Software, 3D Modeling, Visual Effects, Graphic Design. Creates animations and visual effects for various media."
+  },
+  {
+    "parent_id": "job_193",
+    "type": "job",
+    "title": "Computer Hardware Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_193_chunk_2",
+    "text": "Computer Hardware Engineer. Skills: Hardware Design, Circuit Design, Embedded Systems, Testing. Designs and develops computer hardware components and systems."
+  },
+  {
+    "parent_id": "job_194",
+    "type": "job",
+    "title": "Computer Network Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_194_chunk_2",
+    "text": "Computer Network Architect. Skills: Network Design, Network Protocols, Security, System Architecture. Designs and plans computer networks."
+  },
+  {
+    "parent_id": "job_195",
+    "type": "job",
+    "title": "Computer Programmer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_195_chunk_2",
+    "text": "Computer Programmer. Skills: Programming Languages, Algorithms, Software Development, Debugging. Writes and tests code to create software programs."
+  },
+  {
+    "parent_id": "job_196",
+    "type": "job",
+    "title": "Computer Research Scientist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_196_chunk_2",
+    "text": "Computer Research Scientist. Skills: Research Methodologies, Data Analysis, Programming, Scientific Writing. Conducts research in computer science and develops new technologies."
+  },
+  {
+    "parent_id": "job_197",
+    "type": "job",
+    "title": "Computer Systems Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_197_chunk_2",
+    "text": "Computer Systems Analyst. Skills: Systems Analysis, Requirements Gathering, Process Improvement, IT Consulting. Analyzes computer systems and recommends improvements."
+  },
+  {
+    "parent_id": "job_198",
+    "type": "job",
+    "title": "Confluence Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_198_chunk_2",
+    "text": "Confluence Engineer. Skills: Confluence, Atlassian Suite, Documentation, Collaboration Tools. Manages and configures Confluence for team collaboration."
+  },
+  {
+    "parent_id": "job_199",
+    "type": "job",
+    "title": "Consul Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_199_chunk_2",
+    "text": "Consul Engineer. Skills: Consul, Service Discovery, Infrastructure Automation, Networking. Manages and deploys Consul for service discovery."
+  },
+  {
+    "parent_id": "job_200",
+    "type": "job",
+    "title": "Coverage.Py Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_200_chunk_2",
+    "text": "Coverage.Py Engineer. Skills: Coverage.py, Python Testing, Test Coverage Analysis, Software Quality. Implements and manages code coverage tools for Python projects."
+  },
+  {
+    "parent_id": "job_201",
+    "type": "job",
+    "title": "Data Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_201_chunk_2",
+    "text": "Data Analyst. Skills: Data Analysis, SQL, Data Visualization, Statistical Analysis. Analyzes data to identify trends and insights."
+  },
+  {
+    "parent_id": "job_202",
+    "type": "job",
+    "title": "Data Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_202_chunk_2",
+    "text": "Data Architect. Skills: Data Modeling, Database Design, ETL Processes, Data Warehousing. Designs and manages data storage and retrieval systems."
+  },
+  {
+    "parent_id": "job_203",
+    "type": "job",
+    "title": "Data Modeler",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_203_chunk_2",
+    "text": "Data Modeler. Skills: Data Modeling Techniques, Database Design, Data Governance, Data Analysis. Creates and maintains data models."
+  },
+  {
+    "parent_id": "job_204",
+    "type": "job",
+    "title": "Datadog Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_204_chunk_2",
+    "text": "Datadog Engineer. Skills: Datadog, Monitoring, System Performance, Cloud Infrastructure. Implements and manages Datadog for system monitoring."
+  },
+  {
+    "parent_id": "job_205",
+    "type": "job",
+    "title": "Devops Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_205_chunk_2",
+    "text": "Devops Architect. Skills: DevOps Practices, Cloud Computing, Automation, System Architecture. Designs and implements DevOps strategies and infrastructure."
+  },
+  {
+    "parent_id": "job_206",
+    "type": "job",
+    "title": "Devops Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_206_chunk_2",
+    "text": "Devops Manager. Skills: DevOps Practices, Team Leadership, Project Management, Automation. Manages DevOps teams and projects."
+  },
+  {
+    "parent_id": "job_207",
+    "type": "job",
+    "title": "Devsecops Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_207_chunk_2",
+    "text": "Devsecops Architect. Skills: DevSecOps Practices, Security Automation, Cloud Security, System Architecture. Designs and implements DevSecOps strategies and infrastructure."
+  },
+  {
+    "parent_id": "job_208",
+    "type": "job",
+    "title": "Devsecops Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_208_chunk_2",
+    "text": "Devsecops Engineer. Skills: Security Automation, CI/CD, Cloud Security, Scripting. Integrates security practices into DevOps processes."
+  },
+  {
+    "parent_id": "job_209",
+    "type": "job",
+    "title": "Director Of Engineering",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_209_chunk_2",
+    "text": "Director Of Engineering. Skills: Leadership, Software Development, Project Management, Team Management. Leads and manages engineering teams and projects."
+  },
+  {
+    "parent_id": "job_210",
+    "type": "job",
+    "title": "Docker Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_210_chunk_2",
+    "text": "Docker Engineer. Skills: Docker, Containerization, Orchestration, DevOps. Manages and deploys Docker containers."
+  },
+  {
+    "parent_id": "job_211",
+    "type": "job",
+    "title": "Elk Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_211_chunk_2",
+    "text": "Elk Engineer. Skills: ELK Stack, Log Management, Data Analysis, System Monitoring. Manages and configures the ELK stack for log analysis and monitoring."
+  },
+  {
+    "parent_id": "job_212",
+    "type": "job",
+    "title": "Entry Level Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_212_chunk_2",
+    "text": "Entry Level Developer. Skills: Programming Basics, Software Development, Problem Solving, Learning Agility. Entry-level position focused on learning and developing software skills."
+  },
+  {
+    "parent_id": "job_213",
+    "type": "job",
+    "title": "Entry Level Network Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_213_chunk_2",
+    "text": "Entry Level Network Engineer. Skills: Networking Basics, Troubleshooting, System Administration, Learning Agility. Entry-level position focused on learning and assisting with network operations."
+  },
+  {
+    "parent_id": "job_214",
+    "type": "job",
+    "title": "Entry Level Programmer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_214_chunk_2",
+    "text": "Entry Level Programmer. Skills: Programming Basics, Software Development, Problem Solving, Learning Agility. Entry-level position focused on learning and developing software skills."
+  },
+  {
+    "parent_id": "job_215",
+    "type": "job",
+    "title": "Entry Level Web Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_215_chunk_2",
+    "text": "Entry Level Web Developer. Skills: HTML, CSS, JavaScript, Basic Web Development, Learning Agility. Entry-level position focused on learning and developing web development skills."
+  },
+  {
+    "parent_id": "job_216",
+    "type": "job",
+    "title": "Envoy Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_216_chunk_2",
+    "text": "Envoy Engineer. Skills: Envoy Proxy, Service Mesh, Load Balancing, Networking. Configures and manages Envoy proxy for service mesh architectures."
+  },
+  {
+    "parent_id": "job_217",
+    "type": "job",
+    "title": "Falco Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_217_chunk_2",
+    "text": "Falco Engineer. Skills: Falco, Kubernetes Security, Cloud Security, System Monitoring. Implements and manages Falco for runtime security monitoring."
+  },
+  {
+    "parent_id": "job_218",
+    "type": "job",
+    "title": "Fluentd Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_218_chunk_2",
+    "text": "Fluentd Engineer. Skills: Fluentd, Log Aggregation, Data Collection, System Monitoring. Configures and manages Fluentd for log aggregation and analysis."
+  },
+  {
+    "parent_id": "job_219",
+    "type": "job",
+    "title": "Fortify Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_219_chunk_2",
+    "text": "Fortify Engineer. Skills: Fortify, Static Code Analysis, Application Security, Secure Coding. Implements and manages Fortify for static code analysis and application security."
+  },
+  {
+    "parent_id": "job_220",
+    "type": "job",
+    "title": "Frameworks Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_220_chunk_2",
+    "text": "Frameworks Specialist. Skills: Software Frameworks, Programming Languages, Problem Solving, System Design. Specializes in designing and implementing software frameworks."
+  },
+  {
+    "parent_id": "job_221",
+    "type": "job",
+    "title": "Front End Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_221_chunk_2",
+    "text": "Front End Developer. Skills: HTML, CSS, JavaScript, UI/UX Design, Responsive Design. Develops the user interface and front-end components of web applications."
+  },
+  {
+    "parent_id": "job_222",
+    "type": "job",
+    "title": "Full Stack Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_222_chunk_2",
+    "text": "Full Stack Developer. Skills: HTML, CSS, JavaScript, Back-End Technologies, Database Management. Develops both the front-end and back-end components of web applications."
+  },
+  {
+    "parent_id": "job_223",
+    "type": "job",
+    "title": "Full Stack Java Developer/Programmer/Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_223_chunk_2",
+    "text": "Full Stack Java Developer/Programmer/Engineer. Skills: Java, Spring, Hibernate, HTML, CSS, JavaScript. Develops full-stack applications using Java technologies."
+  },
+  {
+    "parent_id": "job_224",
+    "type": "job",
+    "title": "Full Stack Python Developer/Programmer/Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_224_chunk_2",
+    "text": "Full Stack Python Developer/Programmer/Engineer. Skills: Python, Django, Flask, HTML, CSS, JavaScript. Develops full-stack applications using Python technologies."
+  },
+  {
+    "parent_id": "job_225",
+    "type": "job",
+    "title": "Game Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_225_chunk_2",
+    "text": "Game Developer. Skills: C++, C#, Game Engines, 3D Modeling, Game Design. Develops video games for various platforms."
+  },
+  {
+    "parent_id": "job_226",
+    "type": "job",
+    "title": "Gcp Devops Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_226_chunk_2",
+    "text": "Gcp Devops Engineer. Skills: Google Cloud Platform, DevOps Practices, CI/CD Pipelines, Automation. Implements DevOps practices on Google Cloud Platform, automating processes and ensuring system reliability."
+  },
+  {
+    "parent_id": "job_227",
+    "type": "job",
+    "title": "Gerrit Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_227_chunk_2",
+    "text": "Gerrit Administrator. Skills: Gerrit, Code Review, Git, Version Control. Administers and manages Gerrit for code review processes."
+  },
+  {
+    "parent_id": "job_228",
+    "type": "job",
+    "title": "Git Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_228_chunk_2",
+    "text": "Git Engineer. Skills: Git, Version Control, Branching Strategies, Collaboration. Manages and configures Git for efficient version control."
+  },
+  {
+    "parent_id": "job_229",
+    "type": "job",
+    "title": "Github Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_229_chunk_2",
+    "text": "Github Engineer. Skills: GitHub, Git, Collaboration Tools, CI/CD Integration. Manages and configures GitHub for efficient collaboration and CI/CD."
+  },
+  {
+    "parent_id": "job_230",
+    "type": "job",
+    "title": "Gitlab Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_230_chunk_2",
+    "text": "Gitlab Engineer. Skills: GitLab, Git, CI/CD Pipelines, DevOps Practices. Manages and configures GitLab for efficient DevOps workflows."
+  },
+  {
+    "parent_id": "job_231",
+    "type": "job",
+    "title": "Gradle Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_231_chunk_2",
+    "text": "Gradle Engineer. Skills: Gradle, Build Automation, Java, Software Configuration Management. Configures and manages Gradle for build automation."
+  },
+  {
+    "parent_id": "job_232",
+    "type": "job",
+    "title": "Grafana Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_232_chunk_2",
+    "text": "Grafana Engineer. Skills: Grafana, Data Visualization, Monitoring, System Performance. Configures and manages Grafana for data visualization and monitoring."
+  },
+  {
+    "parent_id": "job_233",
+    "type": "job",
+    "title": "Groovy Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_233_chunk_2",
+    "text": "Groovy Engineer. Skills: Groovy, Scripting, Automation, Software Development. Develops automation scripts and applications using Groovy."
+  },
+  {
+    "parent_id": "job_234",
+    "type": "job",
+    "title": "Information Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_234_chunk_2",
+    "text": "Information Architect. Skills: Information Architecture, User Experience Design, Content Strategy, Taxonomy. Designs information structures to enhance usability and findability."
+  },
+  {
+    "parent_id": "job_235",
+    "type": "job",
+    "title": "Information Security Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_235_chunk_2",
+    "text": "Information Security Analyst. Skills: Security Protocols, Threat Analysis, Compliance, Incident Response. Protects computer systems and networks from security threats."
+  },
+  {
+    "parent_id": "job_236",
+    "type": "job",
+    "title": "Interaction Designer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_236_chunk_2",
+    "text": "Interaction Designer. Skills: Interaction Design, User Research, Prototyping, Usability Testing. Designs interactive user interfaces and experiences."
+  },
+  {
+    "parent_id": "job_237",
+    "type": "job",
+    "title": "Ios Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_237_chunk_2",
+    "text": "Ios Developer. Skills: Swift, Objective-C, iOS SDK, Mobile App Development, UI/UX Design. Develops mobile applications for iOS devices, integrating features and ensuring user experience."
+  },
+  {
+    "parent_id": "job_238",
+    "type": "job",
+    "title": "Istio Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_238_chunk_2",
+    "text": "Istio Engineer. Skills: Istio, Service Mesh, Traffic Management, Security. Configures and manages Istio for service mesh architectures."
+  },
+  {
+    "parent_id": "job_239",
+    "type": "job",
+    "title": "It Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_239_chunk_2",
+    "text": "It Manager. Skills: IT Management, Team Leadership, Project Management, Budgeting. Manages IT teams and projects, ensuring efficient operations."
+  },
+  {
+    "parent_id": "job_240",
+    "type": "job",
+    "title": "Jacoco Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_240_chunk_2",
+    "text": "Jacoco Engineer. Skills: JaCoCo, Code Coverage, Java Testing, Software Quality. Implements and manages code coverage tools for Java projects."
+  },
+  {
+    "parent_id": "job_241",
+    "type": "job",
+    "title": "Java Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_241_chunk_2",
+    "text": "Java Developer. Skills: Java, Spring, Hibernate, Software Development, Object-Oriented Programming. Develops applications using Java and related technologies, focusing on functionality and performance."
+  },
+  {
+    "parent_id": "job_242",
+    "type": "job",
+    "title": "Jenkins Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_242_chunk_2",
+    "text": "Jenkins Engineer. Skills: Jenkins, CI/CD Pipelines, Build Automation, DevOps Practices. Configures and manages Jenkins for continuous integration and delivery."
+  },
+  {
+    "parent_id": "job_243",
+    "type": "job",
+    "title": "Jira Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_243_chunk_2",
+    "text": "Jira Administrator. Skills: Jira, Atlassian Suite, Workflow Configuration, Project Management. Administers and configures Jira for project management and issue tracking."
+  },
+  {
+    "parent_id": "job_244",
+    "type": "job",
+    "title": "Junior Front End Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_244_chunk_2",
+    "text": "Junior Front End Developer. Skills: HTML, CSS, JavaScript, Basic Web Development, Learning Agility. Entry-level position focused on learning and developing front-end web development skills."
+  },
+  {
+    "parent_id": "job_245",
+    "type": "job",
+    "title": "Junior Ios Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_245_chunk_2",
+    "text": "Junior Ios Developer. Skills: Swift, Objective-C, iOS SDK, Basic Mobile App Development, Learning Agility. Entry-level position focused on learning and developing iOS app development skills."
+  },
+  {
+    "parent_id": "job_246",
+    "type": "job",
+    "title": "Junit Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_246_chunk_2",
+    "text": "Junit Engineer. Skills: JUnit, Java Testing, Test Automation, Software Quality. Implements and manages JUnit for Java testing and test automation."
+  },
+  {
+    "parent_id": "job_247",
+    "type": "job",
+    "title": "Kubernetes Operations Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_247_chunk_2",
+    "text": "Kubernetes Operations Engineer. Skills: Kubernetes, Container Orchestration, Cloud Computing, DevOps Practices. Manages and operates Kubernetes clusters, ensuring system reliability and scalability."
+  },
+  {
+    "parent_id": "job_248",
+    "type": "job",
+    "title": "Machine Learning Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_248_chunk_2",
+    "text": "Machine Learning Architect. Skills: Machine Learning Algorithms, System Architecture, Cloud Computing, Data Modeling. Designs and implements scalable machine learning infrastructure and solutions."
+  },
+  {
+    "parent_id": "job_249",
+    "type": "job",
+    "title": "Maven Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_249_chunk_2",
+    "text": "Maven Engineer. Skills: Maven, Build Automation, Java, Software Configuration Management. Configures and manages Maven for build automation in Java projects."
+  },
+  {
+    "parent_id": "job_250",
+    "type": "job",
+    "title": "Mobile App Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_250_chunk_2",
+    "text": "Mobile App Developer. Skills: Mobile App Development, iOS/Android SDKs, UI/UX Design, Programming Languages. Develops mobile applications for iOS and Android platforms."
+  },
+  {
+    "parent_id": "job_251",
+    "type": "job",
+    "title": "Mulesoft Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_251_chunk_2",
+    "text": "Mulesoft Developer. Skills: MuleSoft Anypoint Platform, API Integration, Java, Integration Patterns. Develops and integrates applications using the MuleSoft Anypoint Platform."
+  },
+  {
+    "parent_id": "job_252",
+    "type": "job",
+    "title": "Nagios Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_252_chunk_2",
+    "text": "Nagios Engineer. Skills: Nagios, System Monitoring, Linux, Networking. Configures and manages Nagios for system and network monitoring."
+  },
+  {
+    "parent_id": "job_253",
+    "type": "job",
+    "title": "Network And Systems Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_253_chunk_2",
+    "text": "Network And Systems Administrator. Skills: Networking, System Administration, Linux/Windows Servers, Troubleshooting. Manages and maintains network and server infrastructure."
+  },
+  {
+    "parent_id": "job_254",
+    "type": "job",
+    "title": "Network Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_254_chunk_2",
+    "text": "Network Engineer. Skills: Networking Protocols, Cisco/Juniper Devices, Network Security, Troubleshooting. Designs, implements, and manages network infrastructure."
+  },
+  {
+    "parent_id": "job_255",
+    "type": "job",
+    "title": "New Relic Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_255_chunk_2",
+    "text": "New Relic Engineer. Skills: New Relic, Application Performance Monitoring, Troubleshooting, Cloud Computing. Configures and manages New Relic for application performance monitoring."
+  },
+  {
+    "parent_id": "job_256",
+    "type": "job",
+    "title": "Nexus Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_256_chunk_2",
+    "text": "Nexus Engineer. Skills: Nexus Repository Manager, Artifact Management, DevOps Practices. Manages and configures Nexus Repository Manager for artifact storage and retrieval."
+  },
+  {
+    "parent_id": "job_257",
+    "type": "job",
+    "title": "Nomad Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_257_chunk_2",
+    "text": "Nomad Engineer. Skills: Nomad, Container Orchestration, HashiCorp Tools, Infrastructure Automation. Configures and manages Nomad for container orchestration and infrastructure automation."
+  },
+  {
+    "parent_id": "job_258",
+    "type": "job",
+    "title": "Notary Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_258_chunk_2",
+    "text": "Notary Engineer. Skills: Notary, Container Security, Docker, Cryptography. Implements and manages Notary for ensuring container image security."
+  },
+  {
+    "parent_id": "job_259",
+    "type": "job",
+    "title": "Octopus Deploy Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_259_chunk_2",
+    "text": "Octopus Deploy Engineer. Skills: Octopus Deploy, Deployment Automation, .NET, PowerShell. Configures and manages Octopus Deploy for automating application deployments."
+  },
+  {
+    "parent_id": "job_260",
+    "type": "job",
+    "title": "Openshift Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_260_chunk_2",
+    "text": "Openshift Engineer. Skills: OpenShift, Kubernetes, Containerization, DevOps Practices. Manages and configures OpenShift for container orchestration and application deployment."
+  },
+  {
+    "parent_id": "job_261",
+    "type": "job",
+    "title": "Openstack Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_261_chunk_2",
+    "text": "Openstack Engineer. Skills: OpenStack, Cloud Computing, Virtualization, System Administration. Implements and manages OpenStack cloud infrastructure."
+  },
+  {
+    "parent_id": "job_262",
+    "type": "job",
+    "title": "Operations Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_262_chunk_2",
+    "text": "Operations Engineer. Skills: System Administration, Linux/Windows Servers, Troubleshooting, Scripting. Manages and maintains systems and infrastructure, ensuring reliable operation."
+  },
+  {
+    "parent_id": "job_263",
+    "type": "job",
+    "title": "Oracle Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_263_chunk_2",
+    "text": "Oracle Developer. Skills: Oracle Database, SQL, PL/SQL, Database Development. Develops database applications using Oracle technologies."
+  },
+  {
+    "parent_id": "job_264",
+    "type": "job",
+    "title": "Oracle Sql Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_264_chunk_2",
+    "text": "Oracle Sql Developer. Skills: Oracle SQL, PL/SQL, Data Modeling, Database Design. Develops and optimizes SQL queries and database schemas in Oracle environments."
+  },
+  {
+    "parent_id": "job_265",
+    "type": "job",
+    "title": "Packer Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_265_chunk_2",
+    "text": "Packer Engineer. Skills: Packer, Infrastructure as Code, Cloud Computing, Automation. Creates machine images using Packer for consistent infrastructure deployment."
+  },
+  {
+    "parent_id": "job_266",
+    "type": "job",
+    "title": "Php Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_266_chunk_2",
+    "text": "Php Developer. Skills: PHP, MySQL, Web Development, Frameworks (Laravel, Symfony). Develops web applications using PHP and related technologies."
+  },
+  {
+    "parent_id": "job_267",
+    "type": "job",
+    "title": "Powershell Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_267_chunk_2",
+    "text": "Powershell Engineer. Skills: PowerShell, Automation, Windows Server Administration, Scripting. Develops automation scripts and tools using PowerShell for Windows environments."
+  },
+  {
+    "parent_id": "job_268",
+    "type": "job",
+    "title": "Principle Engineer In Artificial Intelligence",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_268_chunk_2",
+    "text": "Principle Engineer In Artificial Intelligence. Skills: AI/ML Architecture, Leadership, Strategic Planning, Deep Learning. Leads and designs AI/ML solutions, providing technical guidance and strategic direction."
+  },
+  {
+    "parent_id": "job_269",
+    "type": "job",
+    "title": "Principle Engineer In Big Data",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_269_chunk_2",
+    "text": "Principle Engineer In Big Data. Skills: Big Data Architecture, Hadoop, Spark, Data Warehousing. Leads and designs big data solutions, providing technical expertise and guidance."
+  },
+  {
+    "parent_id": "job_270",
+    "type": "job",
+    "title": "Principle Engineer In Data Analysis",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_270_chunk_2",
+    "text": "Principle Engineer In Data Analysis. Skills: Data Analysis, Statistical Modeling, Data Visualization, Leadership. Leads data analysis initiatives, providing expertise and guidance on analytical techniques."
+  },
+  {
+    "parent_id": "job_271",
+    "type": "job",
+    "title": "Principle Engineer In Machine Learning",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_271_chunk_2",
+    "text": "Principle Engineer In Machine Learning. Skills: Machine Learning Algorithms, Model Development, Deployment, Leadership. Leads machine learning initiatives, providing expertise and guidance on model development and deployment."
+  },
+  {
+    "parent_id": "job_272",
+    "type": "job",
+    "title": "Production Support Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_272_chunk_2",
+    "text": "Production Support Engineer. Skills: Troubleshooting, Incident Management, System Monitoring, Technical Support. Provides technical support for production systems, resolving incidents and ensuring stability."
+  },
+  {
+    "parent_id": "job_273",
+    "type": "job",
+    "title": "Puppet Operations Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_273_chunk_2",
+    "text": "Puppet Operations Engineer. Skills: Puppet, Configuration Management, Automation, Infrastructure as Code. Manages and automates infrastructure configuration using Puppet."
+  },
+  {
+    "parent_id": "job_274",
+    "type": "job",
+    "title": "Senior Build And Release Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_274_chunk_2",
+    "text": "Senior Build And Release Engineer. Skills: CI/CD Pipelines, Build Systems, Automation, Configuration Management. Manages build and release processes, ensuring smooth and reliable software deployments."
+  },
+  {
+    "parent_id": "job_275",
+    "type": "job",
+    "title": "Senior Build Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_275_chunk_2",
+    "text": "Senior Build Engineer. Skills: Build Systems, Scripting, Automation, Software Configuration Management. Develops and maintains build systems, automating software compilation and testing."
+  },
+  {
+    "parent_id": "job_276",
+    "type": "job",
+    "title": "Senior Devops Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_276_chunk_2",
+    "text": "Senior Devops Engineer. Skills: DevOps Practices, Cloud Computing, Automation, System Architecture. Leads DevOps initiatives, designing and implementing automation solutions."
+  },
+  {
+    "parent_id": "job_277",
+    "type": "job",
+    "title": "SITE RELIABILITY ENGINEER (KUBERNETES \u00c2\u20ac\u00ef\u00bf\u00bd DOCKER)",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_277_chunk_2",
+    "text": "SITE RELIABILITY ENGINEER (KUBERNETES \u00c2\u20ac\u00ef\u00bf\u00bd DOCKER). Skills: Kubernetes, Docker, System Reliability, Automation, Monitoring. Ensures the reliability and performance of systems running on Kubernetes and Docker."
+  },
+  {
+    "parent_id": "job_278",
+    "type": "job",
+    "title": "Splunk Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_278_chunk_2",
+    "text": "Splunk Engineer. Skills: Splunk, Log Management, Data Analysis, System Monitoring. Configures and manages Splunk for log analysis, monitoring, and security insights."
+  },
+  {
+    "parent_id": "job_279",
+    "type": "job",
+    "title": "Xl Deploy Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_279_chunk_2",
+    "text": "Xl Deploy Engineer. Skills: XL Deploy, Deployment Automation, DevOps Practices, Configuration Management. Configures and manages XL Deploy for automating application deployments."
+  },
+  {
+    "parent_id": "job_280",
+    "type": "job",
+    "title": "Zabbix Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_280_chunk_2",
+    "text": "Zabbix Engineer. Skills: Zabbix, System Monitoring, Network Monitoring, Alerting. Configures and manages Zabbix for monitoring systems, networks, and applications."
+  },
+  {
+    "parent_id": "job_281",
+    "type": "job",
+    "title": "Api Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_281_chunk_2",
+    "text": "Api Developer. Skills: API Design, RESTful Services, Programming Languages, Security. Develops and implements APIs for integrating systems and applications."
+  },
+  {
+    "parent_id": "job_282",
+    "type": "job",
+    "title": "Automation Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_282_chunk_2",
+    "text": "Automation Specialist. Skills: Automation Tools, Scripting, Process Improvement, Testing. Designs and implements automation solutions to improve efficiency and reduce manual effort."
+  },
+  {
+    "parent_id": "job_283",
+    "type": "job",
+    "title": "Business Intelligence Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_283_chunk_2",
+    "text": "Business Intelligence Analyst. Skills: Data Analysis, SQL, Data Visualization, Business Acumen. Analyzes data to provide insights and support business decision-making."
+  },
+  {
+    "parent_id": "job_284",
+    "type": "job",
+    "title": "Cloud Migration Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_284_chunk_2",
+    "text": "Cloud Migration Specialist. Skills: Cloud Platforms, Migration Tools, System Migration, Project Management. Plans and executes cloud migration projects, ensuring smooth transitions."
+  },
+  {
+    "parent_id": "job_285",
+    "type": "job",
+    "title": "Cybersecurity Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_285_chunk_2",
+    "text": "Cybersecurity Analyst. Skills: Security Protocols, Threat Analysis, Compliance, Incident Response. Protects computer systems and networks from cyber threats."
+  },
+  {
+    "parent_id": "job_286",
+    "type": "job",
+    "title": "Data Quality Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_286_chunk_2",
+    "text": "Data Quality Engineer. Skills: Data Quality Tools, Data Profiling, SQL, Data Governance. Ensures data quality by profiling, monitoring, and improving data accuracy and consistency."
+  },
+  {
+    "parent_id": "job_287",
+    "type": "job",
+    "title": "Digital Transformation Consultant",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_287_chunk_2",
+    "text": "Digital Transformation Consultant. Skills: Digital Strategy, Technology Consulting, Business Process Improvement, Change Management. Advises organizations on digital transformation initiatives, driving innovation and efficiency."
+  },
+  {
+    "parent_id": "job_288",
+    "type": "job",
+    "title": "E-Commerce Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_288_chunk_2",
+    "text": "E-Commerce Developer. Skills: E-Commerce Platforms, Web Development, Payment Gateways, Security. Develops and maintains e-commerce websites and applications."
+  },
+  {
+    "parent_id": "job_289",
+    "type": "job",
+    "title": "Embedded Systems Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_289_chunk_2",
+    "text": "Embedded Systems Engineer. Skills: Embedded Systems, C/C++, Firmware Development, Hardware Interfaces. Develops software for embedded systems, integrating hardware and software components."
+  },
+  {
+    "parent_id": "job_290",
+    "type": "job",
+    "title": "Erp Consultant",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_290_chunk_2",
+    "text": "Erp Consultant. Skills: ERP Systems, Business Process Analysis, Implementation, Training. Consults on ERP system implementation, customization, and support."
+  },
+  {
+    "parent_id": "job_291",
+    "type": "job",
+    "title": "Geographic Information Systems (Gis) Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_291_chunk_2",
+    "text": "Geographic Information Systems (Gis) Analyst. Skills: GIS Software, Spatial Analysis, Cartography, Data Visualization. Analyzes spatial data using GIS software to create maps and provide insights."
+  },
+  {
+    "parent_id": "job_292",
+    "type": "job",
+    "title": "Help Desk Technician",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_292_chunk_2",
+    "text": "Help Desk Technician. Skills: Technical Support, Troubleshooting, Customer Service, Hardware/Software. Provides technical support to end-users, resolving hardware and software issues."
+  },
+  {
+    "parent_id": "job_293",
+    "type": "job",
+    "title": "Identity And Access Management Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_293_chunk_2",
+    "text": "Identity And Access Management Specialist. Skills: IAM Systems, Security Protocols, Authentication, Authorization. Manages identity and access control systems, ensuring secure access to resources."
+  },
+  {
+    "parent_id": "job_294",
+    "type": "job",
+    "title": "Infrastructure Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_294_chunk_2",
+    "text": "Infrastructure Architect. Skills: System Architecture, Cloud Computing, Networking, Security. Designs and plans IT infrastructure, ensuring scalability, reliability, and security."
+  },
+  {
+    "parent_id": "job_295",
+    "type": "job",
+    "title": "INTERNET OF THINGS (IoT) DEVELOPER",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_295_chunk_2",
+    "text": "INTERNET OF THINGS (IoT) DEVELOPER. Skills: IoT Platforms, Embedded Systems, Sensor Technology, Programming Languages. Develops applications for IoT devices and platforms, connecting devices and analyzing data."
+  },
+  {
+    "parent_id": "job_296",
+    "type": "job",
+    "title": "It Auditor",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_296_chunk_2",
+    "text": "It Auditor. Skills: IT Auditing, Compliance, Risk Management, Security. Conducts IT audits to ensure compliance and identify security risks."
+  },
+  {
+    "parent_id": "job_297",
+    "type": "job",
+    "title": "Java Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_297_chunk_2",
+    "text": "Java Architect. Skills: Java, System Architecture, Design Patterns, Cloud Computing. Designs and leads the development of Java-based systems, ensuring scalability and maintainability."
+  },
+  {
+    "parent_id": "job_298",
+    "type": "job",
+    "title": "Linux Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_298_chunk_2",
+    "text": "Linux Administrator. Skills: Linux Servers, System Administration, Scripting, Troubleshooting. Manages and maintains Linux servers, ensuring system stability and security."
+  },
+  {
+    "parent_id": "job_299",
+    "type": "job",
+    "title": "Mainframe Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_299_chunk_2",
+    "text": "Mainframe Developer. Skills: Mainframe Systems, COBOL, JCL, VSAM. Develops and maintains applications on mainframe systems."
+  },
+  {
+    "parent_id": "job_300",
+    "type": "job",
+    "title": "Microsoft Dynamics Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_300_chunk_2",
+    "text": "Microsoft Dynamics Developer. Skills: Microsoft Dynamics, CRM, .NET, Development. Develops and customizes Microsoft Dynamics CRM solutions."
+  },
+  {
+    "parent_id": "job_301",
+    "type": "job",
+    "title": "Mobile Security Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_301_chunk_2",
+    "text": "Mobile Security Specialist. Skills: Mobile Security, Penetration Testing, Security Protocols, Risk Management. Ensures the security of mobile devices and applications, conducting assessments and implementing security measures."
+  },
+  {
+    "parent_id": "job_302",
+    "type": "job",
+    "title": "Natural Language Processing Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_302_chunk_2",
+    "text": "Natural Language Processing Engineer. Skills: NLP Algorithms, Python, Machine Learning, Text Analysis. Develops NLP models for various applications, such as chatbots and text analysis tools."
+  },
+  {
+    "parent_id": "job_303",
+    "type": "job",
+    "title": "Network Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_303_chunk_2",
+    "text": "Network Architect. Skills: Network Design, Network Protocols, Security, System Architecture. Designs and plans computer networks."
+  },
+  {
+    "parent_id": "job_304",
+    "type": "job",
+    "title": "Penetration Tester",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_304_chunk_2",
+    "text": "Penetration Tester. Skills: Penetration Testing, Security Audits, Ethical Hacking, Vulnerability Assessment. Conducts penetration tests to identify security vulnerabilities in systems and applications."
+  },
+  {
+    "parent_id": "job_305",
+    "type": "job",
+    "title": "Python Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_305_chunk_2",
+    "text": "Python Architect. Skills: Python, System Architecture, Design Patterns, Cloud Computing. Designs and leads the development of Python-based systems, ensuring scalability and maintainability."
+  },
+  {
+    "parent_id": "job_306",
+    "type": "job",
+    "title": "Quality Assurance Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_306_chunk_2",
+    "text": "Quality Assurance Manager. Skills: QA Processes, Test Automation, Test Planning, Team Leadership. Manages quality assurance processes, ensuring software quality through testing and automation."
+  },
+  {
+    "parent_id": "job_307",
+    "type": "job",
+    "title": "Release Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_307_chunk_2",
+    "text": "Release Manager. Skills: Release Management, CI/CD Pipelines, Coordination, Communication. Manages software releases, coordinating activities and ensuring smooth deployments."
+  },
+  {
+    "parent_id": "job_308",
+    "type": "job",
+    "title": "Sap Consultant",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_308_chunk_2",
+    "text": "Sap Consultant. Skills: SAP Modules, Business Process Analysis, Implementation, Customization. Consults on SAP system implementation, customization, and support."
+  },
+  {
+    "parent_id": "job_309",
+    "type": "job",
+    "title": "Ux/Ui Designer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_309_chunk_2",
+    "text": "Ux/Ui Designer. Skills: UX/UI Design, User Research, Prototyping, Usability Testing. Designs user interfaces and experiences, ensuring usability and aesthetic appeal."
+  },
+  {
+    "parent_id": "job_310",
+    "type": "job",
+    "title": "Web Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_310_chunk_2",
+    "text": "Web Developer. Skills: HTML, CSS, JavaScript, Web Development, Frameworks. Develops web applications, implementing front-end and back-end components."
+  },
+  {
+    "parent_id": "job_311",
+    "type": "job",
+    "title": "Back End Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_311_chunk_2",
+    "text": "Back End Developer. Skills: Server-Side Programming, Databases, API Development, Frameworks. Develops the server-side logic and APIs for web applications."
+  },
+  {
+    "parent_id": "job_312",
+    "type": "job",
+    "title": "Web Designer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_312_chunk_2",
+    "text": "Web Designer. Skills: Web Design, Graphic Design, UI/UX Principles, Wireframing. Creates visual designs and layouts for websites, ensuring aesthetic appeal and usability."
+  },
+  {
+    "parent_id": "job_313",
+    "type": "job",
+    "title": "Web Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_313_chunk_2",
+    "text": "Web Engineer. Skills: Web Technologies, System Architecture, Performance Optimization, Security. Designs and implements web infrastructure, ensuring scalability and reliability."
+  },
+  {
+    "parent_id": "job_314",
+    "type": "job",
+    "title": "Web Producer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_314_chunk_2",
+    "text": "Web Producer. Skills: Web Content Management, Project Management, Content Strategy, Collaboration. Manages the creation and delivery of web content, coordinating with stakeholders."
+  },
+  {
+    "parent_id": "job_315",
+    "type": "job",
+    "title": "Web Project Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_315_chunk_2",
+    "text": "Web Project Manager. Skills: Project Management, Web Development, Communication, Budgeting. Manages web development projects, ensuring they are completed on time and within budget."
+  },
+  {
+    "parent_id": "job_316",
+    "type": "job",
+    "title": "Web Content Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_316_chunk_2",
+    "text": "Web Content Manager. Skills: Content Creation, Content Strategy, CMS, SEO. Manages web content, ensuring it is accurate, engaging, and optimized for search engines."
+  },
+  {
+    "parent_id": "job_317",
+    "type": "job",
+    "title": "Multimedia Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_317_chunk_2",
+    "text": "Multimedia Architect. Skills: Multimedia Design, Video Production, Audio Production, Graphic Design. Designs and produces multimedia content for various platforms."
+  },
+  {
+    "parent_id": "job_318",
+    "type": "job",
+    "title": "Web Analytics Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_318_chunk_2",
+    "text": "Web Analytics Developer. Skills: Web Analytics Tools, Data Analysis, Reporting, A/B Testing. Implements web analytics tools and analyzes data to improve website performance."
+  },
+  {
+    "parent_id": "job_319",
+    "type": "job",
+    "title": "Seo Consultant",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_319_chunk_2",
+    "text": "Seo Consultant. Skills: Search Engine Optimization, Keyword Research, Content Optimization, Link Building. Advises on SEO strategies, improving website visibility and organic traffic."
+  },
+  {
+    "parent_id": "job_320",
+    "type": "job",
+    "title": "Seo Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_320_chunk_2",
+    "text": "Seo Manager. Skills: SEO Strategy, Team Leadership, Performance Monitoring, Reporting. Manages SEO initiatives, leading teams and monitoring performance."
+  },
+  {
+    "parent_id": "job_321",
+    "type": "job",
+    "title": "Internet Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_321_chunk_2",
+    "text": "Internet Engineer. Skills: Networking Protocols, Internet Technologies, System Administration, Security. Designs, implements, and manages internet infrastructure."
+  },
+  {
+    "parent_id": "job_322",
+    "type": "job",
+    "title": "Front-End Designer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_322_chunk_2",
+    "text": "Front-End Designer. Skills: HTML, CSS, JavaScript, UI/UX Design, Responsive Design. Designs the visual elements and user interface of web applications."
+  },
+  {
+    "parent_id": "job_323",
+    "type": "job",
+    "title": "Mobile Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_323_chunk_2",
+    "text": "Mobile Developer. Skills: Mobile App Development, iOS/Android SDKs, UI/UX Design, Programming Languages. Develops mobile applications for iOS and Android platforms."
+  },
+  {
+    "parent_id": "job_324",
+    "type": "job",
+    "title": "Python Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_324_chunk_2",
+    "text": "Python Developer. Skills: Python, Web Frameworks (Django, Flask), Data Analysis, Scripting. Develops applications using Python, focusing on back-end development and automation."
+  },
+  {
+    "parent_id": "job_325",
+    "type": "job",
+    "title": "Power Bi Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_325_chunk_2",
+    "text": "Power Bi Developer. Skills: Power BI, Data Modeling, DAX, Data Visualization. Develops interactive dashboards and reports using Power BI."
+  },
+  {
+    "parent_id": "job_326",
+    "type": "job",
+    "title": "Power Bi Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_326_chunk_2",
+    "text": "Power Bi Analyst. Skills: Power BI, Data Analysis, SQL, Business Intelligence. Analyzes data using Power BI to provide insights and support business decision-making."
+  },
+  {
+    "parent_id": "job_327",
+    "type": "job",
+    "title": "Cloud Computing Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_327_chunk_2",
+    "text": "Cloud Computing Specialist. Skills: Cloud Platforms, Virtualization, System Administration, Security. Manages and maintains cloud infrastructure, ensuring availability and performance."
+  },
+  {
+    "parent_id": "job_328",
+    "type": "job",
+    "title": "Cybersecurity Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_328_chunk_2",
+    "text": "Cybersecurity Specialist. Skills: Security Protocols, Threat Analysis, Compliance, Incident Response. Protects computer systems and networks from cyber threats."
+  },
+  {
+    "parent_id": "job_329",
+    "type": "job",
+    "title": "Data Science Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_329_chunk_2",
+    "text": "Data Science Specialist. Skills: Data Analysis, Machine Learning, Statistical Modeling, Data Visualization. Applies data science techniques to analyze data and solve business problems."
+  },
+  {
+    "parent_id": "job_330",
+    "type": "job",
+    "title": "Artificial Intelligence Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_330_chunk_2",
+    "text": "Artificial Intelligence Engineer. Skills: AI/ML Algorithms, Python, Deep Learning, Neural Networks. Develops AI models and applications, implementing machine learning algorithms."
+  },
+  {
+    "parent_id": "job_331",
+    "type": "job",
+    "title": "Database Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_331_chunk_2",
+    "text": "Database Architect. Skills: Database Design, Data Modeling, SQL, Performance Tuning. Designs and manages database systems, ensuring data integrity and performance."
+  },
+  {
+    "parent_id": "job_332",
+    "type": "job",
+    "title": "Software Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_332_chunk_2",
+    "text": "Software Architect. Skills: System Architecture, Design Patterns, Programming Languages, Cloud Computing. Designs and leads the development of software systems, ensuring scalability and maintainability."
+  },
+  {
+    "parent_id": "job_333",
+    "type": "job",
+    "title": "Cybersecurity Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_333_chunk_2",
+    "text": "Cybersecurity Engineer. Skills: Security Protocols, Threat Analysis, Risk Management, Incident Response. Implements and manages security measures to protect computer systems and networks."
+  },
+  {
+    "parent_id": "job_334",
+    "type": "job",
+    "title": "Infosec Analyst/Cybersecurity Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_334_chunk_2",
+    "text": "Infosec Analyst/Cybersecurity Analyst. Skills: Security Protocols, Threat Analysis, Compliance, Incident Response. Protects computer systems and networks from cyber threats."
+  },
+  {
+    "parent_id": "job_335",
+    "type": "job",
+    "title": "Computer Forensic Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_335_chunk_2",
+    "text": "Computer Forensic Analyst. Skills: Digital Forensics, Incident Response, Data Recovery, Legal Compliance. Investigates cybercrimes and security incidents, collecting and analyzing digital evidence."
+  },
+  {
+    "parent_id": "job_336",
+    "type": "job",
+    "title": "It Security Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_336_chunk_2",
+    "text": "It Security Specialist. Skills: Security Protocols, Threat Analysis, Compliance, Risk Management. Implements and manages security measures to protect computer systems and networks."
+  },
+  {
+    "parent_id": "job_337",
+    "type": "job",
+    "title": "Security Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_337_chunk_2",
+    "text": "Security Manager. Skills: Security Management, Risk Assessment, Compliance, Team Leadership. Manages security teams and initiatives, ensuring the protection of IT assets."
+  },
+  {
+    "parent_id": "job_338",
+    "type": "job",
+    "title": "Security Consultant",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_338_chunk_2",
+    "text": "Security Consultant. Skills: Security Consulting, Risk Assessment, Compliance, Security Solutions. Provides security consulting services, assessing risks and recommending security solutions."
+  },
+  {
+    "parent_id": "job_339",
+    "type": "job",
+    "title": "Director Of Security",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_339_chunk_2",
+    "text": "Director Of Security. Skills: Security Leadership, Risk Management, Compliance, Incident Response. Leads security teams and initiatives, providing strategic direction and ensuring compliance."
+  },
+  {
+    "parent_id": "job_340",
+    "type": "job",
+    "title": "Security Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_340_chunk_2",
+    "text": "Security Administrator. Skills: Security Tools, System Administration, User Management, Security Policies. Administers security systems, managing user access and enforcing security policies."
+  },
+  {
+    "parent_id": "job_341",
+    "type": "job",
+    "title": "Security Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_341_chunk_2",
+    "text": "Security Specialist. Skills: Security Protocols, Threat Analysis, Compliance, Risk Management. Implements and manages security measures to protect computer systems and networks."
+  },
+  {
+    "parent_id": "job_342",
+    "type": "job",
+    "title": "Chief Information Officer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_342_chunk_2",
+    "text": "Chief Information Officer. Skills: IT Strategy, Leadership, Budgeting, Project Management. Leads IT organizations, defining IT strategy and overseeing IT operations."
+  },
+  {
+    "parent_id": "job_343",
+    "type": "job",
+    "title": "Network Security Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_343_chunk_2",
+    "text": "Network Security Engineer. Skills: Networking Protocols, Security Protocols, Firewall Management, Intrusion Detection. Implements and manages network security measures, protecting networks from threats."
+  },
+  {
+    "parent_id": "job_344",
+    "type": "job",
+    "title": "Machine Learning Engineer For Cybersecurity",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_344_chunk_2",
+    "text": "Machine Learning Engineer For Cybersecurity. Skills: Machine Learning Algorithms, Cybersecurity, Data Analysis, Threat Detection. Develops machine learning models for cybersecurity applications, such as threat detection and fraud prevention."
+  },
+  {
+    "parent_id": "job_345",
+    "type": "job",
+    "title": "Network Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_345_chunk_2",
+    "text": "Network Analyst. Skills: Network Monitoring, Troubleshooting, Performance Analysis, Reporting. Monitors network performance, troubleshoots issues, and provides performance reports."
+  },
+  {
+    "parent_id": "job_346",
+    "type": "job",
+    "title": "Network Operations Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_346_chunk_2",
+    "text": "Network Operations Engineer. Skills: Network Operations, Troubleshooting, Monitoring, Incident Response. Manages day-to-day network operations, resolving issues and ensuring network availability."
+  },
+  {
+    "parent_id": "job_347",
+    "type": "job",
+    "title": "Network Reliability Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_347_chunk_2",
+    "text": "Network Reliability Engineer. Skills: Network Reliability, Automation, Monitoring, Incident Response. Ensures the reliability and performance of network infrastructure, implementing automation and monitoring solutions."
+  },
+  {
+    "parent_id": "job_348",
+    "type": "job",
+    "title": "Network Infrastructure Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_348_chunk_2",
+    "text": "Network Infrastructure Specialist. Skills: Networking Hardware, Cabling, Network Design, Implementation. Installs, configures, and maintains network infrastructure, including cabling and hardware."
+  },
+  {
+    "parent_id": "job_349",
+    "type": "job",
+    "title": "Computer Support Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_349_chunk_2",
+    "text": "Computer Support Specialist. Skills: Technical Support, Troubleshooting, Customer Service, Hardware/Software. Provides technical support to end-users, resolving hardware and software issues."
+  },
+  {
+    "parent_id": "job_350",
+    "type": "job",
+    "title": "Information Technology Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_350_chunk_2",
+    "text": "Information Technology Analyst. Skills: IT Analysis, Requirements Gathering, Process Improvement, IT Consulting. Analyzes IT systems and processes, recommending improvements and providing IT consulting services."
+  },
+  {
+    "parent_id": "job_351",
+    "type": "job",
+    "title": "Technology Sales Consultant",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_351_chunk_2",
+    "text": "Technology Sales Consultant. Skills: Sales, Technology Solutions, Customer Relationship Management, Technical Expertise. Sells technology solutions, providing technical expertise and building customer relationships."
+  },
+  {
+    "parent_id": "job_352",
+    "type": "job",
+    "title": "Database Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_352_chunk_2",
+    "text": "Database Developer. Skills: Database Development, SQL, PL/SQL, Data Modeling. Develops database applications and schemas."
+  },
+  {
+    "parent_id": "job_353",
+    "type": "job",
+    "title": "Database Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_353_chunk_2",
+    "text": "Database Analyst. Skills: Data Analysis, SQL, Data Modeling, Reporting. Analyzes data stored in databases and creates reports."
+  },
+  {
+    "parent_id": "job_354",
+    "type": "job",
+    "title": "Data Warehouse Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_354_chunk_2",
+    "text": "Data Warehouse Manager. Skills: Data Warehousing, ETL Processes, Data Modeling, Team Leadership. Manages data warehouse projects and teams."
+  },
+  {
+    "parent_id": "job_355",
+    "type": "job",
+    "title": "Data Warehouse Programming Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_355_chunk_2",
+    "text": "Data Warehouse Programming Specialist. Skills: ETL Processes, SQL, Data Modeling, Data Warehousing. Develops and maintains ETL processes for data warehousing."
+  },
+  {
+    "parent_id": "job_356",
+    "type": "job",
+    "title": "Intelligence Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_356_chunk_2",
+    "text": "Intelligence Specialist. Skills: Data Analysis, Intelligence Gathering, Reporting, Security. Gathers and analyzes intelligence data to support security and decision-making."
+  },
+  {
+    "parent_id": "job_357",
+    "type": "job",
+    "title": "Cloud/Software Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_357_chunk_2",
+    "text": "Cloud/Software Architect. Skills: Cloud Platforms, System Architecture, Cloud Security, DevOps. Designs and oversees the implementation of cloud computing strategies."
+  },
+  {
+    "parent_id": "job_358",
+    "type": "job",
+    "title": "Cloud/Software Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_358_chunk_2",
+    "text": "Cloud/Software Developer. Skills: Cloud Platforms, Programming Languages, Software Development, Cloud Services. Develops software applications on cloud platforms."
+  },
+  {
+    "parent_id": "job_359",
+    "type": "job",
+    "title": "Cloud/Software Applications Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_359_chunk_2",
+    "text": "Cloud/Software Applications Engineer. Skills: Cloud Platforms, Application Development, Cloud Services, DevOps. Develops and deploys applications on cloud platforms."
+  },
+  {
+    "parent_id": "job_360",
+    "type": "job",
+    "title": "Cloud System Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_360_chunk_2",
+    "text": "Cloud System Administrator. Skills: Cloud Platforms, System Administration, Virtualization, Networking. Manages and maintains cloud infrastructure, ensuring availability and performance."
+  },
+  {
+    "parent_id": "job_361",
+    "type": "job",
+    "title": "Cloud System Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_361_chunk_2",
+    "text": "Cloud System Engineer. Skills: Cloud Platforms, System Engineering, Automation, Scripting. Engineers cloud infrastructure, implementing automation and ensuring system reliability."
+  },
+  {
+    "parent_id": "job_362",
+    "type": "job",
+    "title": "Software Quality Assurance Analyst",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_362_chunk_2",
+    "text": "Software Quality Assurance Analyst. Skills: QA Processes, Test Planning, Test Execution, Reporting. Ensures software quality through testing and reporting."
+  },
+  {
+    "parent_id": "job_363",
+    "type": "job",
+    "title": "Ui (User Interface) Designer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_363_chunk_2",
+    "text": "Ui (User Interface) Designer. Skills: UI Design, User Research, Prototyping, Usability Testing. Designs user interfaces, ensuring usability and aesthetic appeal."
+  },
+  {
+    "parent_id": "job_364",
+    "type": "job",
+    "title": "Technical Account Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_364_chunk_2",
+    "text": "Technical Account Manager. Skills: Customer Relationship Management, Technical Support, Account Management, Sales. Manages customer accounts, providing technical support and building relationships."
+  },
+  {
+    "parent_id": "job_365",
+    "type": "job",
+    "title": "It Sales Executive",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_365_chunk_2",
+    "text": "It Sales Executive. Skills: Sales, Technology Solutions, Customer Relationship Management, Sales Strategy. Sells technology solutions, developing sales strategies and building customer relationships."
+  },
+  {
+    "parent_id": "job_366",
+    "type": "job",
+    "title": "It Sales Director",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_366_chunk_2",
+    "text": "It Sales Director. Skills: Sales Leadership, Sales Strategy, Customer Relationship Management, Team Management. Leads IT sales teams, developing sales strategies and managing customer relationships."
+  },
+  {
+    "parent_id": "job_367",
+    "type": "job",
+    "title": "Technology Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_367_chunk_2",
+    "text": "Technology Manager. Skills: IT Management, Team Leadership, Project Management, Budgeting. Manages IT teams and projects, ensuring efficient operations."
+  },
+  {
+    "parent_id": "job_368",
+    "type": "job",
+    "title": "Technology Assistant",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_368_chunk_2",
+    "text": "Technology Assistant. Skills: Technical Support, Administrative Support, Hardware/Software, Troubleshooting. Provides technical and administrative support to IT teams."
+  },
+  {
+    "parent_id": "job_369",
+    "type": "job",
+    "title": "Technology Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_369_chunk_2",
+    "text": "Technology Specialist. Skills: Technical Expertise, Problem Solving, Troubleshooting, IT Support. Provides technical expertise and support, resolving complex IT issues."
+  },
+  {
+    "parent_id": "job_370",
+    "type": "job",
+    "title": "Director Oracle",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_370_chunk_2",
+    "text": "Director Oracle. Skills: Oracle Database, Team Leadership, Project Management, Budgeting. Manages Oracle database teams and projects, ensuring efficient operations."
+  },
+  {
+    "parent_id": "job_371",
+    "type": "job",
+    "title": "Knowledge Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_371_chunk_2",
+    "text": "Knowledge Manager. Skills: Knowledge Management, Information Architecture, Collaboration, Documentation. Manages knowledge assets, ensuring information is accessible and organized."
+  },
+  {
+    "parent_id": "job_372",
+    "type": "job",
+    "title": "Manager Hardware",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_372_chunk_2",
+    "text": "Manager Hardware. Skills: Hardware Management, Team Leadership, Budgeting, Inventory Management. Manages hardware resources, leading teams and overseeing hardware operations."
+  },
+  {
+    "parent_id": "job_373",
+    "type": "job",
+    "title": "Sharepoint Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_373_chunk_2",
+    "text": "Sharepoint Manager. Skills: SharePoint, Team Leadership, Project Management, Collaboration. Manages SharePoint environments, leading teams and ensuring efficient collaboration."
+  },
+  {
+    "parent_id": "job_374",
+    "type": "job",
+    "title": "Requirements Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_374_chunk_2",
+    "text": "Requirements Manager. Skills: Requirements Gathering, Analysis, Documentation, Communication. Manages requirements for IT projects, ensuring they are well-defined and communicated."
+  },
+  {
+    "parent_id": "job_375",
+    "type": "job",
+    "title": "Implementation Director",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_375_chunk_2",
+    "text": "Implementation Director. Skills: Implementation Management, Project Management, Team Leadership, Communication. Manages IT project implementations, leading teams and ensuring successful deployments."
+  },
+  {
+    "parent_id": "job_376",
+    "type": "job",
+    "title": "Technology Officer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_376_chunk_2",
+    "text": "Technology Officer. Skills: IT Strategy, Leadership, Innovation, Project Management. Provides technology leadership, defining IT strategy and driving innovation."
+  },
+  {
+    "parent_id": "job_377",
+    "type": "job",
+    "title": "Director Business Systems",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_377_chunk_2",
+    "text": "Director Business Systems. Skills: Business Systems, Team Leadership, Project Management, Process Improvement. Manages business systems, leading teams and improving business processes."
+  },
+  {
+    "parent_id": "job_378",
+    "type": "job",
+    "title": "Manager Net",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_378_chunk_2",
+    "text": "Manager Net. Skills: NET Development, Team Leadership, Project Management, .NET Framework. Manages .NET development teams and projects, ensuring efficient development practices."
+  },
+  {
+    "parent_id": "job_379",
+    "type": "job",
+    "title": "Systems Integration Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_379_chunk_2",
+    "text": "Systems Integration Manager. Skills: Systems Integration, Project Management, Team Leadership, Communication. Manages systems integration projects, leading teams and ensuring successful integration."
+  },
+  {
+    "parent_id": "job_380",
+    "type": "job",
+    "title": "Digital Program Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_380_chunk_2",
+    "text": "Digital Program Manager. Skills: Digital Strategy, Program Management, Team Leadership, Communication. Manages digital programs, leading teams and ensuring successful execution."
+  },
+  {
+    "parent_id": "job_381",
+    "type": "job",
+    "title": "Integration Director",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_381_chunk_2",
+    "text": "Integration Director. Skills: Integration Management, Project Management, Team Leadership, Communication. Manages integration projects, leading teams and ensuring successful integration."
+  },
+  {
+    "parent_id": "job_382",
+    "type": "job",
+    "title": "Director Hardware",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_382_chunk_2",
+    "text": "Director Hardware. Skills: Hardware Management, Team Leadership, Budgeting, Strategic Planning. Manages hardware resources, leading teams and developing hardware strategies."
+  },
+  {
+    "parent_id": "job_383",
+    "type": "job",
+    "title": "Manager Linux",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_383_chunk_2",
+    "text": "Manager Linux. Skills: Linux Administration, Team Leadership, Project Management, Troubleshooting. Manages Linux systems and teams, ensuring efficient operations and troubleshooting issues."
+  },
+  {
+    "parent_id": "job_384",
+    "type": "job",
+    "title": "Manager Php",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_384_chunk_2",
+    "text": "Manager Php. Skills: PHP Development, Team Leadership, Project Management, Web Development. Manages PHP development teams and projects, ensuring efficient development practices."
+  },
+  {
+    "parent_id": "job_385",
+    "type": "job",
+    "title": "Firmware Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_385_chunk_2",
+    "text": "Firmware Manager. Skills: Firmware Development, Team Leadership, Project Management, Embedded Systems. Manages firmware development teams and projects, ensuring efficient development practices."
+  },
+  {
+    "parent_id": "job_386",
+    "type": "job",
+    "title": "It Program Engagement Director",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_386_chunk_2",
+    "text": "It Program Engagement Director. Skills: IT Program Management, Customer Relationship Management, Stakeholder Management, Team Leadership. Manages IT program engagements, building customer relationships and leading teams."
+  },
+  {
+    "parent_id": "job_387",
+    "type": "job",
+    "title": "Manager Unix",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_387_chunk_2",
+    "text": "Manager Unix. Skills: UNIX Administration, Team Leadership, Project Management, Troubleshooting. Manages UNIX systems and teams, ensuring efficient operations and troubleshooting issues."
+  },
+  {
+    "parent_id": "job_388",
+    "type": "job",
+    "title": "Technology Adoption Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_388_chunk_2",
+    "text": "Technology Adoption Manager. Skills: Technology Adoption, Training, Communication, Change Management. Manages technology adoption initiatives, providing training and communication to ensure successful adoption."
+  },
+  {
+    "parent_id": "job_389",
+    "type": "job",
+    "title": "Customer Service Representative",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_389_chunk_2",
+    "text": "Customer Service Representative. Skills: Customer Service, Communication, Problem Solving, Technical Support. Provides customer service, resolving issues and providing technical support."
+  },
+  {
+    "parent_id": "job_390",
+    "type": "job",
+    "title": "Technical Product Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_390_chunk_2",
+    "text": "Technical Product Manager. Skills: Product Management, Technical Expertise, Market Analysis, Requirements Gathering. Manages technical products, defining product strategy and gathering requirements."
+  },
+  {
+    "parent_id": "job_391",
+    "type": "job",
+    "title": "Project Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_391_chunk_2",
+    "text": "Project Manager. Skills: Project Management, Planning, Execution, Communication. Manages projects, ensuring they are completed on time and within budget."
+  },
+  {
+    "parent_id": "job_392",
+    "type": "job",
+    "title": "Program Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_392_chunk_2",
+    "text": "Program Manager. Skills: Program Management, Planning, Execution, Communication. Manages programs, ensuring they are completed on time and within budget."
+  },
+  {
+    "parent_id": "job_393",
+    "type": "job",
+    "title": "Portfolio Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_393_chunk_2",
+    "text": "Portfolio Manager. Skills: Portfolio Management, Investment Management, Risk Management, Financial Analysis. Manages investment portfolios, assessing risk and making investment decisions."
+  },
+  {
+    "parent_id": "job_394",
+    "type": "job",
+    "title": "Chief Information Officer (Cio)",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_394_chunk_2",
+    "text": "Chief Information Officer (Cio). Skills: IT Strategy, Leadership, Budgeting, Project Management. Leads IT organizations, defining IT strategy and overseeing IT operations."
+  },
+  {
+    "parent_id": "job_395",
+    "type": "job",
+    "title": "Chief Technology Officer (Cto)",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_395_chunk_2",
+    "text": "Chief Technology Officer (Cto). Skills: Technology Strategy, Innovation, Research and Development, Team Leadership. Leads technology initiatives, driving innovation and overseeing research and development."
+  },
+  {
+    "parent_id": "job_396",
+    "type": "job",
+    "title": "It Director",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_396_chunk_2",
+    "text": "It Director. Skills: IT Management, Team Leadership, Budgeting, Project Management. Manages IT teams and projects, ensuring efficient operations."
+  },
+  {
+    "parent_id": "job_397",
+    "type": "job",
+    "title": "Technical Operations Officer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_397_chunk_2",
+    "text": "Technical Operations Officer. Skills: Technical Operations, Infrastructure Management, System Administration, Incident Response. Manages technical operations, ensuring the stability and performance of IT systems."
+  },
+  {
+    "parent_id": "job_398",
+    "type": "job",
+    "title": "Information Management Systems Director",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_398_chunk_2",
+    "text": "Information Management Systems Director. Skills: Information Management, Systems Administration, Data Management, Compliance. Manages information management systems, ensuring data is accessible and secure."
+  },
+  {
+    "parent_id": "job_399",
+    "type": "job",
+    "title": "Senior It Consultant",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_399_chunk_2",
+    "text": "Senior It Consultant. Skills: IT Consulting, Project Management, Technical Expertise, Client Management. Provides IT consulting services, managing projects and providing technical expertise."
+  },
+  {
+    "parent_id": "job_400",
+    "type": "job",
+    "title": "Technical Lead",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_400_chunk_2",
+    "text": "Technical Lead. Skills: Technical Leadership, Software Development, Team Leadership, Mentoring. Leads technical teams, providing guidance and mentoring team members."
+  },
+  {
+    "parent_id": "job_401",
+    "type": "job",
+    "title": "It Apprentice",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_401_chunk_2",
+    "text": "It Apprentice. Skills: Technical Support, Troubleshooting, Learning Agility, Customer Service. Provides technical support to end-users, learning IT concepts and developing technical skills."
+  },
+  {
+    "parent_id": "job_402",
+    "type": "job",
+    "title": "It Technician",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_402_chunk_2",
+    "text": "It Technician. Skills: Technical Support, Troubleshooting, Hardware/Software, Networking. Provides technical support to end-users, resolving hardware and software issues."
+  },
+  {
+    "parent_id": "job_403",
+    "type": "job",
+    "title": "It Systems Administrator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_403_chunk_2",
+    "text": "It Systems Administrator. Skills: System Administration, Linux/Windows Servers, Troubleshooting, Scripting. Manages and maintains IT systems, ensuring stability and performance."
+  },
+  {
+    "parent_id": "job_404",
+    "type": "job",
+    "title": "It Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_404_chunk_2",
+    "text": "It Engineer. Skills: System Engineering, Networking, Cloud Computing, Security. Engineers IT systems, ensuring scalability, reliability, and security."
+  },
+  {
+    "parent_id": "job_405",
+    "type": "job",
+    "title": "Computer Network Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_405_chunk_2",
+    "text": "Computer Network Specialist. Skills: Networking, Troubleshooting, System Administration, Security. Manages and maintains computer networks, ensuring stability and security."
+  },
+  {
+    "parent_id": "job_406",
+    "type": "job",
+    "title": "Computer And Information Research Scientist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_406_chunk_2",
+    "text": "Computer And Information Research Scientist. Skills: Research Methodologies, Data Analysis, Programming, Scientific Writing. Conducts research in computer science and develops new technologies."
+  },
+  {
+    "parent_id": "job_407",
+    "type": "job",
+    "title": "Computer And Information Research Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_407_chunk_2",
+    "text": "Computer And Information Research Manager. Skills: Research Management, Team Leadership, Budgeting, Project Management. Manages computer and information research projects and teams."
+  },
+  {
+    "parent_id": "job_408",
+    "type": "job",
+    "title": "Software Development Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_408_chunk_2",
+    "text": "Software Development Manager. Skills: Software Development, Team Leadership, Project Management, Software Architecture. Manages software development teams and projects, ensuring efficient development practices."
+  },
+  {
+    "parent_id": "job_409",
+    "type": "job",
+    "title": "Software Development Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_409_chunk_2",
+    "text": "Software Development Engineer. Skills: Software Development, Programming Languages, Algorithm Design, Problem Solving. Develops software applications, implementing algorithms and solving complex problems."
+  },
+  {
+    "parent_id": "job_410",
+    "type": "job",
+    "title": "Application Designer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_410_chunk_2",
+    "text": "Application Designer. Skills: Application Design, UI/UX Principles, Programming Languages, Software Architecture. Designs software applications, ensuring usability and functionality."
+  },
+  {
+    "parent_id": "job_411",
+    "type": "job",
+    "title": "Application Engineer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_411_chunk_2",
+    "text": "Application Engineer. Skills: Application Development, Programming Languages, Troubleshooting, System Administration. Develops and maintains software applications, troubleshooting issues and ensuring stability."
+  },
+  {
+    "parent_id": "job_412",
+    "type": "job",
+    "title": "Lead Programmer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_412_chunk_2",
+    "text": "Lead Programmer. Skills: Programming Languages, Software Development, Team Leadership, Mentoring. Leads programming teams, providing technical guidance and mentoring team members."
+  },
+  {
+    "parent_id": "job_413",
+    "type": "job",
+    "title": "Iteration Manager",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_413_chunk_2",
+    "text": "Iteration Manager. Skills: Agile Methodologies, Scrum, Kanban, Team Facilitation. Facilitates agile development teams, ensuring efficient iteration and collaboration."
+  },
+  {
+    "parent_id": "job_414",
+    "type": "job",
+    "title": "Webmaster",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_414_chunk_2",
+    "text": "Webmaster. Skills: Web Development, Web Design, System Administration, Content Management. Manages websites, ensuring functionality, security, and content quality."
+  },
+  {
+    "parent_id": "job_415",
+    "type": "job",
+    "title": "Ux/Ui Researcher",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_415_chunk_2",
+    "text": "Ux/Ui Researcher. Skills: User Research, Usability Testing, Data Analysis, Reporting. Conducts user research and usability testing to inform design decisions."
+  },
+  {
+    "parent_id": "job_416",
+    "type": "job",
+    "title": "Ux/Ui Specialist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_416_chunk_2",
+    "text": "Ux/Ui Specialist. Skills: UX/UI Design, User Research, Prototyping, Usability Testing. Designs user interfaces and experiences, ensuring usability and aesthetic appeal."
+  },
+  {
+    "parent_id": "job_417",
+    "type": "job",
+    "title": "Animator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_417_chunk_2",
+    "text": "Animator. Skills: Animation Software, 2D/3D Animation, Storyboarding, Visual Effects. Creates animations for various media, including films, games, and websites."
+  },
+  {
+    "parent_id": "job_418",
+    "type": "job",
+    "title": "Motion Graphics Artist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_418_chunk_2",
+    "text": "Motion Graphics Artist. Skills: Motion Graphics, Animation Software, Visual Effects, Graphic Design. Creates motion graphics and visual effects for various media."
+  },
+  {
+    "parent_id": "job_419",
+    "type": "job",
+    "title": "2D Artist/Animator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_419_chunk_2",
+    "text": "2D Artist/Animator. Skills: 2D Animation, Drawing, Illustration, Animation Software. Creates 2D animations for various media."
+  },
+  {
+    "parent_id": "job_420",
+    "type": "job",
+    "title": "3D Artist/Animator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_420_chunk_2",
+    "text": "3D Artist/Animator. Skills: 3D Animation, Modeling, Texturing, Rigging. Creates 3D animations for various media."
+  },
+  {
+    "parent_id": "job_421",
+    "type": "job",
+    "title": "Character Designer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_421_chunk_2",
+    "text": "Character Designer. Skills: Character Design, Illustration, Drawing, Animation. Designs characters for animation, games, and other media."
+  },
+  {
+    "parent_id": "job_422",
+    "type": "job",
+    "title": "Storyboard Artist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_422_chunk_2",
+    "text": "Storyboard Artist. Skills: Storyboarding, Drawing, Visual Communication, Film/Animation. Creates storyboards for films, animations, and other media."
+  },
+  {
+    "parent_id": "job_423",
+    "type": "job",
+    "title": "Vfx Artist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_423_chunk_2",
+    "text": "Vfx Artist. Skills: Visual Effects, Compositing, 3D Modeling, Simulation. Creates visual effects for films, television, and other media."
+  },
+  {
+    "parent_id": "job_424",
+    "type": "job",
+    "title": "Rigging Artist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_424_chunk_2",
+    "text": "Rigging Artist. Skills: Rigging, Animation, 3D Modeling, Character Setup. Creates rigs for animating 3D characters."
+  },
+  {
+    "parent_id": "job_425",
+    "type": "job",
+    "title": "Technical Animator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_425_chunk_2",
+    "text": "Technical Animator. Skills: Technical Animation, Scripting, Programming, Animation Software. Develops tools and workflows for animation production."
+  },
+  {
+    "parent_id": "job_426",
+    "type": "job",
+    "title": "Art Director",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_426_chunk_2",
+    "text": "Art Director. Skills: Art Direction, Visual Design, Team Leadership, Project Management. Leads art teams, providing visual direction and ensuring aesthetic consistency."
+  },
+  {
+    "parent_id": "job_427",
+    "type": "job",
+    "title": "Animation Director",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_427_chunk_2",
+    "text": "Animation Director. Skills: Animation Direction, Storytelling, Team Leadership, Project Management. Directs animation projects, ensuring artistic quality and storytelling effectiveness."
+  },
+  {
+    "parent_id": "job_428",
+    "type": "job",
+    "title": "Visual Effects Animator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_428_chunk_2",
+    "text": "Visual Effects Animator. Skills: Visual Effects, Animation, Compositing, 3D Modeling. Creates visual effects for films, television, and other media."
+  },
+  {
+    "parent_id": "job_429",
+    "type": "job",
+    "title": "Graphic Effects Supervisor",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_429_chunk_2",
+    "text": "Graphic Effects Supervisor. Skills: Visual Effects Supervision, Team Leadership, Technical Expertise, Project Management. Supervises visual effects projects, ensuring technical and artistic quality."
+  },
+  {
+    "parent_id": "job_430",
+    "type": "job",
+    "title": "Forensic Animator",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_430_chunk_2",
+    "text": "Forensic Animator. Skills: Forensic Animation, 3D Modeling, Legal Expertise, Visual Communication. Creates animations for legal presentations, visualizing forensic evidence."
+  },
+  {
+    "parent_id": "job_431",
+    "type": "job",
+    "title": "Compositor",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_431_chunk_2",
+    "text": "Compositor. Skills: Compositing, Visual Effects, Color Correction, Image Manipulation. Combines visual elements to create final images for films, television, and other media."
+  },
+  {
+    "parent_id": "job_432",
+    "type": "job",
+    "title": "Effects Technical Director (Fx Td)",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_432_chunk_2",
+    "text": "Effects Technical Director (Fx Td). Skills: Visual Effects, Technical Expertise, Scripting, Problem Solving. Develops technical solutions for visual effects production."
+  },
+  {
+    "parent_id": "job_433",
+    "type": "job",
+    "title": "Layout Artist",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_433_chunk_2",
+    "text": "Layout Artist. Skills: Layout, Cinematography, 3D Modeling, Visual Storytelling. Creates layouts for animated scenes, determining camera angles and composition."
+  },
+  {
+    "parent_id": "job_434",
+    "type": "job",
+    "title": "Ai Researcher",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_434_chunk_2",
+    "text": "Ai Researcher. Skills: AI/ML Algorithms, Python, Research Methodologies, Data Analysis. Conducts research in artificial intelligence and machine learning, developing new algorithms and techniques."
+  },
+  {
+    "parent_id": "job_435",
+    "type": "job",
+    "title": "Ai Software Architect",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_435_chunk_2",
+    "text": "Ai Software Architect. Skills: AI/ML Architecture, Software Design, Cloud Computing, Data Modeling. Designs and implements AI software systems, ensuring scalability and performance."
+  },
+  {
+    "parent_id": "job_436",
+    "type": "job",
+    "title": "Business Intelligence Developer",
+    "metadata": {
+      "source_type": "job",
+      "track": "",
+      "level": "",
+      "skills": [],
+      "platform": "",
+      "cost": ""
+    },
+    "chunk_id": "job_436_chunk_2",
+    "text": "Business Intelligence Developer. Skills: Business Intelligence Tools, Data Modeling, SQL, ETL Processes. Develops business intelligence solutions, creating reports and dashboards."
+  },
+  {
     "parent_id": "advice_001",
     "type": "advice",
     "title": "How do I start a career in frontend development?",
