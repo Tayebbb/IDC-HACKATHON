@@ -45,7 +45,7 @@ const FACE_API_MODEL_URL = '/models';
 // =====================================================================
 // face-api.js lazy loader.
 //
-// We dynamic-import the library only when the component first mounts so
+// We dynamic-import the library only when the camera starts so
 // the ~1.2 MB gzipped bundle never lands on pages that don't use it
 // (chat, profile, jobs, etc.). Once loaded the module is cached on
 // _faceApiModule so subsequent component mounts are free.
@@ -406,8 +406,8 @@ async function _detectFaceAndEmotion(canvas) {
     try {
       const fa = _faceApiModule;
       const opts = new fa.TinyFaceDetectorOptions({
-        inputSize: 224,
-        scoreThreshold: 0.35,
+        inputSize: 160,
+        scoreThreshold: 0.3,
       });
       const result = await fa
         .detectSingleFace(canvas, opts)
@@ -699,17 +699,6 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   // Shape: { label: string, score: number } | null
   const [liveEmotion,   setLiveEmotion]   = useState(null);
 
-  // Kick off face-api lazy load as soon as the component mounts so the
-  // models are warm by the time the user clicks "Enable Camera".
-  useEffect(() => {
-    let cancelled = false;
-    _loadFaceApi().then((mod) => {
-      if (cancelled) return;
-      setFaceApiState(mod ? 'ready' : 'unavailable');
-    });
-    return () => { cancelled = true; };
-  }, []);
-
   // Periodic re-render so the "fade after 4s" opacity check stays current.
   useEffect(() => {
     if (!tipQueue.length) return;
@@ -785,7 +774,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
       // Local detection could not find a face; skip the backend HF round-trip.
       setFaceVisible(false);
       _drawBoundingBox(overlayCanvasRef.current, videoRef.current, null);
-      _pushTip({ tip: 'Center your face in the frame', type: 'warning', icon: 'Eye' });
+      _pushTip({ tip: 'Keep your face visible and well lit', type: 'warning', icon: 'Eye' });
       return;
     }
 
@@ -987,6 +976,11 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
         await videoRef.current.play().catch(() => { /* autoplay race â€” ignore */ });
       }
       setCameraStarted(true);
+      setFaceApiState('loading');
+      const faceApi = await _loadFaceApi();
+      const modelsReady = Boolean(faceApi);
+      setFaceApiState(modelsReady ? 'ready' : 'unavailable');
+      if (!modelsReady) return;
       // Kick off the first capture quickly so the user sees a tip within ~1s.
       // The video element typically reaches readyState 2 within ~300-500ms.
       setTimeout(() => { captureAndAnalyze(); }, 600);
@@ -1196,6 +1190,7 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
   // =====================================================================
   const now = Date.now();
   const localReady = faceApiState === 'ready';
+  const modelsReady = localReady;
   const hfReady = hfState === 'ready';
   const modelBadge = localOnlyMode
     ? `local ${localReady ? '✓' : '…'} / HF off`
@@ -1292,21 +1287,23 @@ const FaceExpressionOverlay = forwardRef(function FaceExpressionOverlay(
               </div>
             )}
             {/* Top-left: tracking confidence indicator */}
-            <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/80 bg-black/40 backdrop-blur-sm rounded-md px-2 py-1">
-              <span
-                className={`inline-block w-2 h-2 rounded-full ${
-                  trackingScore > 0.6
-                    ? 'bg-emerald-400'
-                    : trackingScore > 0.3
-                    ? 'bg-amber-400'
-                    : 'bg-red-400'
-                }`}
-              />
-              <span>Tracking · {Math.round(trackingScore * 100)}%</span>
-              {calibrated && (
-                <span className="ml-1 text-emerald-300/90 normal-case">· calibrated</span>
-              )}
-            </div>
+            {modelsReady && (
+              <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/80 bg-black/40 backdrop-blur-sm rounded-md px-2 py-1">
+                <span
+                  className={`inline-block w-2 h-2 rounded-full ${
+                    trackingScore > 0.6
+                      ? 'bg-emerald-400'
+                      : trackingScore > 0.3
+                      ? 'bg-amber-400'
+                      : 'bg-red-400'
+                  }`}
+                />
+                <span>Tracking · {Math.round(trackingScore * 100)}%</span>
+                {calibrated && (
+                  <span className="ml-1 text-emerald-300/90 normal-case">· calibrated</span>
+                )}
+              </div>
+            )}
             {/* Bottom-left: live median-smoothed emotion + confidence */}
             {liveEmotion && (
               <div
